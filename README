@@ -1,0 +1,63 @@
+The like_eos project is for exploring HE modeling issues using
+simple toy models.  To make notes.pdf:
+
+-> git clone https://github.com/fraserphysics/like_eos
+-> cd like_eos
+-> make -j8
+
+for m in *.py; do echo $m test; python $m test; done
+
+Make standard plot for experiment 1 cost 2 eos 3 spectrum 4 eigenfunctions
+
+rate stick CJ point plot
+
+rate stick eos_i plots
+
+Plans for multiple measurements:
+
+1. Calulate detonation velocity from eos
+
+2. Simulate rate stick measurements
+
+3. Use rate stick data in eos estimation
+
+4. Simulate expanding cylinder
+
+Plans for comparing coordinate systems:
+
+1. Write code that calculates or estimates uncertainty of estimated
+   EOS model.
+
+2. Write code that calculates or estimates uncertainty of estimated
+   muzzle energy and muzzle time given uncertain EOS model.
+   
+3. Plot bias/variance pairs for sequences of spline and polynomial
+   models with increasing numbers of parameters.
+
+4. Explain all of the above work in notes.tex
+
+-----------------------------------------------------------------
+Here is an alphabetical list of source files under git in this directory
+
+basis.py:
+Makes a plot that illustrates a spline basis function and its derivatives.
+
+eos.py:
+Provides EOS classes for experiments and a nominal guess for
+optimization.  Also provides spline classes that other modules use.
+
+fit.py:
+Contains optimization code.
+
+gun.py
+Code for the gun model.  Makes experimental data and used for
+optimization in fit.py
+
+Makefile
+First and only ultimate target is notes.pdf
+
+notes.tex
+Explains models and optimization
+
+plot.py
+Provides figures for notes.pdf

@@ -1,0 +1,797 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amsfonts,afterpage}
+%\usepackage{showlabels}
+\usepackage[pdftex]{graphicx,color}
+\usepackage{url}
+\newcommand{\normal}[2]{{\cal N}\left( #1,#2 \right)}
+\newcommand{\normalexp}[3]{ -\frac{1}{2}
+      (#1 - #2)^T #3^{-1} (#1 - #2) }
+\newcommand{\La}{{\cal L}}
+\newcommand{\fnom}{\tilde f}
+\newcommand{\fhat}{\hat f}
+\newcommand{\COST}{\cal C}
+\newcommand{\LL}{{\cal L}}
+\newcommand{\Prob}{\text{Prob}}
+\newcommand{\field}[1]{\mathbb{#1}}
+\newcommand\REAL{\field{R}}
+\newcommand\Z{\field{Z}}
+\newcommand{\partialfixed}[3]{\left. \frac{\partial #1}{\partial
+      #2}\right|_#3}
+\newcommand{\partiald}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\argmin}{\operatorname*{argmin}}
+\newcommand{\argmax}{\operatorname*{argmax}}
+\newcommand\norm[1]{\left|#1\right|}
+\newcommand\bv{\mathbf{v}}
+\newcommand\bt{\mathbf{t}}
+\newcommand\vol{v}        % specific volume
+\newcommand{\pressure}{p}
+\newcommand{\eos}{f}
+\newcommand{\eosnom}{\tilde f}
+\newcommand{\EOS}{{\cal F}}
+\newcommand{\data}{y}
+\newcommand{\DATA}{{\cal Y}}
+\newcommand\Vfunc{\mathbb{V}}
+\newcommand\Vt{\mathbf{V}}
+\newcommand\vexp{V_{\rm{exp}}}
+\newcommand\texp{T_{\rm{exp}}}
+\newcommand\cf{c_f}
+\newcommand\cv{c_v}
+\newcommand\fbasis{b_f}
+\newcommand\vbasis{b_v}
+\newcommand\tsim{{\mathbf t}_{\rm{sim}}}
+\newcommand\DVDf{\partiald{\Vt}{f}}
+\newcommand\Lbb{\mathbb{L}}
+\newcommand\epv{\epsilon_v}
+\newcommand\epf{\epsilon_f}
+\newcommand{\fig}[1]{figs/#1.pdf}
+
+\title{Notes on EOS Estimation Code}
+
+\author{Andrew M.\ Fraser}
+\begin{document}
+\maketitle
+\begin{abstract}
+  The source for these notes and illustrations reside in
+  like\_eos/notes.tex\footnote{Run \emph{git clone
+      https://github.com/fraserphysics/like\_eos} to obtain the source.}.
+  I use the same ideas for work on the 9501 model on moonlight.
+\end{abstract}
+
+\section{Introduction}
+\label{sec:introduction}
+
+I describe theory and code for numerical experiments based on functions
+(EOSs) that map specific volume to pressure along an isentrope.
+Running the code helps verify the theory.  I intend to describe how
+tightly a few different experiments constrain the EOS.  This document
+and the code are structured as follows:
+\begin{description}
+\item[EOS:] I characterize the EOS $f$ in terms of
+  \begin{description}
+  \item[Constraints:] The function $f$ must be positive, monotonic and
+    convex over its entire domain.
+  \item[Prior:] I use a Gaussian distribution over parameters of an ad
+    hoc choice of coordinates.  I don't know how seriously this flawed
+    choice affects the results.
+  \end{description}
+\item[Experiments:] I will consider a set of experiments
+  $\left\{ E_k: 0 \leq k < N \right\}$.  For each experiment, I will
+  need:
+  \begin{description}
+  \item[Data:] Theory and code for generating simulated data
+  \item[Likelihood:] Theory and code for calculating the likelihood of
+    data
+  \end{description}
+\item[Analysis:] If the likelihoods were exponentials of quadratic
+  functions of the parameters of the EOS, then the a posteriori
+  distribution would be Gaussian if there were no constraints.  The
+  code for each experiment reports the dependence of the data on the
+  parameters as an affine approximation.  That lets me approximately
+  characterize the likelihoods as exponentials of quadratics.  I
+  enforce the constraints and ignore their effects on the
+  distributions.  The file \emph{fit.py} implements the resulting
+  constrained MAP estimation.
+\end{description}
+
+\section{The EOS}
+\label{sec:eos}
+
+The class \emph{Spline\_eos} in the file \emph{eos.py} provides
+methods that implement the EOSs described in this section.
+
+\subsection{Definitions and Notation}
+\label{sec:eos-notation}
+
+\begin{description}
+\item[$\vol$:] Specific volume
+\item[$\pressure$:] Pressure
+\item[$\eos$:] An EOS that maps specific volume to pressure, $\eos: \vol
+  \mapsto \pressure$.
+\item[$\EOS$:] A set of possible EOS functions.
+\item[$\cf,\fbasis$:] Vector of coefficients and cubic spline basis
+  functions that define an EOS.  I will use $\cf[i]$ and $\fbasis[i]$
+  to denote components.
+\item[$\mu_\eos, \Sigma_\eos$:] Mean and covariance of prior
+  distribution of EOS.  In a context that requires coordinates, I let
+  $\mu_\eos = \left( \cf[0], \cf[1], \ldots , \cf[n] \right)^T$.
+\end{description}
+
+\subsection{An Inconsistently Defined Prior}
+\label{sec:eos-prior}
+
+I constrain $\eos$ to be positive and to be a convex function of
+$\vol$.  I have begun but not finished work to define a probability
+measure on a set of functions that obeys those constraints and is
+further constrained by $\frac{\left| \eos(\vol) - \mu_\eos(\vol)
+  \right|}{\mu_\eos(\vol)} \leq \Delta$.  For now, I characterize the
+prior as Gaussian.  However as I search for the mean of the a
+posteriori distribution, I enforce the constraints.  This is
+inconsistent and requires justification or a different approach.
+
+I use a prior defined in terms of spline coefficients.  I start with a
+nominal EOS
+\begin{equation}
+  \label{eq:2}
+  \eosnom(\vol) = \frac{C}{\vol^3}, \text{ where } C \leftrightarrow
+  2.56\times10^9 \text{Pa} \text{ at one gram/cc}
+\end{equation}
+and over a finite domain I approximate it by a cubic spline with
+coefficients $\left\{\tilde \cf[i] \right\}$.  Then I assign a variance to
+  each coefficient:
+\begin{equation}
+  \label{eq:3}
+  \sigma^2[i] = \left( \cf[i] \Delta \right)^2.
+\end{equation}
+To match Shaw's $\frac{1}{2} \%$ claim, I set $\Delta = 0.005$.  These
+choices yield:
+\begin{align*}
+  \mu_\eos &\leftrightarrow \left\{\tilde c[i] \right\} \\
+  \Sigma_\eos[i,j] &= \tilde \sigma^2[i] \delta_{i,j}
+\end{align*}
+
+\subsection{The Nominal and \emph{True} EOS}
+\label{sec:true-eos}
+
+
+\newcommand{\freq}{k} %
+For each experiment, data comes from a simulation using the
+\emph{true} function
+\begin{align}
+  \label{eq:actual}
+  f(v) &= \fnom(v) + \frac{2 e^{-\frac{(v-v_0)^2}{2w^2}}
+         \fnom(v_0)}{\freq}  \sin(\freq (v-v_0))\\
+   \text{ where }C &= 2.56\times 10^{10} \nonumber \\
+  \freq &= 0.2 \nonumber \\
+  w &= 0.2. \nonumber \\
+  v_0 &= 0.6. \nonumber
+\end{align}
+The EOS specified by \eqref{eq:actual} is like the prior except that
+there is an added sinusoidal perturbation with a Gaussian envelope
+centered at $v=v_0$.  The perturbation is just strong enough to make
+the sum non-convex.  Thus, the \emph{true} EOS is not in the set over
+which the algorithm described in Section~\ref{sec:analysis} searches.
+
+\section{Experiments}
+\label{sec:experiments}
+
+I've written the code with a structure that lets me include more
+experiments easily.  Each experiment must have theory and code that
+provides faux data, Gaussian likelihood as a function of the EOS
+$\eos$ and the derivative of the conditional mean with respect to the
+EOS.  For the $k^{\rm th}$ experiment, here is the notation:
+\begin{description}
+\item[$\data_k\in \DATA_k$:] Faux data and the set over which the
+  likelihood is a density.
+\item[$\mu_k$:] A function $\EOS\mapsto \DATA_k$ that gives the mean
+  of the likelihood.
+\item[$\Sigma_k$:] The covariance of the likelihood.  This is
+  independent of $\eos$.
+\item[$D_k$:] The derivative of $\mu_k$ with respect to $\eos$, which
+  in the spline coordinates is
+  $D_k[i,j] =\frac{\partial \data_k[i]}{\partial \cf[j]}$.
+\item[$\epsilon_k$:] The difference between the data and the model
+  prediction, $\epsilon_k = \data_k - \mu_k(\eos)$.
+\item[log likelihood:] Ignoring constant terms that depend on
+  $\Sigma_k$, the log likelihood is $-\frac{1}{2}\epsilon_k^T
+  \Sigma_k^{-1} \epsilon_k$.
+\end{description}
+
+\subsection{Fisher Information}
+\label{sec:fisher-information}
+
+Fisher Information describes how tightly an experiment constrains
+unknown parameters.  Assume a parametric probability density function
+$p(Y|\theta)$ that gives the likelihood for data $Y$.  Quoting
+Wikipedia: ``If $p(y|\theta)$ is twice differentiable with respect to
+$\theta$, and under certain regularity conditions, then the Fisher
+information may also be written as''
+\begin{equation*}
+  \mathcal{I}(\theta) = - \operatorname{E}
+  \left[\left. \frac{\partial^2}{\partial\theta^2} \log
+      p(Y;\theta)\right|\theta \right].
+\end{equation*}
+In my notation for experiments and models, the parameters are $c$.
+Dropping added constants, the log likelihood is
+\begin{equation*}
+  \log(p(y|c)) + C = -\frac{1}{2}\epsilon_k^T \Sigma_k^{-1} \epsilon_k
+  = -\frac{1}{2}(y-\mu(c))^T \Sigma_k^{-1} (y-\mu(c)).
+\end{equation*}
+At the maximum, the first derivative is zero and I calculate
+\newcommand{\dmudc}{\left(\frac{\partial \mu(c)}{\partial c} \right)}
+\begin{align*}
+  \frac{\partial}{\partial c} \log(p(y|c)) &= 
+      (y-\mu(c))^T \Sigma_k^{-1} \dmudc \\
+  \frac{\partial^2}{\partial c^2} \log(p(y|c)) &=
+      \dmudc^T \Sigma_k^{-1} \dmudc +  (y-\mu(c))^T \Sigma_k^{-1}
+       \left(\frac{\partial^2 \mu(c)}{\partial c^2} \right).
+\end{align*}
+Since the distribution of $Y$ is symmetric about its mean $\mu(c)$,
+the expected value of the second term is 0, and the first term is the
+Fisher Information.
+
+\subsection{A Rate Stick}
+\label{sec:rate-stick}
+
+Here the data are a sequence of times that a detonation shock is
+measured arriving at locations along a rate stick that is so thick
+that the detonation velocity is not reduced by curvature.  The code
+for the faux data uses the average density and sensor positions given
+by Pemberton et al.\cite{Pemberton9501} for their \emph{Shot 1}.
+
+\subsubsection{Detonation Velocity}
+\label{sec:det-vel}
+
+The only characteristic that this ideal rate stick measures is the
+detonation velocity.  Code in \emph{stick.py} derives that velocity
+following Section 2A (entitled \emph{The Simplest Theory)}) of
+\emph{Detonation Theory and Experiment} by Fickett and
+Davis\cite{FickettDavis}.  At the Chapman Jouguet (CJ) state, the
+following three curves are tangent in the $p,v$ plane:
+\begin{itemize}
+\item The Rayleigh line which gives a relation implied by conservation
+  laws between pressure and density (or specific volume) before and
+  after a shock.
+\item The Hugoniot curve, which I will not use.
+\item An isentrope.  Generally one must use the Hugoniot to determine
+  which isentrope goes through the CJ state, but I will just assume
+  that each isentrope considered goes through the CJ state.
+\end{itemize}
+
+On page 17 of Fickett and Davis, Equation 2.3 expresses the Rayleigh
+line as
+\begin{equation}
+  \label{eq:Rayleigh}
+  \rho_0^2 V^2 - (p-p_0)/(v_0-v) = 0,
+\end{equation}
+with the following notation:
+\begin{description}
+\item[$\rho_0$] The initial density (before detonation wave arrives)
+\item[$v_0\equiv\frac{1}{\rho_0}$] The initial specific volume
+\item[$p_0$] The initial pressure
+\item[$V$] The velocity of the detonation wave
+\item[$p$] The pressure at positions behind the wave
+\item[$v$] The specific at positions behind the wave.
+\end{description}
+Rearranging the terms in \eqref{eq:Rayleigh} yields this relation
+between pressure and volume after the shock
+\begin{equation*}
+  p = R(v,V) \equiv p_0 + \frac{V^2(v_0-v)}{v_0^2}.
+\end{equation*}
+At the CJ point, the Rayleigh line is tangent to the isentrope.
+Using
+\begin{align*}
+  F(v,V) &= \eos(v) - R(v,V) \\
+  F'(v,V) &= \frac{d \eos}{d v} - \frac{V^2}{v_0^2},
+\end{align*}
+I can write the following conditions for the CJ point:
+\begin{subequations}
+  \begin{align}
+    \label{eq:Fcond}
+    F(v,V) &= 0 \\
+    \label{eq:dFcond}
+    F'(v,V) &= 0.
+  \end{align}
+\end{subequations}
+Given $V$, the code has function that numerically solves
+\eqref{eq:dFcond} for $v$.  Letting $v(V)$ denote that solution, I
+write \eqref{eq:Fcond} as
+\begin{equation}
+  \label{eq:FV}
+  F(v(V),V) = 0.
+\end{equation}
+The code numerically solves \eqref{eq:FV} to get $V_{\text{CJ}}$ and
+then assigns $v_{\text{CJ}} = v(V_{\text{CJ}})$.
+
+\subsubsection{Simulating the Measured Data}
+\label{sec:stick-sim}
+
+From $V_{\text{CJ}}(\eos)$, the code calculates
+\begin{equation}
+  \label{eq:t}
+  t[j] = \frac{x[j]}{V_{\text{CJ}}(\eos)}.
+\end{equation}
+Finally the code calculates
+\begin{equation}
+  \label{eq:Dstick}
+  D[j,i] \equiv \frac{\partial t[j]}{\partial c[i]}
+\end{equation}
+using finite differences.  Illustrations of three simulations appear
+in Figure~\ref{fig:tx_stick}.
+
+\begin{figure}
+  \centering
+    \resizebox{\columnwidth}{!}{\includegraphics{\fig{tx_stick}}}
+    \caption{The rate stick data.  Red +'s denote measured shock
+      arrival time at 7 positions.  The blue line represents the shock
+      velocity calculated from the nominal EOS, and the green line
+      represents the velocity from an EOS optimized to fit the rate
+      stick data alone.}
+  \label{fig:tx_stick}
+\end{figure}
+
+\subsection{The Gun}
+\label{sec:gun}
+
+The data is a time series of measurements of the velocity of a
+projectile as it accelerates down a gun barrel.
+
+\subsubsection{Notation}
+\label{sec:basic_notation}
+
+\begin{description}
+\item[$y\equiv(\vexp, \texp)$:] An experimental sequence of measured pairs of
+  velocity and time
+\item[$\bv(\eos)$:] A sequence of model velocities
+\item[$\Vt$:] A map from times to model velocities, eg, $\bv =
+  \Vt(\texp)$
+\item[$\tsim$:] A sequence of closely spaced sample times at which to record
+  simulated position and velocity for constructing $\Vt$.
+\item[$\Vfunc$:] An expensive procedure that maps an EOS function to a
+  function that maps time to velocity with $\Vt = \Vfunc(\eos)$
+\item[$\cv,\vbasis$:] Vectors of spline coefficients and basis functions
+  that define a $\Vt$
+\item[$C$] Derivative of the velocity function with respect to the
+  EOS, ie, matrix with elements $C[k,i] = \partiald{\cv[k]}{\cf[i]}$
+\item[$B$] Matrix with elements $B[j,k] = \vbasis[k](\texp[j])$, ie,
+  the exactly linear map from $c_v$ to simulated data.  The matrix
+  elements are the velocity basis functions evaluated at the
+  experimental sample times.  Thus the derivative of the simulated
+  data with respect to the EOS basis coefficients is $D = BC$.
+\item[$\epv$] The vector of differences between the measured
+  velocities and the simulated velocities at the times of the
+  measurements.
+\end{description}
+
+\subsubsection{Implementation}
+\label{sec:basic_implementation}
+
+\begin{description}
+\item[$\Vfunc(f)$:] Run a simulation and record a sequence of
+  velocities $\bv$ at times $\tsim$.  Then fit a
+  spline to $(\bv, \bt)$ to obtain $\Vt\iff \{\cv,\vbasis\}$.
+\item[$\Vt$:] Call the spline evaluation method to get $\bv = \Vt(\texp)$
+\item[$D$:] Evaluate $\Vfunc(f)$ for $N(\cf)+1$ different sets of
+  coefficients $\cf$, and use finite differences to get a matrix with
+  elements $C[k,i] = \partiald{\cv[k]}{\cf[i]}$.  Then
+  \begin{equation*}
+    D[j,i] = \partiald{\Vt[j]}{\cf[i]} = \sum_k C[k,i] \vbasis[k](T) = BC[j,i]
+  \end{equation*}
+\end{description}
+Figure \ref{fig:big_d} illustrates the calculation of $D$ using finite
+differences.
+\begin{figure}
+  \centering
+    \resizebox{\columnwidth}{!}{\includegraphics{\fig{big_d}}}
+    \caption{Illustration of the derivative of the velocity function
+      with respect to the pressure function, $\frac{d v}{d p}$.  The
+      second and third columns correspond variations of the
+      coefficients of basis functions that differ by a factor of ten.
+      The lower left plot indicates that the nonlinear part of the
+      response is a factor of a $10^4$ smaller than the linear
+      response.  }
+  \label{fig:big_d}
+\end{figure}
+
+\subsubsection{The Code}
+\label{sec:guncode}
+
+The file \emph{gun.py} defines the \emph{Gun} class which has the
+following methods:
+\begin{description}
+\item[fit\_t2v] Run a simulation to build a spline for mapping times
+  to velocities.  The result for the initial EOS appears in
+  Fig.~\ref{fig:vt_gun}.
+  \begin{figure}
+    \centering
+    \resizebox{\columnwidth}{!}{\includegraphics{\fig{vt_gun}}}
+    \caption{Velocities as functions of time.  Traces for the
+      \emph{experimental} data, a simulation with the nominal EOS,
+      $\mu_\eos$, and the error, $\epsilon$.}
+    \label{fig:vt_gun}
+  \end{figure}
+\item[fit\_C] Use finite differences to calculate dv/df in terms of
+  spline coefficients, ie,
+  $C[k,i] = \frac{\Delta c_v[k]}{\Delta c_f[i]}$.  See
+  Fig.~\ref{fig:C_gun} and note that $k$ and $i$ range over components
+  of $\cv$ and $\cf$ respectively.
+  \begin{figure}
+    \centering
+    \resizebox{\columnwidth}{!}{\includegraphics{\fig{C_gun}}}
+    \caption{The matrix $C$.  For each $i$, a trace represents
+      $C[k,i] = \frac{\partial \cv[k]}{\partial \cf[i]}$.}
+    \label{fig:C_gun}
+  \end{figure}
+\item[fit\_B\_ep] Map experimental velocities v and times t to the
+  following:
+  \begin{align*}        
+    \epsilon[i] &= v[j] - t2v(t[j])
+                        \text{ Difference between simulation and data} \\
+    B[j,k] &= \vbasis[k](t[j])     
+  \end{align*}
+  Notes: $\vbasis[k]$ is the $k^{\text{th}}$ basis function for the t2v spline.
+  $B$ is the derivative of the simulated velocity function at the
+  experimental sample times wrt the coefficients of the spline fit
+  that implements that function, and $BC_{j,i}$ is the derivative of
+  $v(t[j])$ wrt $\cf[i]$.  See Fig.~\ref{fig:BC_gun}.
+  \begin{figure}
+    \centering
+    \resizebox{\columnwidth}{!}{\includegraphics{\fig{BC_gun}}}
+    \caption{The product $D = B C$.  For each $i$, a trace illustrates
+      $D[j,i] = \frac{\partial v(t[j])}{\partial c_f[i]}$, and it
+      represents a difference between two splines fit to simulations
+      with a finite difference in $f$.  Because the basis functions
+      for $v(t)$ are very narrow, this figure is very similar to
+      Fig.~\ref{fig:C_gun}.}
+    \label{fig:BC_gun}
+  \end{figure}
+\end{description}
+
+\subsection{A Cylinder}
+\label{sec:cylinder}
+
+\marginpar{Not implemented yet}
+This is a simplification of measurements of cylinders.  Suppose that
+all of the material in a long cylinder detonates in an instant and
+that the density after that is uniform inside.  Thus the radius as
+function of time, $\left\{r(t): t>0 \right\}$, is a sufficient
+specification of an experimental result.  Letting $r(0) = r_0$ denote
+the initial radius, the work done by the gas in expanding to $r$ is
+\begin{equation*}
+  U(r) = \int_{r_0}^r p(v(r)) \frac{dv}{dr} dr = \int_{r_0}^r p(\pi
+  r^2) 2\pi r dr.
+\end{equation*}
+That work is used to deform and accelerate the cladding.  I model the
+energy of deformation is
+\begin{equation*}
+  D(r) = \sigma \log \left(\frac{r}{r_0} \right),
+\end{equation*}
+and the kinetic energy of the cladding is
+\begin{equation*}
+  K = \frac{1}{2} m \left( \dot r \right)^2.
+\end{equation*}
+Thus the velocity as a function of radius is
+\begin{equation*}
+  v(r) = \sqrt{\frac{2}{m} \left( U(r) - \sigma \log
+      \left(\frac{r}{r_0} \right) \right) },
+\end{equation*}
+and I can obtain the velocity as a function of time by numerical
+integration.
+
+\section{Analysis}
+\label{sec:analysis}
+
+To characterize the information about the EOS that a collection of
+measurements provide, I use a Bayesian analyses that assumes all the
+relevant distributions are Gaussian.  The analysis is flawed because
+the EOS is constrained in a manner that is inconsistent with the
+Gaussian assumption.
+
+In Section~\ref{sec:eos} I described a prior with the form
+\begin{equation*}
+  \eos \sim \normal{\mu_\eos}{\Sigma_\eos},
+\end{equation*}
+and in Section~\ref{sec:experiments} I suggested the form
+\begin{equation*}
+  \data | \eos \sim \prod_k \normal{\mu_k(f)}{\Sigma_k}
+\end{equation*}
+for the likelihood.  The a posteriori distribution is
+\begin{equation*}
+  p(\eos|\data) = \frac{p(\data|\eos) p(\eos)}{\int p(\data|\eos)
+    p(\eos) d \eos}.
+\end{equation*}
+Without approximation, the assumptions so far imply
+\begin{equation}
+  \label{eq:app}
+  \log(p(\eos|\data)) = \normalexp{\data}{\mu_\data(\eos)}{\Sigma_\data}
+\normalexp{\eos}{\mu_\eos)}{\Sigma_\eos} + C,
+\end{equation}
+where the constant $C$ does not depend on $f$.
+Equation~\eqref{eq:app} is not a Gaussian distribution of $\eos$
+unless $\mu_\data(\eos)$ is affine, ie,
+$\mu_\data(\eos) = \mu_\data(\hat \eos) + D(\eos - \hat \eos)$, in
+which case
+\begin{equation*}
+  -2\log(p(\eos|\data)) = \left(\eos - \hat \eos \right)^T
+  \left( D^T \Sigma_\data^{-1} D + \Sigma_\eos^{-1} \right)
+  \left(\eos - \hat \eos \right) + C,
+\end{equation*}
+where $\hat \eos$ maximizes \eqref{eq:app}.  I will assume that near
+$\hat \eos$, ie, the MAP estimate, an affine approximation is adequate
+and write
+\begin{equation}
+  \label{eq:normal_app}
+  \eos|\data \sim \normal{\hat \eos}{\left( D^T \Sigma_\data^{-1} D + \Sigma_\eos^{-1} \right)^{-1}},
+\end{equation}
+where
+\begin{equation*}
+  D \equiv \left. \frac{\partial\mu_\data}{\partial \eos}
+  \right|_{\hat \eos} .
+\end{equation*}
+Both the optimization procedure that I use to search for $\hat \eos$
+and my characterization of the a posteriori distribution of $\eos$
+rely on having access to $D$.  Note that
+\begin{equation}
+  \label{eq:Fisher_I}
+   D^T \Sigma_\data^{-1} D = \sum_k D_k^T \Sigma_k^{-1} D_k,
+\end{equation}
+and $D_k^T \Sigma_k^{-1} D_k$ approximates the second derivative of
+the log likelihood which is called the \emph{Fisher Information} of
+the $k^{\text{th}}$ experiment.
+
+\subsection{An Algorithm}
+\label{sec:algorithm}
+
+\begin{enumerate}
+\item \label{step:0} Initialize $c_0 = \tilde c$, where this vector of
+  spline coefficients represents $\tilde \eos$.
+\item \label{step:1} For iteration $i$ start with $c_i$ and
+  calculate
+  \begin{description}
+  \item[$D=\cup_k \left\{ D_k \right\},$] the derivative of the model
+    predictions of the data for all the experiments.  For the
+    $k^{\text{th}}$ experiment
+    \begin{equation*}
+      D_k \equiv \left. \frac{\partial\mu_k}{\partial c}
+      \right|_{c_i} .
+    \end{equation*}
+  \item[$\epsilon=\cup_k \left\{ \epsilon_k \right\},$] the difference
+    between the model predictions and the experimental data.  For the
+    $k^{\text{th}}$ experiment
+    \begin{equation*}
+      \epsilon_k \equiv \data_k - \mu_k(c_i) .
+    \end{equation*}
+  \end{description}
+\item \label{step:2} Calculate $c_{i+1} = c_i + d$ by solving
+  the quadratic program
+\begin{subequations}
+  \label{eq:dhat}
+  \begin{align}
+    \text{Minimize } & \frac{1}{2} d^T P d + q^T d \\
+  \label{eq:dhatb}
+    \text{Subject to } & Gd \preceq h
+  \end{align}
+\end{subequations}
+with $G$ describing the constraints (see section
+\ref{sec:constraints}) and
+\begin{subequations}
+  \label{eq:opt}
+  \begin{align}
+    P &= \Sigma_\eos^{-1} + \sum_k D_k^T\Sigma_k^{-1} D_k \\
+    q^T &= (c_i - c_0)^T \Sigma_\eos^{-1} - \sum_k \epsilon_k
+          \Sigma_k^{-1} D_k \\
+    h &= -Gc_i
+  \end{align}
+\end{subequations}
+\item \label{step:3} Calculate $L_i = \log(p(c_{i+1}|\data)$ using
+  \eqref{eq:app}.
+\item \label{step:4} Stop if $\left( L_0, L_1, \ldots L_{i+1} \right)$
+  meets some convergence criterion, otherwise go back to \ref{step:1}.
+\end{enumerate}
+
+\subsection{Numerical Results}
+\label{sec:numerical-results}
+
+The result of a single iteration of the algorithm appears in
+Fig.~\ref{fig:opt_result}.  Three iterations of the algorithm
+increases $L_i$ from $-9.7\times 10^8$ to $-4.2\times 10^4$.  Figure
+\ref{fig:fve_gun} illustrates the convergence.
+\begin{figure}
+  \centering
+  \resizebox{\columnwidth}{!}{\includegraphics{\fig{opt_result}}}
+  \caption{The function $f_1 = f_0 + \hat d$ returned by fit.opt()
+    compared to $f_0$.}
+  \label{fig:opt_result}
+\end{figure}
+\begin{figure}
+  \centering
+    \resizebox{\columnwidth}{!}{\includegraphics{\fig{fve_gun}}}
+    \caption{Sequential estimation of the maximum a posteriori
+      probability parameters of $f$.  The \emph{true} EOS appears as
+      \emph{experimental} in the upper plot, and the optimization starts
+      with the \emph{nominal} and ends with \emph{fit}.  The
+      corresponding velocity as a function of position appears in the
+      middle plot, and the sequence of errors in the forecast velocity
+      time series after each step in the optimization appears in the
+      lower plot. }
+  \label{fig:fve_gun}
+\end{figure}
+
+\section{Comparing Model Classes}
+\label{sec:classes}
+
+We want to test the hypothesis that splines are better for building
+models of an EOS than polynomials.  We hope to compare the bias and
+variance of two sequences of estimators, one that uses splines and one
+that uses polynomials.  We will study estimators for quantities of
+interest that are functionals of the EOS that differ from the
+functionals that correspond to the measurements.  In previous work, we
+have analyzed the functionals for muzzle time and muzzle velocity for
+an ideal gun, and in the sections above we have described an analysis
+of velocity measurements that depend on time.  We hope that those
+quantities of interest and those measurements are sufficiently
+different in that the measurements are given as functions of time and
+the quantities of interest are required as functions of position.
+
+Here is the agenda:
+\begin{enumerate}
+\item Design two classes of EOS models, ie, pressure as a function of
+  volume along an isentrope.  One class will be splines with $n$ knots
+  equally spaced on a log scale, and the other will be $n^{\text{th}}$
+  order polynomials.
+\item Write code that draws realizations of experimental data based on
+  an EOS that is outside of both model classes for any finite $n$.
+\item Write code that estimates the coefficients of polynomial models
+  of the EOS.
+\item Calculate (or estimate with simulations) sequences (indexed by
+  $n$) of bias and variance pairs of estimators for quantities of
+  interest using the two classes of models.  We hope to find that the
+  curve defined by the pairs for splines lies below the curve defined
+  by pairs for polynomials.
+\end{enumerate}
+
+\appendix
+
+\section{Cubic Splines}
+\label{sec:splines}
+
+Cubic splines are so named because their basis functions are piecewise
+cubic.  I illustrate their basis functions for a grid of evenly spaced
+knots in Fig.~\ref{fig:basis}.  Note that the second derivative is
+affine between knots and that consequently if it is positive at the
+knots it is positive between them.  Also if the second derivative is
+positive over the domain and the first derivative is positive at the
+right hand end point, the function is monotonic and convex over the
+entire domain.  Finally, if the function is monotonic and positive a
+the right hand end point, then it is positive over the entire domain.
+\begin{figure}
+  \centering
+    \resizebox{\columnwidth}{!}{\includegraphics{basis.pdf}}  
+    \caption{Cubic spline basis functions and their first and second
+      derivatives. The dashed plots are for $f_5$ whose knot is
+      $t_5=3$.  Note that $t_k=0$ for $f_0,~f_1,~f_2$ and $f_3$, and
+      $t_4=2$.}
+  \label{fig:basis}
+\end{figure}
+
+Figure~\ref{fig:basis} also illustrates the symmetry of the right and
+left boundaries.  The knot location $t$ of each basis function is the
+point on the left where the function departs from zero.  There are
+four functions at $t=0$.  There are also four functions at $t=10$, but
+since their coefficients are always zero, they are not degrees of
+freedom in any fit.
+
+\subsection{Constraints}
+\label{sec:constraints}
+
+I require that the EOS be everywhere convex, monotonically decreasing
+and positive.  Since I am using cubic splines, the third derivative is
+piecewise constant, and for the knot positions in Fig.~\ref{fig:basis}
+the constraints are equivalent to the following:
+\begin{description}
+\item[Second derivative positive at each knot] The matrix
+  \setcounter{MaxMatrixCols}{12}
+  \begin{equation}
+    \label{eq:d2}
+    D_2 =
+    \begin{bmatrix}
+      \frac{3}{2} & -\frac{5}{2} & 1     & 0   & \cdots \\ \\
+      0   & \frac{2}{3} & -\frac{7}{6} & \frac{1}{2} & 0 & \cdots \\ \\
+      \vdots   & 0    & \frac{3}{4} & -\frac{7}{4} & 1 & 0 & \cdots \\ \\
+      & \vdots    & 0   & 1 & -2 & 1 & 0 & \cdots \\ \\
+       & & & 0 & 1 & -2 & 1 & 0  \\ \\
+      & & & & 0 & 1 & -2 & 1 & 0  \\ \\
+      &&&&& 0 & 1 & -\frac{7}{4} &\frac{3}{4} & 0 \\ \\
+      &&&&&& 0 & \frac{1}{2} & -\frac{7}{6} & \frac{2}{3} & 0 \\ \\
+      &&&&&&& 0 & 1 & -\frac{5}{2} & \frac{3}{2} \\ \\
+    \end{bmatrix}
+  \end{equation}
+  is the map from coefficients to the second derivative at the knots
+  in Fig.~\ref{fig:basis}.
+\item[First derivative negative at last knot] The vector
+  \begin{equation*}
+    D_1 = \begin{bmatrix}
+    0 & \cdots & 0 & -\frac{3}{2} & \frac{3}{2}
+  \end{bmatrix}
+  \end{equation*}
+  is the map from coefficients to the first derivative at the last knot
+  in Fig.~\ref{fig:basis}.
+\item[Function value positive at last knot] The vector
+  \begin{equation*}
+     D_0 = \begin{bmatrix}
+    0 & \cdots & 0 & 1
+  \end{bmatrix}
+  \end{equation*}
+  is the map from coefficients to the function value at the last knot
+  in Fig.~\ref{fig:basis}.
+\end{description}
+Thus for the knots in Fig.~\ref{fig:basis}, the constraints are
+\begin{align}
+  G & \equiv
+      \begin{bmatrix}
+        - D_2 \\ D_1 \\ -D_0
+      \end{bmatrix}\\
+  \label{eq:constraint}
+  G\cf & \preceq 0.
+\end{align}
+
+\section{Preconditioning}
+\label{sec:preconditioning}
+
+Wherever in the domain of $\eos$ there is no effect on any of the
+experiments, the posterior distribution will be the same as the prior.
+The domain should extend beyond the effect of the experiments.
+Since the variance of the prior at $v$ is proportional $(f(v))^2$ and
+$f(v) \approx \frac{C}{v^3}$,
+\begin{equation}
+  \label{eq:var_f}
+  \sigma^2_{c}[i] \propto (v[i])^{-6},
+\end{equation}
+and the condition\footnote{The condition of a symmetric matrix is the
+  ratio of the largest eigenvalue to the smallest eigenvalue.  See
+  \eqref{eq:opt} for the calculation of $P$.} of $P$ will be
+$\left( \frac{v_{\text{max}}}{v_{\text{min}}} \right)^6$.  By
+changing to the variable $z$ defined as
+\begin{align*}
+  z[i] &\equiv v[i]^3 d[i] \\
+  z &\equiv U \cdot d \text{ with} \\
+  U[i,j] &= \delta_{i,j} v[i]^3,
+\end{align*}
+\newcommand{\UI}{U^{-1}} instead of $P$, the optimization code will use
+$\UI P \UI$, which is better conditioned.  I also rescale the
+constraint equation to ensure that $\left| h[i] \right|=1~\forall i$
+using the matrix
+\begin{equation*}
+  H^{-1}[i,j] \equiv \delta_{i,j} \frac{1}{\left|h[i]\right|}
+\end{equation*}
+
+
+The procedure is to first solve the quadratic program specified by
+\begin{align*}
+  \tilde P &= \UI P \UI \\
+  \tilde q &= \UI q \\
+  \tilde G &= H^{-1}G \UI \\
+  \tilde h &= H^{-1}h
+\end{align*}
+for $z$, and then derive the estimate of $d$ from
+\begin{equation*}
+  d = \UI z.
+\end{equation*}
+
+\section{Other Information}
+\label{sec:appendix}
+
+See other information in $\sim$/doc/HE.tex on moonlight.
+
+\bibliographystyle{unsrt} \bibliography{local}
+%
+\vfill \hrule
+
+Source file: https://github.com/fraserphysics/like\_eos/notes.tex
+
+\end{document}
+
+%%%---------------
+%%% Local Variables:
+%%% eval: (TeX-PDF-mode)
+%%% eval: (setq ispell-personal-dictionary "./localdict")
+%%% End:
