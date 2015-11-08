@@ -264,9 +264,10 @@ def test_log_like():
     vt = (data())
     gun = Gun(Spline_eos(Nominal()))
     ll = gun.log_like(*gun.compare(vt))
-    if close(-ll, 970963830.012):
+    if close(-ll, 7.648752529e8):
         return 0
     else:
+        print('ll={0:.9e}'.format(ll))
         return 1
 def test_shoot_t2v():
     from eos import Experiment
@@ -275,16 +276,17 @@ def test_shoot_t2v():
     t2v = gun.fit_t2v()
     v_ = t2v(t[-1])
     this_computation = list(xv[-1,:]) + [t2v(t[-1])]
-    old_results = (4.52167252, 4.12180082e+04, 4.12180082e+04)
+    old_results = [4.5442538084954309, 40702.29070048398,
+                   40702.29070048398]
     for old, this, name in zip(old_results, this_computation,
                                'x v spline'.split()):
-        assert close(old,this),'{0}: old={1:.8e}, new={2:.8e}'.format(
-            name, old, this)
+        assert close(old,this),'{0}: old={1:.8e}, new={2:.8e}\n{3}'.format(
+            name, old, this, this_computation)
     return 0
 def test_x_dot():
     from eos import Experiment
     v = Gun(Experiment()).x_dot(4.0)
-    assert close(v, 4.121800824e+04)
+    assert close(v, 4.070229070e4), 'v={:.9e}'.format(v)
     return 0
 def test_C():
     from eos import Experiment, Spline_eos
@@ -294,8 +296,8 @@ def test_C():
     eos = Spline_eos(Experiment(), N=N, v_min=.38, v_max=4.2)
     C = Gun(eos).fit_C(n_t=n_t)
     assert C.shape == (n_t, N)
-    assert close(C[1,0], 2.05695528e-07)
-    assert close(C[-1,-1], 6.45823399e-07)
+    assert close(C[1,0], 2.36918629944e-7),'C[1,0]={0}'.format(C[1,0])
+    assert close(C[-1,-1], 6.5485651069e-7),'C[-11,-1]={0}'.format(C[-1,-1])
     return 0
 def test_B_ep():
     ''' B[i,j] = dv(t[i])/dc_velocity[j]
@@ -307,8 +309,8 @@ def test_B_ep():
     B,ep = Gun(eos).fit_B_ep(vt)
     assert B.shape == (1000,500)
     assert ep.shape == (1000,)
-    assert np.argmax(ep) == 345
-    assert close(ep[345], 1461.8632379214614)
+    assert np.argmax(ep) == 51,'argmax={0}'.format(np.argmax(ep))
+    assert close(ep[51], 2794.5793364922065)
     assert np.argmax(B[300,:]) == 165
     assert close(B[300,165], 0.66576300914271824)
     return 0
@@ -330,7 +332,7 @@ def test_Pq():
     i = 22
     assert np.argmin(q) == i, 'argmin={0} != 11'.format(
         np.argmin(q), i)
-    value = 5.680863201e-01
+    value = 0.36651079402411407
     assert close(-q[i], value), '-q[{2}]={0:.9e} != {1:.9e}'.format(
         -q[i], value, i)
     return 0    
@@ -338,7 +340,7 @@ def test():
     for name,value in globals().items():
         if not name.startswith('test_'):
             continue
-        if value() == 0:
+        if value() == 0: # This is a call to a function with a name "test_..."
             print('{0} passed'.format(name))
         else:
             print('\nFAILED            {0}\n'.format(name))

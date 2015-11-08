@@ -12,8 +12,8 @@
 # https://www.gnu.org/software/make/manual/html_node/Automatic-Variables.html
 # https://www.gnu.org/software/make/manual/html_node/Text-Functions.html
 # Type "make test" to see the list of figures
-FIG_ROOT = C_gun vt_gun BC_gun opt_result big_d fve_gun tx_stick
-FIGURES = $(patsubst %, figs/%.pdf, ${FIG_ROOT}) basis.pdf
+FIG_ROOT = C_gun vt_gun BC_gun opt_result big_d fve_gun tx_stick basis
+FIGURES = $(patsubst %, figs/%.pdf, ${FIG_ROOT})
 
 CODE = plot.py fit.py eos.py gun.py
 
@@ -25,16 +25,17 @@ notes.bbl: local.bib notes.tex ${FIGURES}
 	pdflatex notes
 	bibtex notes
 
+figs/basis.pdf: basis.py
+	mkdir -p figs
+	python basis.py $@	
 figs/%.pdf: ${CODE}
 	mkdir -p figs
 	python plot.py --$* $*.pdf
 
-basis.pdf: basis.py
-	python basis.py $@
 test:
 	@echo FIGURES = ${FIGURES}
 clean:
-	rm -rf figs *.pdf *.pyc *.log *.aux *.bbl
+	rm -rf figs *.pdf *.pyc *.log *.aux *.bbl *.blg
 
 ###---------------
 ### Local Variables:

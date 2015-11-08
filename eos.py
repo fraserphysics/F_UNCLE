@@ -23,10 +23,9 @@ magic = Go(
     spline_max=100,          # Maximum volume
     spline_uncertainty=5.e-3,# Multiplicative uncertainty of prior (1/2 %)
     spline_end=4,            # Last 4 coefficients of splines are 0
-    freq=.2,                 # sin term of perturbation
-    w=.2,                    # Perturbation width
-    v_0=0.6,                 # Center of perturbation
-    scale=2.0,               # Scale of perturbation
+    w=.06,                    # Perturbation width
+    v_0=0.35,                 # Center of perturbation
+    scale=.2,               # Scale of perturbation
            )
 
 R = lambda vel, vol_0, vol: vel*vel*(vol_0-vol)/(vol_0*vol_0)
@@ -59,7 +58,7 @@ class Isentrope:
         vel_CJ = brentq(E, d_min, d_max, args=(self,))
         vol_CJ = arg_min(vel_CJ,self)
         p_CJ = self(vol_CJ)
-        return vel_CJ, vol_CJ, p_CJ
+        return vel_CJ, vol_CJ, p_CJ, R
 class Nominal(Isentrope):
     '''Model of pressure as function of volume.  This is the nominal eos
 
@@ -83,46 +82,38 @@ class Experiment(Isentrope):
     '''This is the "true" eos used for the experiments.
 
     P(v) =
-    C/v^3 + 2 sin(freq*(v-v_0)) * e^{(v-v_0)^2/(2*w^2)} * C/(freq*(v-v_0)^3)
+    C/v^3 +  e^{(v-v_0)^2/(2*w^2)} * C/(v_0^3)
     '''
     def __init__(
             self,              # Experiment instance
             C=magic.C,
             v_0=magic.v_0,
-            freq=magic.freq,
             w=magic.w,
+            scale=magic.scale,
             ):
         self.C = C
         self.v_0 = v_0
-        self.freq = freq
         self.w = w
+        self.scale=scale
         return
     def __call__(
             self,      # Experiment instance
             v          # Specific volume in cm^3/gram
             ):
-        freq = self.freq
         v_0 = self.v_0
         w = self.w
-        sin = lambda Dv: np.sin(freq*Dv)
+        factor = self.scale*self.C/(v_0**3)
         exp = lambda Dv: np.exp(-Dv**2/(2*w**2))
-        pert = lambda Dv: np.sin(freq*Dv)*np.exp(-Dv**2/(2*w**2))
-        factor = 2*self.C/(freq*v_0**3)
-        f_Dv = lambda Dv : factor * sin(Dv)*exp(Dv)
+        f_Dv = lambda Dv : factor * exp(Dv)
         return self.C/v**3 + f_Dv(v-v_0)
     def derivative(self, n):
         assert n == 1
-        freq = self.freq
         v_0 = self.v_0
         w = self.w
-        sin = lambda Dv: np.sin(freq*Dv)
-        dsin = lambda Dv: freq*np.cos(freq*Dv)
+        factor = self.scale*self.C/(v_0**3)
         exp = lambda Dv: np.exp(-Dv**2/(2*w**2))
-        dexp = lambda Dv: -Dv/w*exp(Dv)
-        pert = lambda Dv: np.sin(freq*Dv)*np.exp(-Dv**2/(2*w**2))
-        factor = 2*self.C/(freq*v_0**3)
-        df = lambda Dv: factor*(dsin(Dv)*exp(Dv) + sin(Dv)*dexp(Dv))            
-        return lambda v:-3*self.C/v**4 + df(v-v_0)
+        df = lambda Dv: -factor*exp(Dv)*Dv/w**2
+        return lambda v: df(v-v_0) -3*self.C/v**4
     
 from scipy.interpolate import InterpolatedUnivariateSpline as IU_Spline
 # For scipy.interpolate.InterpolatedUnivariateSpline. See:
@@ -311,14 +302,14 @@ close = lambda a,b: a*(1-1e-7) < b < a*(1+1e-7)
 import numpy.testing as nt
 def test_CJ():
     v_0 = 1/1.835
-    velocity, volume, pressure = Nominal().CJ(v_0)
+    velocity, volume, pressure, Rayleigh = Nominal().CJ(v_0)
     #print('D_CJ={0:.4e}'.format( velocity))
     assert close(volume, 0.408719346049324)
     assert close(pressure, 3.749422497177544e10)
     assert close(velocity,                            2.858868318e+05)
     assert close(Spline_eos(Nominal()).CJ(v_0)[0],    2.858856308e+05)
-    assert close(Spline_eos(Experiment()).CJ(v_0)[0], 2.744335208e+05)
-    assert close(Experiment().CJ(v_0)[0],             2.745241393e+05)
+    assert close(Spline_eos(Experiment()).CJ(v_0)[0], 3.100993854858e+5)
+    assert close(Experiment().CJ(v_0)[0],             3.0953552067658e5)
     return 0
 def test_spline():
     '''For convex combinations of nominal and experimental, ensure that
@@ -343,7 +334,7 @@ def test_spline():
         G,h = s_nom.Gh(c_nom)
 
         cost = np.empty(21)
-        feasible = np.empty(21)
+        feasible = np.empty(21) # Useful if experiment is not convex
         for i,a in enumerate(np.linspace(0,1,21)):
             c = d_c*a
             if pre_c:
@@ -352,7 +343,7 @@ def test_spline():
             y = np.dot(G,c) - h
             feasible[i] = float(y.max())
         assert np.argmin(cost) == 0
-        assert feasible[11]*feasible[12] < 0
+        #assert feasible[13]*feasible[14] < 0
     return 0  
 def test():
     for name,value in globals().items():

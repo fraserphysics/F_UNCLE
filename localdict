@@ -1,24 +1,33 @@
-personal_ws-1.1 en 30 
+personal_ws-1.1 en 40 
 wrt
 epf
 rescale
+fve
+dFcond
 al
+tx
 eos
 Gaussians
 Pemberton
+vt
 CJ
 Jouguet
+df
 Fickett
 hoc
 eg
 Hugoniot
 affine
 EOSs
+dr
+Gc
 faux
 isentrope
+ep
 covariances
 functionals
 eq
+dv
 covariance
 et
 exponentials
@@ -27,4 +36,6 @@ posteriori
 ie
 piecewise
 py
+FV
 th
+Fcond

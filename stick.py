@@ -57,7 +57,7 @@ class Stick:
         that touches and is tangent to the eos at one point.  See
         Eqn 2.3 on page 17 of Fickett and Davis.
               '''
-        CJ_velocity, CJ_volume, CJ_pressure = self.eos.CJ(self.vol_0)
+        CJ_velocity, CJ_volume, CJ_pressure, Rayleigh = self.eos.CJ(self.vol_0)
         return CJ_velocity
     def fit_D(
             self,                   # Stick instance
@@ -119,7 +119,7 @@ def data(eos=None):
     if eos==None:
         from eos import Experiment
         eos = Experiment()
-    vel_CJ, vol_CJ, p_CJ = eos.CJ(1/pemberton.densities.mean())
+    vel_CJ, vol_CJ, p_CJ, Rayleigh = eos.CJ(1/pemberton.densities.mean())
     stick = Stick(eos)
     # Make simulated measurements
     return stick.x/vel_CJ
@@ -143,18 +143,19 @@ def test_compare():
     D, ep, SI = make_stick().compare(t)
     assert SI.shape == (7,7)
     assert close(SI[0,0], 2.04351375e+14)
-    assert close(ep[-1], 2.569505832e-05),'ep[-1]={0:.9e}'.format(ep[-1])
+    assert close(-ep[-1], 4.7501395606007728e-5),'ep[-1]={0:.9e}'.format(ep[-1])
     return 0
 def test_log_like():
     t = data()
     stick = make_stick()
     rv = stick.compare(t)
     ll = stick.log_like(*rv)
-    assert close(-ll,1.922445608e+05),'-ll={0:.9e}'.format(-ll)
+    assert close(-ll,6.570033509e5),'-ll={0:.9e}'.format(-ll)
     return 0
 def test_data():
-    ref = np.array([9.43278801e-05, 1.84795237e-04, 2.76719395e-04, 3.70755915e-04,
-   4.58564609e-04, 5.53730150e-04, 6.46856169e-04])
+    ref = np.array([  8.36539982e-05,   1.63884319e-04,   2.45406594e-04,
+         3.28802201e-04,   4.06674707e-04,   4.91071579e-04,
+         5.73659715e-04])
     t = data()
     nt.assert_allclose(t,ref)
     return 0
@@ -172,16 +173,47 @@ def work():
     ''' This code for debugging stuff will change often
     '''
     import matplotlib.pyplot as plt
-    from eos import Nominal, Spline_eos
+    from eos import Nominal, Experiment, Spline_eos
     from fit import Opt
+    C = 2.56e9
+    center = 0.35
+    w = 0.06
+    scale = 0.4
+    v_min=.1
+    v_max=100
+    nom = Spline_eos(
+        Nominal(C=C),
+        N=200,
+        v_min=v_min,
+        v_max=v_max,
+        precondition=True)
+    exp = Experiment(
+            C=C,
+            v_0=center,
+            w=w,
+            scale=scale,
+        )
+    s_exp = Spline_eos(exp)
+    v_0 = 1/1.835
+    v = np.linspace(.2, 1, 100)
+    velocity, volume, pressure, Rayleigh = exp.CJ(v_0)
+    print('velocity={0:e}, pressure={1:e}'.format(velocity, float(pressure)))
+    fig = plt.figure('CJ')
+    ax = fig.add_subplot(1,1,1)
+    ax.plot(v,nom(v))
+    ax.plot(v,exp(v))
+    ax.plot(v, Rayleigh(velocity,v))
+    ax.set_ylim(ymin=0)
+    
+    fig = plt.figure('quad chart')
     vt = data()
-    nom = Spline_eos(Nominal(),precondition=True)
+    v = np.logspace(np.log10(v_min), np.log10(v_max), 500)
     stick = Stick(nom)
     opt = Opt(
         nom,
         {'stick':stick},
         {'stick':vt})
-    cs,costs = opt.fit(max_iter=10)
+    cs,costs = opt.fit(max_iter=2)
     D, ep, Sigma_inv = stick.compare(vt, cs[-1])
     info = np.dot(D.T, np.dot(Sigma_inv, D))
     _vals,_vecs = np.linalg.eigh(info)
@@ -191,7 +223,8 @@ def work():
     vecs = _vecs[i]
     n_vals = len(np.where(vals > vals[0]*1e-20)[0])
     n_vecs = len(np.where(vals > vals[0]*1e-2)[0])
-    fig = plt.figure()
+
+    # Plot cost(i)
     ax = fig.add_subplot(2,2,1)
     costs = np.array(costs)
     x = range(len(costs))
@@ -209,19 +242,22 @@ def work():
     ax.set_ylabel(ylabel)
     ax.set_xlabel(r'$i$')
     ax.set_xticks(x)
-    v = np.linspace(.2,50,500)
+
+    # Plot eos
     ax = fig.add_subplot(2,2,2)
-    ax.loglog(v,nom(v))
+    for c in cs:
+        ax.loglog(v,nom.new_c(c)(v))
+
+    # Plot eigenvalues
     ax = fig.add_subplot(2,2,3)
     ax.semilogy(range(n_vals), vals[:n_vals])
+
+    # Plot eigenfunctions
     ax = fig.add_subplot(2,2,4)
     for vec in vecs[:n_vecs]:
         f = nom.new_c(vec)
         ax.semilogx(v,f(v))
     plt.show()
-    vecs = _vecs[i]
-#    for j,v in enumerate(vals):
-#        print('v[{0:2d}] = {1:.3e}'.format(j,v))
     return 0
 
 if __name__ == "__main__":

@@ -99,7 +99,7 @@ def tx_stick(exp, nom, plt):
     opt = Opt(
         nom.eos,
         {'stick':nom.stick},
-        {'stick':exp.stick_data})
+        {'stick':exp.stick_data}) 
     cs,costs = opt.fit(max_iter=10)
     print('stick costs={0}'.format(costs))
     opt_t = stick.data(opt.eos)
