@@ -179,14 +179,16 @@ def work():
     center = 0.35
     w = 0.06
     scale = 0.4
-    v_min=.1
-    v_max=100
+    v_min=.2
+    v_max=10
     nom = Spline_eos(
         Nominal(C=C),
-        N=200,
+        N=50,
         v_min=v_min,
         v_max=v_max,
-        precondition=True)
+        precondition=False,
+        #precondition=True,
+    )
     exp = Experiment(
             C=C,
             v_0=center,
@@ -196,7 +198,7 @@ def work():
     s_exp = Spline_eos(exp)
     v_0 = 1/1.835
     v = np.linspace(.2, 1, 100)
-    velocity, volume, pressure, Rayleigh = exp.CJ(v_0)
+    velocity, volume, pressure, Rayleigh = exp.CJ(v_0, v_min, v_max)
     print('velocity={0:e}, pressure={1:e}'.format(velocity, float(pressure)))
     fig = plt.figure('CJ')
     ax = fig.add_subplot(1,1,1)
@@ -205,7 +207,6 @@ def work():
     ax.plot(v, Rayleigh(velocity,v))
     ax.set_ylim(ymin=0)
     
-    fig = plt.figure('quad chart')
     vt = data()
     v = np.logspace(np.log10(v_min), np.log10(v_max), 500)
     stick = Stick(nom)
@@ -213,17 +214,42 @@ def work():
         nom,
         {'stick':stick},
         {'stick':vt})
-    cs,costs = opt.fit(max_iter=2)
+    cs,costs = opt.fit(max_iter=10)
     D, ep, Sigma_inv = stick.compare(vt, cs[-1])
     info = np.dot(D.T, np.dot(Sigma_inv, D))
+    np.set_printoptions(precision=2, linewidth=100)
+    print('info=\n{0}'.format(info[6:14,6:14]))
     _vals,_vecs = np.linalg.eigh(info)
     _vals = np.maximum(_vals, 0)
     i = np.argsort(_vals)[-1::-1]
     vals = _vals[i]
-    vecs = _vecs[i]
+    vecs = _vecs.T[i]
     n_vals = len(np.where(vals > vals[0]*1e-20)[0])
     n_vecs = len(np.where(vals > vals[0]*1e-2)[0])
 
+    fig = plt.figure('D')
+    ax = fig.add_subplot(1,1,1)
+    n,m = D.shape
+    for i in range(m):
+        d = D[:,i]
+        if np.abs(d).max() < 1e-16:
+            continue
+        ax.plot(d,label='{0}'.format(i))
+    ax.legend()
+
+    fig = plt.figure('optimization')
+    ax1 = fig.add_subplot(2,1,1)
+    ax2 = fig.add_subplot(2,1,2)
+    _v_ = np.linspace(.3,.6,100)
+    for i,c in enumerate(cs):
+        eos = nom.new_c(c)
+        t = data(eos)
+        ax1.plot(stick.x,t,label='{0:d}'.format(i))
+        ax2.plot(_v_, eos(_v_) ,label='{0:d}'.format(i))
+    ax1.legend(loc='upper left')
+    ax2.legend(loc='upper right')
+    
+    fig = plt.figure('quad chart')
     # Plot cost(i)
     ax = fig.add_subplot(2,2,1)
     costs = np.array(costs)

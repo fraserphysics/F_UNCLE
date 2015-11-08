@@ -33,14 +33,15 @@ from scipy.optimize import brentq
 class Isentrope:
     '''Provides method to calculate CJ conditions
     '''
-    def CJ(self, vol_0):
+    def CJ(self, vol_0,
+           v_min = magic.spline_min,
+           v_max = magic.spline_max,
+    ):
         '''Find CJ conditions using two nested line searches.
         '''
         # Search for det velocity between 1 and 10 km/sec
-        d_min = 1.0e5
-        d_max = 1.0e6
-        v_min = magic.spline_min
-        v_max = magic.spline_max
+        d_min = 2.0e5
+        d_max = 7.0e5
 
         # R is Rayleigh line
         R = lambda vel, vol: vel*vel*(vol_0-vol)/(vol_0*vol_0)
