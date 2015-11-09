@@ -25,6 +25,10 @@ def main(argv=None):
     'Directory of figures')
     # Plot requests
     h_format = lambda s:'File for figure of {0}'.format(s)
+    parser.add_argument('--info_gun', type=str,
+                        help=h_format('Fisher Information of gun'))
+    parser.add_argument('--info_stick', type=str,
+                        help=h_format('Fisher Information of rate stick'))
     parser.add_argument('--tx_stick', type=str, help=h_format('t(x)'))
     parser.add_argument('--C_gun', type=str, help=h_format('d c_v/ d c_p'))
     parser.add_argument('--vt_gun', type=str, help=h_format('v(t)'))
@@ -115,6 +119,32 @@ def tx_stick(exp, nom, plt):
 
     return fig
 plot_dict['tx_stick'] = tx_stick
+
+def info_stick(exp, nom, plt):
+    from fit import Opt
+    opt = Opt(
+        nom.eos,
+        {'stick':nom.stick},
+        {'stick':exp.stick_data}) 
+    cs,costs = opt.fit(max_iter=10)
+    D, ep, Sigma_inv = nom.stick.compare(exp.stick_data, cs[-1])
+    info = np.dot(D.T, np.dot(Sigma_inv, D))
+    fig = info_quad(info, costs, cs, nom.eos)
+    return fig
+plot_dict['info_stick'] = info_stick
+
+def info_gun(exp, nom, plt):
+    from fit import Opt
+    opt = Opt(
+        nom.eos,
+        {'gun':nom.gun},
+        {'gun':exp.vt}) 
+    cs,costs = opt.fit(max_iter=10)
+    D, ep, Sigma_inv = nom.gun.compare(exp.vt, cs[-1])
+    info = np.dot(D.T, np.dot(Sigma_inv, D))
+    fig = info_quad(info, costs, cs, nom.eos)
+    return fig
+plot_dict['info_gun'] = info_gun
 
 def C_gun(exp, nom, plt):
     fig = plt.figure('C', figsize=fig_y_size(6.4))
@@ -307,6 +337,108 @@ def fve_gun(exp, nom, plt):
     
     return fig
 plot_dict['fve_gun'] = fve_gun
+
+def info_quad(
+        info,  # Fisher Information matrix
+        costs, # Sequence of costs returned by optimizer
+        cs,    # Sequence of coefficient vectors returned by optimizer
+        eos,   # A spline that can take elements of cs
+    ):
+    '''Makes a 4 plot figure that illustrates how tightly a measurement
+    constrains an eos.
+    '''
+    import matplotlib.pyplot as plt
+    import matplotlib.ticker
+    fig = plt.figure(figsize=fig_y_size(9.0))
+    
+    # Spectral decomposition of info matrix and sort by eigenvalues
+    _vals,_vecs = np.linalg.eigh(info)
+    _vals = np.maximum(_vals, 0)        # info is positive definite
+    i = np.argsort(_vals)[-1::-1]
+    vals = _vals[i]
+    vecs = _vecs.T[i]
+    n_vals = max(len(np.where(vals > vals[0]*1e-3)[0]), 3)
+    n_vecs = len(np.where(vals > vals[0]*1e-2)[0])
+
+    # Find range of v that includes support of eigenfunctions
+    knots = eos.get_t()
+    v_min = knots[0]
+    v_max = knots[-1]
+    v = np.logspace(np.log10(v_min), np.log10(v_max), len(knots)*10)
+    max_k = 0
+    min_k = len(v)-1
+    funcs = []
+    for vec in vecs[:n_vecs]:
+        func = eos.new_c(vec)(v)  # An eigenfunction of the Fisher Information
+        a = np.abs(func)
+        argmax = np.argmax(a)
+        if func[argmax] < 0:
+            func *= -1
+        funcs.append(func)
+        big = np.where(a > a[argmax]*1e-4)[0]
+        min_k = min(big[0], min_k)
+        max_k = max(big[-1], max_k)
+    k_range = np.arange(min_k, max_k+1)
+
+    # Plot sequence of costs from iterative optimization
+    ax = fig.add_subplot(2,2,1)
+    costs = np.array(costs)
+    x = range(len(costs))
+    c_min = costs.min()
+    c_max = costs.max()
+    if c_min > 0:
+        y = costs
+        ylabel = r'$\log_{e}(p(y|c_i))$'
+    else:
+        offset = (c_max-c_min)*1e-5 -c_min
+        y = costs + offset
+        ylabel = r'$\log_{e}(p(y|\hat c_i)) + {0:.3e}$'.format(offset)
+    ax.semilogy(x,y)
+    ax.semilogy(x,y, 'kx')
+    ax.set_ylabel(ylabel)
+    ax.set_xlabel(r'$i$')
+    ax.set_xticks(x)
+
+    # Plot sequence of EOSs from iterative optimization
+    ax = fig.add_subplot(2,2,2)
+    ratio = v[k_range[-1]]/v[k_range[0]]
+    for i,c in enumerate(cs):
+        if ratio < 3:
+            ax.plot(v[k_range], eos.new_c(c)(v)[k_range],
+                label=r'$p_{0}$'.format(i))
+        else:
+            ax.loglog(v[k_range], eos.new_c(c)(v)[k_range],
+                label=r'$p_{0}$'.format(i))
+    ax.xaxis.set_major_locator(matplotlib.ticker.MaxNLocator(nbins=4))
+    ax.legend()
+    ax.set_ylabel(r'$p_i(v)$')
+    ax.set_xlabel(r'$v$')
+
+    # Plot eigenvalues of information matrix
+    ax = fig.add_subplot(2,2,3)
+    x = np.arange(n_vals)
+    ax.semilogy(x, vals[:n_vals])
+    ax.semilogy(x, vals[:n_vals], 'kx')
+    ax.set_xticks(x)
+    ax.set_xlim(xmin=-.2, xmax=x[-1]+.2)
+    ax.set_ylabel(r'$\lambda_j$')
+    ax.set_xlabel(r'$j$')
+
+    # Plot eigenfunctions of information matrix
+    ax = fig.add_subplot(2,2,4)
+    for j,func in enumerate(funcs):
+        if ratio < 3:
+            ax.plot(v[k_range], func[k_range],label=r'$f_{0}$'.format(j))
+        else:
+            ax.semilogx(v[k_range], func[k_range],label=r'$f_{0}$'.format(j))
+    ax.legend()
+    ax.xaxis.set_major_locator(matplotlib.ticker.MaxNLocator(nbins=4))
+    ax.set_ylabel(r'$f_j(v)$')
+    ax.set_xlabel(r'$v$')
+
+
+    return fig
+# end of info_quad()
 
 if __name__ == "__main__":
     if sys.argv[1] == 'test':

@@ -168,13 +168,14 @@ def test():
         else:
             print('\nFAILED            {0}\n'.format(name))
     return 0
-    
+
 def work():
     ''' This code for debugging stuff will change often
     '''
     import matplotlib.pyplot as plt
     from eos import Nominal, Experiment, Spline_eos
     from fit import Opt
+    
     C = 2.56e9
     center = 0.35
     w = 0.06
@@ -186,8 +187,8 @@ def work():
         N=50,
         v_min=v_min,
         v_max=v_max,
-        precondition=False,
-        #precondition=True,
+        #precondition=False,
+        precondition=True,
     )
     exp = Experiment(
             C=C,
@@ -199,7 +200,7 @@ def work():
     v_0 = 1/1.835
     v = np.linspace(.2, 1, 100)
     velocity, volume, pressure, Rayleigh = exp.CJ(v_0, v_min, v_max)
-    print('velocity={0:e}, pressure={1:e}'.format(velocity, float(pressure)))
+    #print('velocity={0:e}, pressure={1:e}'.format(velocity, float(pressure)))
     fig = plt.figure('CJ')
     ax = fig.add_subplot(1,1,1)
     ax.plot(v,nom(v))
@@ -215,27 +216,6 @@ def work():
         {'stick':stick},
         {'stick':vt})
     cs,costs = opt.fit(max_iter=10)
-    D, ep, Sigma_inv = stick.compare(vt, cs[-1])
-    info = np.dot(D.T, np.dot(Sigma_inv, D))
-    np.set_printoptions(precision=2, linewidth=100)
-    print('info=\n{0}'.format(info[6:14,6:14]))
-    _vals,_vecs = np.linalg.eigh(info)
-    _vals = np.maximum(_vals, 0)
-    i = np.argsort(_vals)[-1::-1]
-    vals = _vals[i]
-    vecs = _vecs.T[i]
-    n_vals = len(np.where(vals > vals[0]*1e-20)[0])
-    n_vecs = len(np.where(vals > vals[0]*1e-2)[0])
-
-    fig = plt.figure('D')
-    ax = fig.add_subplot(1,1,1)
-    n,m = D.shape
-    for i in range(m):
-        d = D[:,i]
-        if np.abs(d).max() < 1e-16:
-            continue
-        ax.plot(d,label='{0}'.format(i))
-    ax.legend()
 
     fig = plt.figure('optimization')
     ax1 = fig.add_subplot(2,1,1)
@@ -249,40 +229,6 @@ def work():
     ax1.legend(loc='upper left')
     ax2.legend(loc='upper right')
     
-    fig = plt.figure('quad chart')
-    # Plot cost(i)
-    ax = fig.add_subplot(2,2,1)
-    costs = np.array(costs)
-    x = range(len(costs))
-    c_min = costs.min()
-    c_max = costs.max()
-    if c_min > 0:
-        y = costs
-        ylabel = r'$\log_{e}(p(y|c_i))$'
-    else:
-        offset = (c_max-c_min)*1e-5 -c_min
-        y = costs + offset
-        ylabel = r'$\log_{e}(p(y|\hat c_i)) + {0:.3e}$'.format(offset)
-    ax.semilogy(x,y)
-    ax.semilogy(x,y, 'kx')
-    ax.set_ylabel(ylabel)
-    ax.set_xlabel(r'$i$')
-    ax.set_xticks(x)
-
-    # Plot eos
-    ax = fig.add_subplot(2,2,2)
-    for c in cs:
-        ax.loglog(v,nom.new_c(c)(v))
-
-    # Plot eigenvalues
-    ax = fig.add_subplot(2,2,3)
-    ax.semilogy(range(n_vals), vals[:n_vals])
-
-    # Plot eigenfunctions
-    ax = fig.add_subplot(2,2,4)
-    for vec in vecs[:n_vecs]:
-        f = nom.new_c(vec)
-        ax.semilogx(v,f(v))
     plt.show()
     return 0
 
