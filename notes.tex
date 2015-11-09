@@ -11,6 +11,7 @@
 \newcommand{\fhat}{\hat f}
 \newcommand{\COST}{\cal C}
 \newcommand{\LL}{{\cal L}}
+\newcommand{\Fisher}{{\cal I}}
 \newcommand{\Prob}{\text{Prob}}
 \newcommand{\field}[1]{\mathbb{#1}}
 \newcommand\REAL{\field{R}}
@@ -52,9 +53,10 @@
 \maketitle
 \begin{abstract}
   The source for these notes and illustrations reside in
-  like\_eos/notes.tex\footnote{Run \emph{git clone
-      https://github.com/fraserphysics/like\_eos} to obtain the source.}.
-  I use the same ideas for work on the 9501 model on moonlight.
+  like\_eos/notes.tex\footnote{Run \emph{git clone git clone
+      ssh://lanl.fraserphysics.com:/home/git/like\_eos} to obtain the
+    source.}.  I use the same ideas for work on the 9501 model on
+  moonlight.
 \end{abstract}
 
 \section{Introduction}
@@ -301,6 +303,28 @@ write \eqref{eq:Fcond} as
 \end{equation}
 The code numerically solves \eqref{eq:FV} to get $V_{\text{CJ}}$ and
 then assigns $v_{\text{CJ}} = v(V_{\text{CJ}})$.
+Figure~\ref{fig:CJ_stick} depicts three isentropes and the results of
+solving \eqref{eq:FV} for the two labeled \emph{experiment} and
+\emph{fit}.
+
+\begin{figure}
+  \centering
+    \resizebox{\columnwidth}{!}{\includegraphics{\fig{CJ_stick}}}
+    \caption{Isentropes, Rayleigh lines and CJ conditions. Starting
+      from the isentrope labeled \emph{nominal} and using data from a
+      simulated experiment based on the isentrope labeled
+      \emph{experiment}, the optimization algorithm described in
+      Section~\ref{sec:algorithm} produced the estimate labeled
+      \emph{fit}.  Solving Eqn.~\eqref{eq:FV} for the
+      \emph{experiment} and \emph{fit} isentropes yields the two
+      Rayleigh lines that appear.  They are are nearly identical
+      because the detonation velocities (and hence the experimental
+      and fit data) are given by their slopes.  Outside of the CJ
+      points where the Rayleigh lines are tangent to the isentropes,
+      the data does not constrain the isentropes, and in fact they are
+      quite different.}
+  \label{fig:CJ_stick}
+\end{figure}
 
 \subsubsection{Simulating the Measured Data}
 \label{sec:stick-sim}
@@ -315,18 +339,47 @@ Finally the code calculates
   \label{eq:Dstick}
   D[j,i] \equiv \frac{\partial t[j]}{\partial c[i]}
 \end{equation}
-using finite differences.  Illustrations of three simulations appear
-in Figure~\ref{fig:tx_stick}.
+using finite differences.  Illustrations of simulations appear in
+Figure~\ref{fig:opt_stick}.
 
 \begin{figure}
   \centering
-    \resizebox{\columnwidth}{!}{\includegraphics{\fig{tx_stick}}}
-    \caption{The rate stick data.  Red +'s denote measured shock
-      arrival time at 7 positions.  The blue line represents the shock
-      velocity calculated from the nominal EOS, and the green line
-      represents the velocity from an EOS optimized to fit the rate
-      stick data alone.}
-  \label{fig:tx_stick}
+    \resizebox{\columnwidth}{!}{\includegraphics{\fig{opt_stick}}}
+    \caption{Fitting an isentrope to rate stick data.  In the upper
+      plot, black +'s denote measured shock arrival time at 7
+      positions.  The blue line represents the shock velocity
+      calculated from the nominal EOS, and the other lines come from
+      the sequence of isentropes that the optimization algorithm described in
+      Section~\ref{sec:algorithm} generates as it seeks an isentrope
+      that will produce a simulation that matches the data.  That
+      sequence of isentropes appears in the lower plot.}
+  \label{fig:opt_stick}
+\end{figure}
+
+\subsubsection{Fisher Information Matrix for the Rate Stick}
+\label{sec:stick-information}
+
+As Fig.~\ref{fig:CJ_stick} indicates, only the CJ point on the EOS
+influences the forecast data, $\mu(c)$.  Thus only one degree of
+freedom in the model influences the likelihood and Fisher Information
+matrix, $\Fisher$ should have a rank of one.
+Figure~\ref{fig:info_stick} illustrates characteristics of the
+optimization procedure and $\Fisher(\hat c)$.  The largest eigenvalue
+$\Fisher(\hat c)$ is $10^{16}$ larger than the next largest, ie, the
+rank of $\Fisher(\hat c)$ to within machine
+precision.\marginpar{explain constraint}.
+
+\begin{figure}
+  \centering
+    \resizebox{\columnwidth}{!}{\includegraphics{\fig{info_stick}}}
+    \caption{Fisher Information of the Rate Stick Experiment.  The
+      sequence of log likelihoods produced by the optimization
+      procedure appear in the upper left, and the corresponding
+      isentropes appear in the upper right.  The largest three
+      eigenvalues of$\Fisher(\hat c)$ appear in the lower left and the
+      eigenfunction corresponding to the largest eigenvalue appears in
+      the lower left.}
+  \label{fig:info_stick}
 \end{figure}
 
 \subsection{The Gun}
@@ -445,6 +498,19 @@ following methods:
     \label{fig:BC_gun}
   \end{figure}
 \end{description}
+
+\begin{figure}
+  \centering
+    \resizebox{\columnwidth}{!}{\includegraphics{\fig{info_gun}}}
+    \caption{Fisher Information of the Gun Experiment.  The sequence
+      of log likelihoods produced by the optimization procedure appear
+      in the upper left, and the corresponding isentropes appear in
+      the upper right.  The largest nine eigenvalues
+      of$\Fisher(\hat c)$ appear in the lower left and the
+      eigenfunction corresponding to the largest four eigenvalue
+      appears in the lower left.}
+  \label{fig:info_gun}
+\end{figure}
 
 \subsection{A Cylinder}
 \label{sec:cylinder}
@@ -786,7 +852,7 @@ See other information in $\sim$/doc/HE.tex on moonlight.
 %
 \vfill \hrule
 
-Source file: https://github.com/fraserphysics/like\_eos/notes.tex
+Source file: ssh://lanl.fraserphysics.com:/home/git/like\_eos/notes.tex
 
 \end{document}
 

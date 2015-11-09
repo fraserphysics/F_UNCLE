@@ -12,7 +12,9 @@
 # https://www.gnu.org/software/make/manual/html_node/Automatic-Variables.html
 # https://www.gnu.org/software/make/manual/html_node/Text-Functions.html
 # Type "make test" to see the list of figures
-FIG_ROOT = C_gun vt_gun BC_gun opt_result big_d fve_gun tx_stick basis
+FIG_ROOT = basis C_gun vt_gun BC_gun opt_result big_d fve_gun	\
+info_gun info_stick opt_stick CJ_stick
+
 FIGURES = $(patsubst %, figs/%.pdf, ${FIG_ROOT})
 
 CODE = plot.py fit.py eos.py gun.py
