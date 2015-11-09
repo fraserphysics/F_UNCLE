@@ -151,7 +151,7 @@ def test_fit():
         cs,costs = make_opt(precondition=pre).fit(max_iter=1)
         assert len(cs) == 2
         assert len(cs[-1]) == 50
-        tmp = 5.1545519137e8
+        tmp = 5.1545762695e8
         calc = cs[-1][20]
         assert close(calc, tmp),'pre={0}, cs[-1][20]={1:.10e}'.format(pre,calc)
     return 0

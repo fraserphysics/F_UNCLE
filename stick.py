@@ -10,8 +10,8 @@ pemberton = Go(
     densities=np.array(  # g/cc, page4
         [1.835, 1.8358, 1.8353, 1.8356, 1.8356, 1.8345]),
     positions=np.array(  # mm, page 8
-        [25.9, 50.74, 75.98, 101.8, 125.91, 152.04, 177.61]),
-    x_dev=0.02,          # mm, position measurement uncertainty (my guess)
+        [25.9, 50.74, 75.98, 101.8, 125.91, 152.04, 177.61])/10,
+    x_dev=0.02/10,       # cm, position measurement uncertainty (my guess)
     t_dev=1.0e-9,        # sec, time measurement uncertainty (my guess)
     velocity=8.8132,     # Km/sec, page 9
     )
@@ -136,26 +136,26 @@ def test_fit_v():
 def test_fit_D():
     D = make_stick().fit_D()
     assert D.shape == (7,50)
-    assert close(-D[-1,10], 5.32687844706e-15)
+    assert close(-D[-1,10], 5.3268784470622956e-16)
     return 0
 def test_compare():
     t = data()
     D, ep, SI = make_stick().compare(t)
     assert SI.shape == (7,7)
-    assert close(SI[0,0], 2.04351375e+14)
-    assert close(-ep[-1], 4.7501395606007728e-5),'ep[-1]={0:.9e}'.format(ep[-1])
+    assert close(SI[0,0], 2.002991652e+16), 'SI[0,0]={0:.9e}'.format(SI[0,0])
+    assert close(-ep[-1], 4.750139560600781e-6),'ep[-1]={0:.9e}'.format(ep[-1])
     return 0
 def test_log_like():
     t = data()
     stick = make_stick()
     rv = stick.compare(t)
     ll = stick.log_like(*rv)
-    assert close(-ll,6.570033509e5),'-ll={0:.9e}'.format(-ll)
+    assert close(-ll,6.439752258e5),'-ll={0:.9e}'.format(-ll)
     return 0
 def test_data():
-    ref = np.array([  8.36539982e-05,   1.63884319e-04,   2.45406594e-04,
-         3.28802201e-04,   4.06674707e-04,   4.91071579e-04,
-         5.73659715e-04])
+    ref = np.array([  8.36539982e-06,   1.63884319e-05,   2.45406594e-05,
+         3.28802201e-05,   4.06674707e-05,   4.91071579e-05,
+         5.73659715e-05])
     t = data()
     nt.assert_allclose(t,ref)
     return 0
@@ -172,66 +172,7 @@ def test():
 def work():
     ''' This code for debugging stuff will change often
     '''
-    import matplotlib.pyplot as plt
-    from eos import Nominal, Experiment, Spline_eos
-    from fit import Opt
-    
-    C = 2.56e9
-    center = 0.35
-    w = 0.06
-    scale = 0.4
-    v_min=.2
-    v_max=10
-    nom = Spline_eos(
-        Nominal(C=C),
-        N=50,
-        v_min=v_min,
-        v_max=v_max,
-        #precondition=False,
-        precondition=True,
-    )
-    exp = Experiment(
-            C=C,
-            v_0=center,
-            w=w,
-            scale=scale,
-        )
-    s_exp = Spline_eos(exp)
-    v_0 = 1/1.835
-    v = np.linspace(.2, 1, 100)
-    velocity, volume, pressure, Rayleigh = exp.CJ(v_0, v_min, v_max)
-    #print('velocity={0:e}, pressure={1:e}'.format(velocity, float(pressure)))
-    fig = plt.figure('CJ')
-    ax = fig.add_subplot(1,1,1)
-    ax.plot(v,nom(v))
-    ax.plot(v,exp(v))
-    ax.plot(v, Rayleigh(velocity,v))
-    ax.set_ylim(ymin=0)
-    
-    vt = data()
-    v = np.logspace(np.log10(v_min), np.log10(v_max), 500)
-    stick = Stick(nom)
-    opt = Opt(
-        nom,
-        {'stick':stick},
-        {'stick':vt})
-    cs,costs = opt.fit(max_iter=10)
-
-    fig = plt.figure('optimization')
-    ax1 = fig.add_subplot(2,1,1)
-    ax2 = fig.add_subplot(2,1,2)
-    _v_ = np.linspace(.3,.6,100)
-    for i,c in enumerate(cs):
-        eos = nom.new_c(c)
-        t = data(eos)
-        ax1.plot(stick.x,t,label='{0:d}'.format(i))
-        ax2.plot(_v_, eos(_v_) ,label='{0:d}'.format(i))
-    ax1.legend(loc='upper left')
-    ax2.legend(loc='upper right')
-    
-    plt.show()
-    return 0
-
+    pass
 if __name__ == "__main__":
     import sys
     if len(sys.argv) >1 and sys.argv[1] == 'test':

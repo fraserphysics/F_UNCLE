@@ -15,13 +15,7 @@ rate stick eos_i plots
 
 Plans for multiple measurements:
 
-1. Calulate detonation velocity from eos
-
-2. Simulate rate stick measurements
-
-3. Use rate stick data in eos estimation
-
-4. Simulate expanding cylinder
+1. Simulate expanding cylinder
 
 Plans for comparing coordinate systems:
 

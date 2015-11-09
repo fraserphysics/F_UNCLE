@@ -30,6 +30,9 @@ def main(argv=None):
     parser.add_argument('--info_stick', type=str,
                         help=h_format('Fisher Information of rate stick'))
     parser.add_argument('--tx_stick', type=str, help=h_format('t(x)'))
+    parser.add_argument('--opt_stick', type=str, help=h_format(
+        'eos optimization for rate stick'))
+    parser.add_argument('--CJ_stick', type=str, help=h_format('CJ calculation'))
     parser.add_argument('--C_gun', type=str, help=h_format('d c_v/ d c_p'))
     parser.add_argument('--vt_gun', type=str, help=h_format('v(t)'))
     parser.add_argument('--BC_gun', type=str, help=h_format('d v(t)/ d c_p'))
@@ -119,6 +122,73 @@ def tx_stick(exp, nom, plt):
 
     return fig
 plot_dict['tx_stick'] = tx_stick
+
+def CJ_stick(exp, nom, plt):
+    import stick
+    from fit import Opt
+    fig = plt.figure('CJ_stick', figsize=fig_y_size(7.0))
+    opt = Opt(
+        nom.eos,
+        {'stick':nom.stick},
+        {'stick':exp.stick_data}) 
+    cs,costs = opt.fit(max_iter=10)
+    fit = opt.eos
+    ax = fig.add_subplot(1,1,1)
+    v = np.linspace(.2,.6,200)
+    v_0 = 1/1.835
+    v_min=.2
+    v_max=10
+    ax.plot(v,nom.eos(v)/1e9, 'k-', label='nominal')
+    ax.plot(v,fit(v)/1e9, 'g-', label='fit')
+    ax.plot(v,exp.eos(v)/1e9, 'r-', label='experiment')
+    velocity, volume, pressure, Rayleigh = exp.eos.CJ(v_0, v_min, v_max)
+    ax.plot(v, Rayleigh(velocity,v)/1e9, 'r:')
+    velocity, volume, pressure, Rayleigh = fit.CJ(v_0, v_min, v_max)
+    ax.plot(v, Rayleigh(velocity,v)/1e9, 'g:')
+    ax.set_ylim(ymin=0, ymax=1.3e2)
+    #ax.set_xlim(xmin=.2, xmax=.6)
+    ax.legend()
+    ax.set_ylabel(r'$p/(\rm{Gpa})$')
+    ax.set_xlabel(r'$v\cdot(\rm{cm}^2/{\rm g})$')
+    fig.subplots_adjust(bottom=0.15) # Make more space for label
+    return fig
+plot_dict['CJ_stick'] = CJ_stick
+
+def opt_stick(exp, nom, plt):
+    import stick
+    from fit import Opt
+    fig = plt.figure('opt_stick', figsize=fig_y_size(9.0))
+    opt = Opt(
+        nom.eos,
+        {'stick':nom.stick},
+        {'stick':exp.stick_data}) 
+    cs,costs = opt.fit(max_iter=10)
+    fit = opt.eos
+    v = np.linspace(.2,.6,200)
+    v_0 = 1/1.835
+    v_min=.2
+    v_max=10
+    
+    ax1 = fig.add_subplot(2,1,1)
+    ax2 = fig.add_subplot(2,1,2)
+    _v_ = np.linspace(.3,.6,100)
+    x = nom.stick.x
+    ax1.plot(x, exp.stick_data*1e6, 'k+', label='exp')
+    ax2.plot(_v_, exp.eos(_v_)/1e9 ,label='exp')
+    for i,c in enumerate(cs):
+        eos = nom.eos.new_c(c)
+        t = stick.data(eos)
+        ax1.plot(x, t*1e6, label='{0:d}'.format(i))
+        ax2.plot(_v_, eos(_v_)/1e9 ,label='{0:d}'.format(i))
+    ax1.legend(loc='upper left')
+    ax2.legend(loc='upper right')
+    ax1.set_ylabel(r'$t/(\mu\rm{ sec})$')
+    ax1.set_xlabel(r'$x/(\rm{cm})$')
+    ax2.set_ylabel(r'$p/(\rm{Gpa})$')
+    ax2.set_xlabel(r'$v\cdot(\rm{cm}^2/{\rm g})$')
+    fig.subplots_adjust(bottom=0.15) # Make more space for label
+    return fig
+plot_dict['opt_stick'] = opt_stick
 
 def info_stick(exp, nom, plt):
     from fit import Opt
