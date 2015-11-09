@@ -3,6 +3,7 @@
 %\usepackage{showlabels}
 \usepackage[pdftex]{graphicx,color}
 \usepackage{url}
+\usepackage{bigfoot}
 \newcommand{\normal}[2]{{\cal N}\left( #1,#2 \right)}
 \newcommand{\normalexp}[3]{ -\frac{1}{2}
       (#1 - #2)^T #3^{-1} (#1 - #2) }
@@ -52,8 +53,15 @@
 \maketitle
 \begin{abstract}
   The source for these notes and illustrations reside in
-  like\_eos/notes.tex\footnote{Run \emph{git clone
-      https://github.com/fraserphysics/like\_eos} to obtain the source.}.
+  like\_eos/notes.tex\footnote{To obtain the source, build the
+    document and view it, run the following sequence of commands:
+\begin{verbatim}
+->git clone ssh://git@xcp-stash.lanl.gov:7999/fvs/like_eos.git
+->cd like_eos/
+->make -j8
+->evince notes.pdf 
+\end{verbatim}
+}.
   I use the same ideas for work on the 9501 model on moonlight.
 \end{abstract}
 
@@ -786,7 +794,7 @@ See other information in $\sim$/doc/HE.tex on moonlight.
 %
 \vfill \hrule
 
-Source file: https://github.com/fraserphysics/like\_eos/notes.tex
+Source file: ssh://git@xcp-stash.lanl.gov:7999/fvs/like\_eos/notes.tex
 
 \end{document}
 
