@@ -167,18 +167,13 @@ For each experiment, data comes from a simulation using the
 \emph{true} function
 \begin{align}
   \label{eq:actual}
-  f(v) &= \fnom(v) + \frac{2 e^{-\frac{(v-v_0)^2}{2w^2}}
-         \fnom(v_0)}{\freq}  \sin(\freq (v-v_0))\\
+  f(v) &= \fnom(v) + \frac{C}{v_0^3} e^{-\frac{(v-v_0)^2}{2w^2}}\\
    \text{ where }C &= 2.56\times 10^{10} \nonumber \\
-  \freq &= 0.2 \nonumber \\
-  w &= 0.2. \nonumber \\
-  v_0 &= 0.6. \nonumber
+  w &= 0.062. \nonumber \\
+  v_0 &= 0.35. \nonumber
 \end{align}
 The EOS specified by \eqref{eq:actual} is like the prior except that
-there is an added sinusoidal perturbation with a Gaussian envelope
-centered at $v=v_0$.  The perturbation is just strong enough to make
-the sum non-convex.  Thus, the \emph{true} EOS is not in the set over
-which the algorithm described in Section~\ref{sec:analysis} searches.
+there is an added Gaussian perturbation centered at $v=v_0$.
 
 \section{Experiments}
 \label{sec:experiments}
@@ -252,7 +247,7 @@ by Pemberton et al.\cite{Pemberton9501} for their \emph{Shot 1}.
 
 The only characteristic that this ideal rate stick measures is the
 detonation velocity.  Code in \emph{stick.py} derives that velocity
-following Section 2A (entitled \emph{The Simplest Theory)}) of
+following Section 2A (entitled \emph{The Simplest Theory}) of
 \emph{Detonation Theory and Experiment} by Fickett and
 Davis\cite{FickettDavis}.  At the Chapman Jouguet (CJ) state, the
 following three curves are tangent in the $p,v$ plane:
@@ -373,8 +368,9 @@ matrix, $\Fisher$ should have a rank of one.
 Figure~\ref{fig:info_stick} illustrates characteristics of the
 optimization procedure and $\Fisher(\hat c)$.  The largest eigenvalue
 $\Fisher(\hat c)$ is $10^{16}$ larger than the next largest, ie, the
-rank of $\Fisher(\hat c)$ to within machine
-precision.\marginpar{explain constraint}.
+rank of $\Fisher(\hat c)$ is one to within machine
+precision.\marginpar{Interpret/explain $\Fisher$ eigenfunction as
+  constraint.}
 
 \begin{figure}
   \centering
@@ -383,9 +379,9 @@ precision.\marginpar{explain constraint}.
       sequence of log likelihoods produced by the optimization
       procedure appear in the upper left, and the corresponding
       isentropes appear in the upper right.  The largest three
-      eigenvalues of$\Fisher(\hat c)$ appear in the lower left and the
-      eigenfunction corresponding to the largest eigenvalue appears in
-      the lower left.}
+      eigenvalues of $\Fisher(\hat c)$ appear in the lower left and
+      the eigenfunction corresponding to the largest eigenvalue
+      appears in the lower left.}
   \label{fig:info_stick}
 \end{figure}
 
