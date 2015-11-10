@@ -191,15 +191,30 @@ def opt_stick(exp, nom, plt):
 plot_dict['opt_stick'] = opt_stick
 
 def info_stick(exp, nom, plt):
+    '''Make a figure with 4 plots (info_quad) that describes the fit eos
+    and the Fisher Information of the the result.
+
+    '''
     from fit import Opt
     opt = Opt(
         nom.eos,
         {'stick':nom.stick},
         {'stick':exp.stick_data}) 
     cs,costs = opt.fit(max_iter=10)
+    eos = opt.eos
     D, ep, Sigma_inv = nom.stick.compare(exp.stick_data, cs[-1])
     info = np.dot(D.T, np.dot(Sigma_inv, D))
     fig = info_quad(info, costs, cs, nom.eos)
+    # Next draw a vertical line at v_CJ
+    v_0 = 1/1.835
+    v_min=.2
+    v_max=10
+    velocity, v, pressure, Rayleigh = eos.CJ(v_0, v_min, v_max)
+    ax = fig.add_subplot(2,2,4)
+    ylim = ax.get_ylim()
+    ax.plot([v,v], ylim, label=r'$v_{\rm CJ}$')
+    ax.set_ylim(ylim)
+    ax.legend(loc='upper right')
     return fig
 plot_dict['info_stick'] = info_stick
 
