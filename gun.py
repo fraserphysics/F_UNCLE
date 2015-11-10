@@ -247,10 +247,10 @@ class Gun:
         return
 
 def data():
-    '''Make "experimental" data from gun with eos from eos.Experiment
+    '''Make "experimental" data from gun with eos from eos.Bump
     '''
-    from eos import Experiment
-    gun = Gun(Experiment())
+    from eos import Bump
+    gun = Gun(Bump(C=2.56e9, bumps=[(0.35, 0.06, 0.2)])) # FixMe: magic
     # Make simulated measurements
     t2v = gun.fit_t2v()
     t = np.linspace(0, magic.t_max,magic.n_t_sim)
@@ -260,9 +260,9 @@ def data():
 import numpy.testing as nt
 close = lambda a,b: a*(1-1e-7) < b < a*(1+1e-7)
 def test_log_like():
-    from eos import Nominal, Spline_eos
+    from eos import Bump, Spline_eos
     vt = (data())
-    gun = Gun(Spline_eos(Nominal()))
+    gun = Gun(Spline_eos(Bump(C=2.56e9)))
     ll = gun.log_like(*gun.compare(vt))
     if close(-ll, 7.648752529e8):
         return 0
@@ -270,8 +270,8 @@ def test_log_like():
         print('ll={0:.9e}'.format(ll))
         return 1
 def test_shoot_t2v():
-    from eos import Experiment
-    gun = Gun(Experiment())
+    from eos import Bump
+    gun = Gun(Bump(C=2.56e9, bumps=[(0.35, 0.06, 0.2)]))
     t,xv = gun.shoot(magic.t_min, magic.t_max, magic.n_t)
     t2v = gun.fit_t2v()
     v_ = t2v(t[-1])
@@ -284,16 +284,17 @@ def test_shoot_t2v():
             name, old, this, this_computation)
     return 0
 def test_x_dot():
-    from eos import Experiment
-    v = Gun(Experiment()).x_dot(4.0)
+    from eos import Bump
+    v = Gun(Bump(C=2.56e9, bumps=[(0.35, 0.06, 0.2)])).x_dot(4.0)
     assert close(v, 4.070229070e4), 'v={:.9e}'.format(v)
     return 0
 def test_C():
-    from eos import Experiment, Spline_eos
+    from eos import Bump, Spline_eos
 
     n_t = 15
     N = 10
-    eos = Spline_eos(Experiment(), N=N, v_min=.38, v_max=4.2)
+    eos = Spline_eos(Bump(C=2.56e9, bumps=[(0.35, 0.06, 0.2)]), N=N,
+        v_min=.38, v_max=4.2)
     C = Gun(eos).fit_C(n_t=n_t)
     assert C.shape == (n_t, N)
     assert close(C[1,0], 2.36918629944e-7),'C[1,0]={0}'.format(C[1,0])
@@ -303,9 +304,9 @@ def test_B_ep():
     ''' B[i,j] = dv(t[i])/dc_velocity[j]
     ep[i] = v_simulation(t[i]) - v_experiment(t[i])
     '''
-    from eos import Nominal, Spline_eos
+    from eos import Bump, Spline_eos
     vt = (data())
-    eos = Spline_eos(Nominal())
+    eos = Spline_eos(Bump(C=2.56e9))
     B,ep = Gun(eos).fit_B_ep(vt)
     assert B.shape == (1000,500)
     assert ep.shape == (1000,)
@@ -317,9 +318,9 @@ def test_B_ep():
 def test_Pq():
     '''
     '''
-    from eos import Nominal, Spline_eos
+    from eos import Bump, Spline_eos
     vt = (data())
-    eos = Spline_eos(Nominal(),precondition=False)
+    eos = Spline_eos(Bump(C=2.56e9),precondition=False)
     c = eos.get_c()
     gun = Gun(eos)
     P,q = eos.Pq_like(*gun.compare(vt, c))
@@ -350,9 +351,9 @@ def work():
     ''' This code for debugging stuff will change often
     '''
     import matplotlib.pyplot as plt
-    from eos import Nominal, Spline_eos
+    from eos import Bump, Spline_eos
     vt = (data())
-    gun = Gun(Spline_eos(Nominal(),precondition=False))
+    gun = Gun(Spline_eos(Bump(C=2.56e9),precondition=False))
     gun.debug_plot(vt, 'test')
     gun.debug_plot(None, None, show=True)
     return 0

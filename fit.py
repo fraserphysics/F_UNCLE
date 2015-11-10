@@ -130,7 +130,7 @@ def make_opt(precondition=False):
     import gun
     import stick
     import eos
-    nominal_eos = eos.Spline_eos(eos.Nominal(), precondition=precondition)
+    nominal_eos = eos.Spline_eos(eos.Bump(C=2.56e9), precondition=precondition)
     experiment = {
         'gun':gun.Gun(nominal_eos),
         'stick':stick.Stick(nominal_eos),

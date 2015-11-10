@@ -68,8 +68,8 @@ def main(argv=None):
     import stick
     
     t=np.linspace(0, gun.magic.t_max, gun.magic.n_t_sim)
-    exp = Go(eos=eos.Experiment())
-    nom = Go(eos=eos.Spline_eos(eos.Nominal(), precondition=True))
+    exp = Go(eos=eos.Bump(C=2.56e9, bumps=[(0.35, 0.06, 0.2)]))
+    nom = Go(eos=eos.Spline_eos(eos.Bump(C=2.56e9), precondition=True))
     for go in (exp, nom):
         go.add(t=t, gun=gun.Gun(go.eos), stick=stick.Stick(go.eos))
         go.add(x=np.linspace(go.gun.x_i, go.gun.x_f, 500))

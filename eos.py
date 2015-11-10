@@ -31,7 +31,8 @@ magic = Go(
 R = lambda vel, vol_0, vol: vel*vel*(vol_0-vol)/(vol_0*vol_0)
 from scipy.optimize import brentq
 class Isentrope:
-    '''Provides method to calculate CJ conditions
+    '''Provides method to calculate CJ conditions.  An eos instance that is a
+    subclass must provide eos.__call__(v) and eos.derivative(1)(v).
     '''
     def CJ(self, vol_0,
            v_min = magic.spline_min,
@@ -60,62 +61,43 @@ class Isentrope:
         vol_CJ = arg_min(vel_CJ,self)
         p_CJ = self(vol_CJ)
         return vel_CJ, vol_CJ, p_CJ, R
-class Nominal(Isentrope):
-    '''Model of pressure as function of volume.  This is the nominal eos
-
-    p = C/v^3
+class Bump(Isentrope):
+    '''Model of pressure as a function of volume.  Defaults give nominal
+    isentrope, but optional arguments can specify perturbing Gaussian bumps.
     '''
-    def __init__(
-            self,      # Nominal instance
-            C=magic.C,
-            ):
-        self.C = C
-        return
-    def __call__(
-            self,      # Nominal instance
-            v          # Specific volume in cm^3/gram
-            ):
-        return self.C/v**3
-    def derivative(self, n):
-        assert n == 1
-        return lambda v: -3*self.C/v**4
-class Experiment(Isentrope):
-    '''This is the "true" eos used for the experiments.
-
-    P(v) =
-    C/v^3 +  e^{(v-v_0)^2/(2*w^2)} * C/(v_0^3)
-    '''
-    def __init__(
-            self,              # Experiment instance
-            C=magic.C,
-            v_0=magic.v_0,
-            w=magic.w,
-            scale=magic.scale,
-            ):
-        self.C = C
-        self.v_0 = v_0
-        self.w = w
-        self.scale=scale
-        return
-    def __call__(
-            self,      # Experiment instance
-            v          # Specific volume in cm^3/gram
-            ):
-        v_0 = self.v_0
-        w = self.w
-        factor = self.scale*self.C/(v_0**3)
-        exp = lambda Dv: np.exp(-Dv**2/(2*w**2))
-        f_Dv = lambda Dv : factor * exp(Dv)
-        return self.C/v**3 + f_Dv(v-v_0)
-    def derivative(self, n):
-        assert n == 1
-        v_0 = self.v_0
-        w = self.w
-        factor = self.scale*self.C/(v_0**3)
-        exp = lambda Dv: np.exp(-Dv**2/(2*w**2))
-        df = lambda Dv: -factor*exp(Dv)*Dv/w**2
-        return lambda v: df(v-v_0) -3*self.C/v**4
     
+    def __init__(
+            self,       # Bump instance
+            C=magic.C,  # p = C/v^3
+            bumps=[],   # Each element is tuple (v_0, width, scale)
+            ):
+        self.C = C
+        self.bumps=bumps
+        def derivative(v):
+            rv = -3*self.C/v**4
+            for v_0, w, s in self.bumps:
+                z = (v-v_0)/w
+                rv -= (z/w)*np.exp(-z*z/2)*s*self.C/(v_0**3)
+            return rv
+        self.d_func = derivative
+        return
+    def __call__(
+            self,
+            v
+            ):
+        rv = self.C/v**3
+        for v_0, w, s in self.bumps:
+            z = (v-v_0)/w
+            rv += np.exp(-z*z/2)*s*self.C/(v_0**3)
+        return rv
+    def derivative(
+            self,
+            n
+            ):
+        ''' Call matches spline
+        '''
+        assert n == 1
+        return self.d_func
 from scipy.interpolate import InterpolatedUnivariateSpline as IU_Spline
 # For scipy.interpolate.InterpolatedUnivariateSpline. See:
 # https://github.com/scipy/scipy/blob/v0.14.0/scipy/interpolate/fitpack2.py
@@ -302,15 +284,18 @@ class Spline_eos(Spline, Isentrope):
 close = lambda a,b: a*(1-1e-7) < b < a*(1+1e-7)
 import numpy.testing as nt
 def test_CJ():
+    nominal = Bump(C=2.56e9)
+    experiment = Bump(C=2.56e9, bumps=[(0.35, 0.06, 0.2)])
     v_0 = 1/1.835
-    velocity, volume, pressure, Rayleigh = Nominal().CJ(v_0)
-    #print('D_CJ={0:.4e}'.format( velocity))
+    velocity, volume, pressure, Rayleigh = nominal.CJ(v_0)
     assert close(volume, 0.408719346049324)
     assert close(pressure, 3.749422497177544e10)
-    assert close(velocity,                            2.858868318e+05)
-    assert close(Spline_eos(Nominal()).CJ(v_0)[0],    2.858856308e+05)
-    assert close(Spline_eos(Experiment()).CJ(v_0)[0], 3.100993854858e+5)
-    assert close(Experiment().CJ(v_0)[0],             3.0953552067658e5)
+    assert close(velocity,                          2.858868318e+05)
+    assert close(Spline_eos(experiment).CJ(v_0)[0], 3.100993854858e5)
+    assert close(experiment.CJ(v_0)[0],             3.0953552067658e5)
+    assert close(Spline_eos(nominal).CJ(v_0)[0],    2.858856308e5)
+    assert close(Spline_eos(experiment).CJ(v_0)[0], 3.100993854858e5)
+    assert close(experiment.CJ(v_0)[0],             3.0953552067658e5)
     return 0
 def test_spline():
     '''For convex combinations of nominal and experimental, ensure that
@@ -318,8 +303,8 @@ def test_spline():
     .55 and .60.  Also check preconditioning.
     '''
 
-    nominal = Nominal()
-    experiment = Experiment()
+    nominal = Bump(C=2.56e9)
+    experiment = Bump(C=2.56e9, bumps=[(0.35, 0.06, 0.2)])
     for pre_c in (True, False):
         s_nom = Spline_eos(nominal,precondition=pre_c)
         c_nom = s_nom.get_c() # Coefficients for nominal spline
@@ -360,6 +345,28 @@ def work():
     ''' This code for debugging stuff will change often
     '''
     import matplotlib.pyplot as plt
+    nominal = Bump(C=2.56e9)
+    experiment = Bump(C=2.56e9, bumps=[(0.35, 0.06, 0.2)])
+    old = Experiment()
+    v = np.linspace(.2,.5,10)
+
+    fig = plt.figure()
+    
+    ax = fig.add_subplot(2,1,1)
+    ax.plot(v, old(v), label='old')
+    ax.plot(v, experiment(v), label='new')
+    ax.legend()
+    
+    ax = fig.add_subplot(2,1,2)
+    ax.plot(v, old.derivative(1)(v), label='old')
+    ax.plot(v, experiment.derivative(1)(v), label='new')
+    ax.legend(loc='lower right')
+
+    plt.show()
+    return 0
+    
+    nt.assert_allclose(old(v), experiment(v))
+    nt.assert_allclose(old.derivative(1)(v), experiment.derivative(1)(v))
     nominal = Nominal()
     experiment = Experiment()
     

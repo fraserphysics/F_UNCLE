@@ -117,8 +117,8 @@ def data(eos=None):
     '''Make "experimental" data from stick
     '''
     if eos==None:
-        from eos import Experiment
-        eos = Experiment()
+        from eos import Bump
+        eos = Bump(C=2.56e9, bumps=[(0.35, 0.06, 0.2)])
     vel_CJ, vol_CJ, p_CJ, Rayleigh = eos.CJ(1/pemberton.densities.mean())
     stick = Stick(eos)
     # Make simulated measurements
@@ -128,8 +128,8 @@ def data(eos=None):
 close = lambda a,b: a*(1-1e-7) < b < a*(1+1e-7)
 import numpy.testing as nt
 def make_stick():
-    from eos import Nominal, Spline_eos
-    return Stick(Spline_eos(Nominal()))
+    from eos import Bump, Spline_eos
+    return Stick(Spline_eos(Bump()))
 def test_fit_v():
     assert close(make_stick().fit_v(), 2.8593225963e+05)
     return 0
