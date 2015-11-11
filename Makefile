@@ -12,8 +12,8 @@
 # https://www.gnu.org/software/make/manual/html_node/Automatic-Variables.html
 # https://www.gnu.org/software/make/manual/html_node/Text-Functions.html
 # Type "make test" to see the list of figures
-FIG_ROOT = basis C_gun vt_gun BC_gun opt_result big_d fve_gun	\
-info_gun info_stick opt_stick CJ_stick
+FIG_ROOT = CJ_stick opt_stick info_stick big_d vt_gun C_gun BC_gun \
+info_gun fve_gun basis
 
 FIGURES = $(patsubst %, figs/%.pdf, ${FIG_ROOT})
 

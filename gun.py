@@ -97,7 +97,7 @@ class Gun:
         else:
             raise RuntimeError('x has type %s'%(type(x),))
     def shoot(
-            self,              # Gun instance
+            self,   # Gun instance
             t_min,
             t_max,
             n_t,
@@ -128,7 +128,7 @@ class Gun:
         # xv is array of calculated positions and velocities at times in t
         return t, xv
     def fit_t2v(
-            self,
+            self,   # Gun instance
             t_min=magic.t_min,
             t_max=magic.t_max,
             n_t=magic.n_t,
@@ -141,7 +141,7 @@ class Gun:
         # xv is array of calculated positions and velocities at times in t
         return Spline(t,xv[:,1])
     def compare(
-            self,
+            self,   # Gun instance
             vt,
             c=None
             ):

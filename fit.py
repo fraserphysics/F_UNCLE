@@ -25,7 +25,10 @@ class Opt:
         self.data = data
         assert set(experiment.keys()) == set(data.keys())
         return
-    def step(self, constrain=True, debug=False):
+    def step(
+            self,           # Opt instance
+            constrain=True,
+            debug=False):
         ''' Do a constrained optimization step
         '''
         old_c = self.eos.get_c().copy()

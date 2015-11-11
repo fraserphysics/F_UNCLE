@@ -68,7 +68,10 @@ def main(argv=None):
     import stick
     
     t=np.linspace(0, gun.magic.t_max, gun.magic.n_t_sim)
-    exp = Go(eos=eos.Bump(C=2.56e9, bumps=[(0.35, 0.06, 0.2)]))
+    exp = Go(eos=eos.Bump(C=2.56e9, bumps=[
+        (0.4, 0.1, .25),
+        (0.5, 0.1, -.3),
+        ]))
     nom = Go(eos=eos.Spline_eos(eos.Bump(C=2.56e9), precondition=True))
     for go in (exp, nom):
         go.add(t=t, gun=gun.Gun(go.eos), stick=stick.Stick(go.eos))
@@ -246,15 +249,28 @@ def C_gun(exp, nom, plt):
 plot_dict['C_gun'] = C_gun
 
 def vt_gun(exp, nom, plt):
-    fig = plt.figure('vt', figsize=fig_y_size(8))
+    import matplotlib
+    fig = plt.figure('vt_gun', figsize=fig_y_size(8))
+    fig.subplots_adjust(hspace=0.3) # Make more space for label
+    
     ts = nom.t2v.get_t()
-    ax = fig.add_subplot(1,1,1)
+    ax = fig.add_subplot(2,1,1)
     ax.plot(nom.t*1e6, nom.v/1e5, label='simulation')
     ax.plot(exp.t*1e6, exp.v/1e5, label='experiment')
-    ax.plot(nom.t*1e6, nom.ep/1e5, label=r'error $\epsilon$')
+    ax.plot(nom.t*1e6, nom.ep/1e5, label=r'difference $\epsilon$')
     ax.set_xlabel(r'$t/(\mu \rm{sec})$')
     ax.set_ylabel(r'$v/(\rm{km/s})$')
-    ax.legend(loc='upper left')
+    ax.legend(loc='center right')
+    ax.yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(nbins=5))
+
+    vs = np.linspace(.35,5,200)
+    ax = fig.add_subplot(2,1,2)
+    ax.plot(vs, nom.eos(vs)/1e9, label='simulation')
+    ax.plot(vs, exp.eos(vs)/1e9, label='experiment')
+    ax.legend(loc='upper right')
+    ax.set_xlabel(r'$x/\rm{cm}$')
+    ax.set_ylabel(r'$p/\rm{GPa}$')
+    ax.yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(nbins=5))
     return fig
 plot_dict['vt_gun'] = vt_gun
 
@@ -368,8 +384,10 @@ def fve_gun(exp, nom, plt):
     from fit import Opt
     from gun import magic
     from gun import Gun
+    import matplotlib
     
-    fig = plt.figure('fve_gun',figsize=fig_y_size(9))    
+    fig = plt.figure('fve_gun',figsize=fig_y_size(9)) 
+    fig.subplots_adjust(hspace=0.3) # Make more space for label   
     p2f = magic.newton2dyne*magic.area/1e11
     opt = Opt(
         nom.eos,
@@ -417,6 +435,7 @@ def fve_gun(exp, nom, plt):
         d['ax'].legend(loc=ax_d[name]['loc'])
         d['ax'].set_xlabel(d['l_x'])
         d['ax'].set_ylabel(r'$%s$'%name)
+        d['ax'].yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(nbins=4))
         if 'l_y' in d:
             d['ax'].set_ylabel(d['l_y'])
     
@@ -520,8 +539,7 @@ def info_quad(
     ax.xaxis.set_major_locator(matplotlib.ticker.MaxNLocator(nbins=4))
     ax.set_ylabel(r'$f_j(v)$')
     ax.set_xlabel(r'$v$')
-
-
+    fig.subplots_adjust(wspace=0.3) # Make more space for label
     return fig
 # end of info_quad()
 

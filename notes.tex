@@ -140,7 +140,7 @@ inconsistent and requires justification or a different approach.
 I use a prior defined in terms of spline coefficients.  I start with a
 nominal EOS
 \begin{equation}
-  \label{eq:2}
+  \label{eq:nom}
   \eosnom(\vol) = \frac{C}{\vol^3}, \text{ where } C \leftrightarrow
   2.56\times10^9 \text{Pa} \text{ at one gram/cc}
 \end{equation}
@@ -161,19 +161,27 @@ choices yield:
 \subsection{The Nominal and \emph{True} EOS}
 \label{sec:true-eos}
 
-
-\newcommand{\freq}{k} %
-For each experiment, data comes from a simulation using the
-\emph{true} function
+For each experiment, data comes from a simulation using a \emph{true}
+function and each optimization starts from the nominal EOS which is
+the mean of the prior given in \eqref{eq:nom}.  I've made the
+\emph{true} EOS differ from the nominal EOS and the by a sum of
+Gaussian bumps characterized by a center volume $v_k$, a width $w_k$
+and a scale $s_k$, with
+\begin{equation*}
+  b_k(v) = \frac{s_k C}{v_k^3} e^{- \frac{(v-v_k)^2}{2w_k^2}}.
+\end{equation*}
+Throughout the remainder of this paper, the \emph{true} EOS that I've
+used for experiments is
 \begin{align}
   \label{eq:actual}
-  f(v) &= \fnom(v) + \frac{C}{v_0^3} e^{-\frac{(v-v_0)^2}{2w^2}}\\
-   \text{ where }C &= 2.56\times 10^{10} \nonumber \\
-  w &= 0.062. \nonumber \\
-  v_0 &= 0.35. \nonumber
+  f(v) &= \frac{C}{v^3} + b_0(v) + b_1(v) \text{ with} \\
+  v_0 &= .4 \frac{\text{cm}^3}{\text{g}} \nonumber \\
+  w_0 &= .1 \frac{\text{cm}^3}{\text{g}} \nonumber \\
+  s_0 &= .25 \nonumber \\
+  v_1 &= .5 \frac{\text{cm}^3}{\text{g}} \nonumber \\
+  w_1 &= .1 \frac{\text{cm}^3}{\text{g}} \nonumber \\
+  s_1 &= -.3 \nonumber.
 \end{align}
-The EOS specified by \eqref{eq:actual} is like the prior except that
-there is an added Gaussian perturbation centered at $v=v_0$.
 
 \section{Experiments}
 \label{sec:experiments}
@@ -660,28 +668,24 @@ with $G$ describing the constraints (see section
 \subsection{Numerical Results}
 \label{sec:numerical-results}
 
-The result of a single iteration of the algorithm appears in
-Fig.~\ref{fig:opt_result}.  Three iterations of the algorithm
-increases $L_i$ from $-9.7\times 10^8$ to $-4.2\times 10^4$.
+Results of the algorithm appear throughout the paper, see Figures
+\ref{fig:CJ_stick}, \ref{fig:opt_stick}, \ref{fig:info_stick},
+\ref{fig:info_gun} and \ref{fig:fve_gun}.  Three iterations of the
+algorithm increases $L_i$ from $-9.7\times 10^8$ to $-4.2\times
+10^4$. \marginpar{Check this}
 Figure~\ref{fig:fve_gun} illustrates the convergence.
-\begin{figure}
-  \centering
-  \resizebox{\columnwidth}{!}{\includegraphics{\fig{opt_result}}}
-  \caption{The function $f_1 = f_0 + \hat d$ returned by fit.opt()
-    compared to $f_0$.}
-  \label{fig:opt_result}
-\end{figure}
 \begin{figure}
   \centering
     \resizebox{\columnwidth}{!}{\includegraphics{\fig{fve_gun}}}
     \caption{Sequential estimation of the maximum a posteriori
       probability parameters of $f$.  The \emph{true} EOS appears as
-      \emph{experimental} in the upper plot, and the optimization starts
-      with the \emph{nominal} and ends with \emph{fit}.  The
-      corresponding velocity as a function of position appears in the
-      middle plot, and the sequence of errors in the forecast velocity
-      time series after each step in the optimization appears in the
-      lower plot. }
+      \emph{experimental} in the upper plot, and the optimization
+      starts with the \emph{nominal} and ends with \emph{fit}.  The
+      corresponding velocity for the gun as a function of position
+      appears in the middle plot, and the sequence of errors in the
+      forecast velocity time series after each step in the
+      optimization appears in the lower plot. The estimation also used
+      experimental data from the rate stick.}
   \label{fig:fve_gun}
 \end{figure}
 

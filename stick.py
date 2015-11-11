@@ -60,7 +60,7 @@ class Stick:
         CJ_velocity, CJ_volume, CJ_pressure, Rayleigh = self.eos.CJ(self.vol_0)
         return CJ_velocity
     def fit_D(
-            self,                   # Stick instance
+            self,                       # Stick instance
             fraction=fit.magic.D_frac,  # Finite difference fraction
             ):
         '''Calculate dt/df in terms of spline coefficients and return,

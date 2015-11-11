@@ -82,7 +82,7 @@ class Bump(Isentrope):
         self.d_func = derivative
         return
     def __call__(
-            self,
+            self, # Bump instance
             v
             ):
         rv = self.C/v**3
@@ -91,8 +91,8 @@ class Bump(Isentrope):
             rv += np.exp(-z*z/2)*s*self.C/(v_0**3)
         return rv
     def derivative(
-            self,
-            n
+            self, # Bump instance
+            n     # Order of derivative
             ):
         ''' Call matches spline
         '''
@@ -180,7 +180,7 @@ class Spline_eos(Spline, Isentrope):
         # np.linalg.svd(P, compute_uv=False)[0]
         return P, q
     def Pq_like(
-            self,        # Eos instance
+            self,        # Spline_eos instance
             D_k,         # d sim /d f matrix
             ep_k,        # v_exp - v_sim
             Sigma_inv_k, # Covariance martix for exp
