@@ -164,9 +164,9 @@ choices yield:
 For each experiment, data comes from a simulation using a \emph{true}
 function and each optimization starts from the nominal EOS which is
 the mean of the prior given in \eqref{eq:nom}.  I've made the
-\emph{true} EOS differ from the nominal EOS and the by a sum of
-Gaussian bumps characterized by a center volume $v_k$, a width $w_k$
-and a scale $s_k$, with
+\emph{true} EOS differ from the nominal EOS by a sum of Gaussian
+bumps.  Each bump is characterized by a center volume $v_k$, a width
+$w_k$ and a scale $s_k$, with
 \begin{equation*}
   b_k(v) = \frac{s_k C}{v_k^3} e^{- \frac{(v-v_k)^2}{2w_k^2}}.
 \end{equation*}
@@ -282,7 +282,7 @@ with the following notation:
 \item[$p_0$] The initial pressure
 \item[$V$] The velocity of the detonation wave
 \item[$p$] The pressure at positions behind the wave
-\item[$v$] The specific at positions behind the wave.
+\item[$v$] The specific volume at positions behind the wave.
 \end{description}
 Rearranging the terms in \eqref{eq:Rayleigh} yields this relation
 between pressure and volume after the shock
@@ -304,7 +304,7 @@ I can write the following conditions for the CJ point:
     F'(v,V) &= 0.
   \end{align}
 \end{subequations}
-Given $V$, the code has function that numerically solves
+Given $V$, the code has a function that numerically solves
 \eqref{eq:dFcond} for $v$.  Letting $v(V)$ denote that solution, I
 write \eqref{eq:Fcond} as
 \begin{equation}
@@ -372,7 +372,7 @@ Figure~\ref{fig:opt_stick}.
 As Fig.~\ref{fig:CJ_stick} indicates, only the CJ point on the EOS
 influences the forecast data, $\mu(c)$.  Thus only one degree of
 freedom in the model influences the likelihood and Fisher Information
-matrix, $\Fisher$ should have a rank of one.
+matrix, $\Fisher$, should have a rank of one.
 Figure~\ref{fig:info_stick} illustrates characteristics of the
 optimization procedure and $\Fisher(\hat c)$.  The largest eigenvalue
 $\Fisher(\hat c)$ is $10^{16}$ larger than the next largest, ie, the
@@ -470,7 +470,8 @@ following methods:
     \resizebox{\columnwidth}{!}{\includegraphics{\fig{vt_gun}}}
     \caption{Velocities as functions of time.  Traces for the
       \emph{experimental} data, a simulation with the nominal EOS,
-      $\mu_\eos$, and the error, $\epsilon$.}
+      $\mu_\eos$, and the error, $\epsilon$ appear in the upper
+      plot.  The corresponding EOSs appear in the lower plot.}
     \label{fig:vt_gun}
   \end{figure}
 \item[fit\_C] Use finite differences to calculate dv/df in terms of
@@ -518,8 +519,8 @@ following methods:
       in the upper left, and the corresponding isentropes appear in
       the upper right.  The largest nine eigenvalues of
       $\Fisher(\hat c)$ appear in the lower left and the
-      eigenfunctions corresponding to the largest four eigenvalue
-      appears in the lower left.}
+      eigenfunctions corresponding to the largest four eigenvalues
+      appear in the lower left.}
   \label{fig:info_gun}
 \end{figure}
 
@@ -612,8 +613,9 @@ rely on having access to $D$.  Note that
    D^T \Sigma_\data^{-1} D = \sum_k D_k^T \Sigma_k^{-1} D_k,
 \end{equation}
 and $D_k^T \Sigma_k^{-1} D_k$ approximates the second derivative of
-the log likelihood which is called the \emph{Fisher Information} of
-the $k^{\text{th}}$ experiment.
+the log likelihood for the $k^{\text{th}}$ experiment.  It also
+approximates the expected value of that second derivative, the
+\emph{Fisher Information}.
 
 \subsection{An Algorithm}
 \label{sec:algorithm}
@@ -659,7 +661,7 @@ with $G$ describing the constraints (see section
     h &= -Gc_i
   \end{align}
 \end{subequations}
-\item \label{step:3} Calculate $L_i = \log(p(c_{i+1}|\data)$ using
+\item \label{step:3} Calculate $L_{i+1} = \log(p(c_{i+1}|\data)$ using
   \eqref{eq:app}.
 \item \label{step:4} Stop if $\left( L_0, L_1, \ldots L_{i+1} \right)$
   meets some convergence criterion, otherwise go back to \ref{step:1}.
@@ -728,7 +730,7 @@ Here is the agenda:
 \label{sec:splines}
 
 Cubic splines are so named because their basis functions are piecewise
-cubic.  I illustrate their basis functions for a grid of evenly spaced
+cubic.  I illustrate the basis functions for a grid of evenly spaced
 knots in Fig.~\ref{fig:basis}.  Note that the second derivative is
 affine between knots and that consequently if it is positive at the
 knots it is positive between them.  Also if the second derivative is
