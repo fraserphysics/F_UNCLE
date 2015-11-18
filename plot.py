@@ -53,6 +53,8 @@ def main(argv=None):
               'xtick.labelsize': 15,
               'ytick.labelsize': 15}
     mpl.rcParams.update(params)
+    if not args.show:
+        mpl.use('PDF')  # Enables running without DISPLAY enviroment variable
     import matplotlib.pyplot as plt  # must be after mpl.use
 
     if not os.path.exists(args.fig_dir):
