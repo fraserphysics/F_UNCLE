@@ -1,4 +1,4 @@
-"""plot.py derived from ../plot.py makes plots for notes.pdf.
+"""plot.py makes plots for notes.pdf.
 
 """
 plot_dict = {} # Keys are those keys in args.__dict__ that ask for
@@ -53,16 +53,12 @@ def main(argv=None):
               'xtick.labelsize': 15,
               'ytick.labelsize': 15}
     mpl.rcParams.update(params)
-    if args.show:
-        mpl.rcParams['text.usetex'] = False
-    else:
-        mpl.use('PDF')
     import matplotlib.pyplot as plt  # must be after mpl.use
 
     if not os.path.exists(args.fig_dir):
         os.mkdir(args.fig_dir)
         
-    # Do quick calculations to create exp and nom
+    # Do quick calculations to create generic objects exp and nom
     import eos
     import gun
     import stick
@@ -92,9 +88,9 @@ def main(argv=None):
         if args.__dict__[key] == None:
             continue
         print('work on %s'%(key,))
-        fig = plot_dict[key](exp, nom, plt)
+        fig = plot_dict[key](exp, nom, plt) # This calls a plotting function
         file_name = getattr(args, key)
-        if file_name == 'show':
+        if args.show or file_name == 'show':
             do_show = True
         else:
             fig.savefig(os.path.join(args.fig_dir, file_name), format='pdf')
@@ -103,6 +99,8 @@ def main(argv=None):
     return 0
 
 def tx_stick(exp, nom, plt):
+    ''' Plot time as a function of position
+    '''
     import stick
     from fit import Opt
     fig = plt.figure('tx_stick', figsize=fig_y_size(5.0))
@@ -122,11 +120,12 @@ def tx_stick(exp, nom, plt):
     ax.set_ylabel(r'$t/\mu{\rm sec}$')
     ax.legend(loc='lower right')
     fig.subplots_adjust(bottom=0.15) # Make more space for label
-
     return fig
 plot_dict['tx_stick'] = tx_stick
 
 def CJ_stick(exp, nom, plt):
+    ''' Plot 3 isentropes and 2 Rayleigh lines
+    '''
     import stick
     from fit import Opt
     fig = plt.figure('CJ_stick', figsize=fig_y_size(7.0))
@@ -158,6 +157,8 @@ def CJ_stick(exp, nom, plt):
 plot_dict['CJ_stick'] = CJ_stick
 
 def opt_stick(exp, nom, plt):
+    '''Plot sequences of eoses and simulated data for fit to stick data
+    '''
     import stick
     from fit import Opt
     fig = plt.figure('opt_stick', figsize=fig_y_size(9.0))
@@ -195,8 +196,7 @@ plot_dict['opt_stick'] = opt_stick
 
 def info_stick(exp, nom, plt):
     '''Make a figure with 4 plots (info_quad) that describes the fit eos
-    and the Fisher Information of the the result.
-
+    and the Fisher Information of the result.
     '''
     from fit import Opt
     opt = Opt(
@@ -222,6 +222,9 @@ def info_stick(exp, nom, plt):
 plot_dict['info_stick'] = info_stick
 
 def info_gun(exp, nom, plt):
+    '''Make a figure with 4 plots (info_quad) that describes the fit eos
+    and the Fisher Information of the result.
+    '''
     from fit import Opt
     opt = Opt(
         nom.eos,
@@ -235,6 +238,8 @@ def info_gun(exp, nom, plt):
 plot_dict['info_gun'] = info_gun
 
 def C_gun(exp, nom, plt):
+    ''' Plot derivative of c_v wrt c_f
+    '''
     fig = plt.figure('C', figsize=fig_y_size(6.4))
     n_f = len(nom.eos.get_c())
     n_v = len(exp.t2v.get_c())
@@ -249,6 +254,8 @@ def C_gun(exp, nom, plt):
 plot_dict['C_gun'] = C_gun
 
 def vt_gun(exp, nom, plt):
+    ''' Plot velocity as a function of time
+    '''
     import matplotlib
     fig = plt.figure('vt_gun', figsize=fig_y_size(8))
     fig.subplots_adjust(hspace=0.3) # Make more space for label
@@ -275,6 +282,8 @@ def vt_gun(exp, nom, plt):
 plot_dict['vt_gun'] = vt_gun
 
 def BC_gun(exp, nom, plt):
+    ''' Plot derivative of velocity wrt c_f
+    '''
     fig = plt.figure('BC', figsize=fig_y_size(7))
     C = nom.C
     BC = np.dot(nom.B,nom.C)
@@ -289,6 +298,8 @@ def BC_gun(exp, nom, plt):
 plot_dict['BC_gun'] = BC_gun
 
 def opt_result(exp, nom, plt):
+    ''' Plot eos before and after single step of optimization
+    '''
     from fit import Opt
     from gun import magic
     
@@ -381,6 +392,8 @@ def big_d(exp, nom, plt):
 plot_dict['big_d'] = big_d
 
 def fve_gun(exp, nom, plt):
+    ''' Plot f (eos), v (velocity) and e (velocity error)
+    '''
     from fit import Opt
     from gun import magic
     from gun import Gun

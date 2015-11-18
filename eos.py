@@ -1,5 +1,5 @@
 """eos.py: Properties of the "EOS" function volume -> pressure.
-Used in calc.py. Goals:
+Goals:
 
 1. Develop, analyze and understand a procedure for estimating an
    isentrope on the basis of data and simulations.
@@ -23,9 +23,9 @@ magic = Go(
     spline_max=100,          # Maximum volume
     spline_uncertainty=5.e-3,# Multiplicative uncertainty of prior (1/2 %)
     spline_end=4,            # Last 4 coefficients of splines are 0
-    w=.06,                    # Perturbation width
-    v_0=0.35,                 # Center of perturbation
-    scale=.2,               # Scale of perturbation
+    w=.06,                   # Perturbation width
+    v_0=0.35,                # Center of perturbation
+    scale=.2,                # Scale of perturbation
            )
 
 R = lambda vel, vol_0, vol: vel*vel*(vol_0-vol)/(vol_0*vol_0)

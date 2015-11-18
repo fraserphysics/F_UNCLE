@@ -5,7 +5,7 @@
 import numpy as np
 from eos import Go
 magic = Go(
-    D_frac=2.0e-2,     # Fractional finte difference for esimating dv/df
+    D_frac=2.0e-2,     # Fractional finite difference for esimating dv/df
     fit_dim=50,        # Number of x points for EOS fit
     max_iter=5,        # Bound for iterations maximizing likelihood
     converge=1.0e-5,   # Fractional tolerance for cost
@@ -29,7 +29,7 @@ class Opt:
             self,           # Opt instance
             constrain=True,
             debug=False):
-        ''' Do a constrained optimization step
+        ''' Do an optimization step.  Constrained iff constrained is True
         '''
         old_c = self.eos.get_c().copy()
 
