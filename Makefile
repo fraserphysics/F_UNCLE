@@ -13,7 +13,9 @@
 # https://www.gnu.org/software/make/manual/html_node/Text-Functions.html
 # Type "make test" to see the list of figures
 
-PYTHON = module load python/2.7-anaconda-2.1.0; export export PYTHONPATH=/usr/projects/fvs/lib/python/; python
+PYTHON = eval `/usr/bin/modulecmd bash purge`; eval			\
+`/usr/bin/modulecmd bash load python/2.7-anaconda-2.1.0`; export	\
+PYTHONPATH=/usr/projects/fvs/lib/python/; python
 
 FIG_ROOT = CJ_stick opt_stick info_stick big_d vt_gun C_gun BC_gun \
 info_gun fve_gun basis

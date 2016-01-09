@@ -55,12 +55,13 @@
 \begin{abstract}
   The source for these notes and illustrations reside in
   like\_eos/notes.tex\footnote{To obtain the source, build the
-    document and view it, run the following sequence of commands:
+    document and view it, run the following sequence of commands (``time
+    make'' reports \emph{real 1m17.159s}):
 \begin{verbatim}
 ->git clone ssh://git@xcp-stash.lanl.gov:7999/fvs/like_eos.git
 ->cd like_eos/
-->make -j8
-->evince notes.pdf 
+->time make -j10
+->xpdf notes.pdf 
 \end{verbatim}
 }.
   I use the same ideas for work on the 9501 model on moonlight.
