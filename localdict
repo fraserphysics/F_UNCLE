@@ -1,6 +1,9 @@
-personal_ws-1.1 en 44 
+personal_ws-1.1 en 53 
+xcp
 wrt
+XCS
 epf
+Doebling
 rescale
 fve
 dFcond
@@ -16,7 +19,10 @@ df
 Fickett
 isentropes
 Eqn
+Hengartner
 hoc
+FVS
+PEM
 eg
 Hugoniot
 affine
@@ -34,6 +40,7 @@ dv
 eigenfunction
 covariance
 et
+eigenvector
 exponentials
 differentiable
 posteriori
@@ -41,5 +48,7 @@ ie
 piecewise
 py
 FV
+eigenvectors
+LANL
 th
 Fcond

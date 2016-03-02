@@ -1,10 +1,21 @@
-The like_eos project is for exploring HE modeling issues using
-simple toy models.  To make notes.pdf:
+New name, F_UNCLE: Functional UNcertainty Constrained by Law and Experiment
+
+The F_UNCLE project is for quantitatively characterizing uncertainty
+about functions and how physical laws and experiments constrain that
+uncertainty.  The project is an evolving platform consisting of
+program and text files that numerically demonstrate and explore
+quantitative characterizations of uncertainty about functions and how
+either historical or proposed experiments have or could constrain that
+uncertainty.  No actual physical measurements are distributed as part
+of the software.
+
+To make notes.pdf:
 
 -> git clone https://github.com/fraserphysics/like_eos
 -> cd like_eos
 -> make -j8
 
+To run all of the tests
 for m in *.py; do echo $m test; python $m test; done
 
 Make standard plot for experiment 1 cost 2 eos 3 spectrum 4 eigenfunctions
