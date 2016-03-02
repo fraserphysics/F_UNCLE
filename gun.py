@@ -226,9 +226,10 @@ class Gun:
             self.ax2.legend()
             plt.show()
             return
-        t_mic = vt[1]*1e6
+        t_mic = vt[1]*1e6 # time in microseconds
+        v_kms = v/1e5     # velocity in km/sec
         plotv = lambda v,s: self.ax1.plot(
-            t_mic, v/1e5, label=r'$v_{{\rm {0}}}$'.format(s))
+            t_mic, v_kms, label=r'$v_{{\rm {0}}}$'.format(s))
         if not hasattr(self, 'fig'):
             self.fig = plt.figure('debug gun',figsize=(8,12))
             
