@@ -1,0 +1,77 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amsfonts,afterpage}
+%\usepackage{showlabels}
+
+\title{Functional Uncertainty Constrained by Law and
+  Experiment\footnote{LA-UR-16-21982}}
+
+\author{Andrew M.\ Fraser\\Los Alamos National Laboratory}
+\begin{document}
+\maketitle
+\begin{abstract}
+  The F\_UNCLE project uses code to illustrate ideas for
+  quantitatively characterizing uncertainty about functions.  The
+  project is an evolving platform consisting of program and text files
+  that numerically demonstrate and explore how either historical or
+  proposed experiments have or could affect such uncertainty.  The
+  poster focuses on a toy problem in which \emph{data} from a few
+  experiments affect uncertainty about an unknown function that is
+  constrained to be positive, monotonic and convex.  For each
+  experiment, I use the \emph{Fisher Information} matrix, $J_k$, to
+  quantify how the data constrains uncertainty about the unknown
+  function.  A spectral decomposition of $J_k$ indicates the regions
+  of the unknown function where the $k^{\text{th}}$ experiment is most
+  constraining.  While neither physical measurements nor code for
+  simulating physical experiments are distributed as part of F\_UNCLE,
+  I use the ideas and some of the code for work on the equation of
+  state of the gas produced by detonating explosives.  Highlights of
+  that work appear at the end of the poster.
+\end{abstract}
+
+This document is a proposal to present a poster at SciPy2016 to be
+held in Austin July 11-17.  (See http://scipy2016.scipy.org)  The
+online form asks for:
+\begin{enumerate}
+\item A title
+\item An abstract of less than 500 words
+\item A long description for evaluating the proposal
+\end{enumerate}
+Once I get an LAUR for this document, I will submit those portions of
+this document.
+
+\section{Long Description}
+\label{sec:long}
+
+A need to quantitatively characterize the following three notions
+drives this work: 1. Uncertainty about functions in physical
+theories. 2. The manner in which existing experimental data constrain
+that uncertainty.  3. The value that constraints from proposed
+experiments would provide.  I chose Python and SciPy to make the
+analysis coherent, reproducible and extendable.
+
+I have two versions of this project: 1. Code that runs in a minute on
+a desktop computer; 2. Code that runs for hours on high performance
+computers.  The two versions share the same ideas and some code.  Both
+use Python and SciPy to organize sequential batches of simulations in
+a search for the \emph{Maximum A posteriori Probability} function for a
+specific prior and a collection of experimental data.  After finding
+the MAP function, the code uses the second derivative of the
+log-likelihood for data from each experiment to estimate the
+corresponding Fisher Information matrix.  The current version of the
+code nicely illustrates that the information from different
+experiments constrain different parts of the unknown function.
+
+I am designing the code to have a framework that will simultaneously
+handle several uncertain functions and several experiments.  The
+framework code will be the same for all problems and platforms.
+Separate modules will implement each function and experiment.
+
+I expect permission to post code to https://github.com/fraserphysics
+before the conference.
+\end{document}
+
+%%%---------------
+%%% Local Variables:
+%%% eval: (TeX-PDF-mode)
+%%% eval: (setq ispell-personal-dictionary "./localdict")
+%%% End:
