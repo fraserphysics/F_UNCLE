@@ -11,9 +11,9 @@ of the software.
 
 To make notes.pdf:
 
--> git clone https://github.com/fraserphysics/like_eos
--> cd like_eos
--> make -j8
+-> git clone https://github.com/fraserphysics/F_UNCLE
+-> cd F_UNCLE
+-> make -j10
 
 To run all of the tests
 for m in *.py; do echo $m test; python $m test; done

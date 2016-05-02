@@ -54,29 +54,16 @@
 \maketitle
 \begin{abstract}
   You can browse the source for these notes and illustrations at
-  https://xcp-stash.lanl.gov/projects/FVS/repos/like\_eos/browse\footnote{To
+  https://github.com/fraserphysics/F\_UNCLE\footnote{To
     obtain the source, build the document and view it, I can run the
-    following sequence of commands on moonlight (``time make'' reports
-    \emph{real 1m17.159s}.):
+    following sequence of commands:
 \begin{verbatim}
-->git clone ssh://git@xcp-stash.lanl.gov:7999/fvs/like_eos.git
-->cd like_eos/
-->time make -j10
-->xpdf notes.pdf
+-> git clone https://github.com/fraserphysics/F_UNCLE
+-> cd F_UNCLE/
+-> make -j10
+-> evince notes.pdf
 \end{verbatim}
-    You may have to run the ``make'' command a second time if it fails
-    the first time.
-
-    If you haven't set up ssh access to git@xcp-stash.lanl.gov, you
-    can use the following commands to clone the project on a machine
-    that allows connections to https://xcp-stash.lanl.gov (not an HPC
-    machine):
-\begin{verbatim}
-->export no_proxy=xcp-stash.lanl.gov
-->git clone https://xcp-stash.lanl.gov/scp/fvs/like_eos
-->scp -r like_eos/ ml-fey:test
-\end{verbatim}
-  }.  I use the same ideas for work on the 9501 model on moonlight.
+  }.
 \end{abstract}
 
 \section{Introduction}
@@ -904,7 +891,7 @@ for $z$, and then derive the estimate of $d$ from
 %
 \vfill \hrule
 
-Source file: ssh://git@xcp-stash.lanl.gov:7999/fvs/like\_eos/notes.tex
+Source file: https://github.com/fraserphysics/F\_UNCLE/notes.tex
 
 \end{document}
 
