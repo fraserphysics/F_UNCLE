@@ -248,14 +248,19 @@ class Struc(object):
             return warns[warn_id]
         #end
 
-    def __str__(self):
-        """Returns a string representation of the object
+    def __str__(self, inner = False, *args, **kwargs):
+        """Returns a string representation of the object       
 
+        Args:
+            inner(bool): Flag if the string is being called within another
+                         string function
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
         """
         def_opts = self.def_opts
         opts = self.options
-        out_str = ''
-        out_str += "="*80 + "\n"
+        out_str = '\n'
+        # if not inner: out_str += "="*80 + "\n"
         out_str += "{:^80s}\n".format(self.name)
         out_str += "{:^80s}\n".format("^"*len(self.name))
         out_str += "Options\n"
@@ -346,9 +351,22 @@ class Struc(object):
                 #end
             #end
         #end
-        out_str += "="*80 + "\n"
+        out_str += self._on_str(*args, **kwargs)
+        # if not inner: out_str += "="*80 + "\n"
         return out_str
 
+    def _on_str(self, *args, **kwargs):
+        """Print methods of childeren
+
+        Args:
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+        
+        Return:
+            (str): A string representing the object
+        """
+
+        return ''
     def plot(self):
         """Returns a plot of the object
 

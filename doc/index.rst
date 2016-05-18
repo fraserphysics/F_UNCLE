@@ -12,7 +12,9 @@ Contents:
    :maxdepth: 2
 
    code
-
+   utils
+   models
+   analysis
 
 Indices and tables
 ==================
