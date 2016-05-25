@@ -47,8 +47,8 @@ import unittest
 # =========================
 # Custom Packages
 # =========================
-sys.path.append(os.path.abspath('./../'))
-from FUNCLE.utils.pyStruc import Struc
+sys.path.append(os.path.abspath('./../../'))
+from F_UNCLE.Utils.Struc import Struc
 
 
 # =========================

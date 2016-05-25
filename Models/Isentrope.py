@@ -47,15 +47,15 @@ from scipy.interpolate import InterpolatedUnivariateSpline as IU_Spline
 # =========================
 # Custom Packages
 # =========================
-sys.path.append(os.path.abspath('./../'))
-from FUNCLE.utils.pyStruc import Struc
-
+sys.path.append(os.path.abspath('./../../'))
+from F_UNCLE.Utils.Struc import Struc
+from F_UNCLE.Models.PhysicsModel import PhysicsModel
 # =========================
 # Main Code
 # =========================
 
 
-class Isentrope(Struc):
+class Isentrope(PhysicsModel):
     """Abstract class for an isentrope
     """
 
@@ -196,16 +196,16 @@ class EOSBump(Isentrope):
                 pressure w.r.t volume
         """
 
-        C = self.get_option('const_C')
+        const_c = self.get_option('const_C')
         bumps = self.get_option('bumps')
 
         def d1_fun(v):
             """Derrivative function
             """
-            rv = -3*C/v**4
+            rv = -3*const_c/v**4
             for v_0, w, s in bumps:
                 z = (v-v_0)/w
-                rv -= (z/w)*np.exp(-z*z/2)*s*C/(v_0**3)
+                rv -= (z/w)*np.exp(-z*z/2)*s*const_c/(v_0**3)
             return rv
         # end
 
@@ -262,8 +262,21 @@ class EOSModel(Spline, Isentrope):
                        )
         Spline.__init__(self, v, p_fun(v))
 
+        self.prior = copy.deepcopy(self)
+        
+    def get_sigma(self):
+        """Returns the covariance matrix of the spline
+        
+        Return:
+           (np.ndarray): Covariance matrix for the eos
+                         shape is (nxn) where n is the number of knots
+        """
 
-    def _on_update_prior(self, prior, *args, **kwargs):
+        sigma = self.get_option('spline_sigma')
+
+        return np.diag(sigma * self.get_c())
+        
+    def update_prior(self, prior, *args, **kwargs):
         """
 
         Updated the values and statistics of the prior
@@ -273,7 +286,7 @@ class EOSModel(Spline, Isentrope):
         - prior -> function: A function which defines the prior EOS shape
 
         """
-
+        
         self.prior = copy.deepcopy(self)
 
         self.prior_mean = self.prior.get_c().copy()
@@ -303,7 +316,6 @@ class TestIsentrope(unittest.TestCase):
                           spline_sigma=0.0)
 
         self.assertEqual(model.name, "Francis")
-        self.assertEqual(model.prior, 3.5)
         self.assertEqual(model.get_option('spline_N'), 55)
 
 
@@ -409,6 +421,21 @@ class test_eos_model(unittest.TestCase):
         # check the original eos is unchanged
         npt.assert_array_equal(c_list, eos.get_c())
 
+    def test_eos_get_sigma(self):
+        """ Tests that the covariance matrix is generated correctly       
+        """
+
+        eos = EOSModel(self.p_fun)
+
+        sigma_eos = eos.get_sigma()
+
+        n_spline = eos.get_option('spline_N')
+        spline_var = eos.get_option('spline_sigma')
+
+        self.assertEqual(sigma_eos.shape, (n_spline, n_spline))
+
+        npt.assert_array_equal(np.diag(sigma_eos), eos.get_c() * spline_var)
+        
 class TestBumpEOS(unittest.TestCase):
     """Test of the bump EOS
     """

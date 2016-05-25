@@ -41,7 +41,7 @@ import unittest
 sys.path.append(os.path.abspath('./../../'))
 
 #from pyStruc import Struc
-from FUNCLE.utils.pyStruc import Struc
+from F_UNCLE.Utils.Struc import Struc
 # =========================
 # Main Code
 # =========================
