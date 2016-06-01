@@ -27,16 +27,17 @@ None
 # =========================
 # Python Standard Libraries
 # =========================
-        
-import sys 
-import os 
+
+import sys
+import os
+import unittest
 
 # =========================
-# Python Packages 
+# Python Packages
 # =========================
 
 # =========================
-# Custom Packages 
+# Custom Packages
 # =========================
 
 sys.path.append(os.path.abspath('./../../'))
@@ -49,93 +50,128 @@ from F_UNCLE.Utils.Struc import Struc
 
 class PhysicsModel(Struc):
     """
+
+    Abstract class for a pysics model
     
-    Abstract class for Batesian analysis
-    
+    Attributes:
+       prior(PhysicsModel): the prior
+
+
     """
 
-    def __init__(self, name = 'Abstract Physics Model',  prior = None, *args, **kwargs):
+    def __init__(self, prior, name='Abstract Physics Model', *args, **kwargs):
         """
-        
-        **Arguments**
-        
-        None
 
-        **Keyword Arguments**
-        
-        - prior -> PhysicsModel: The prior for the pysics model. *Default = None*
-        
+        Args:
+           None
+
+        Keyword Args
+           prior(PhysicsModel): The prior for the pysics model. *Default = None*
+
         """
 
         Struc.__init__(self, name, *args, **kwargs)
-        
-        self.prior = prior
+
+        self.prior = None
+        self.update_prior(prior)
 
         return
     # end
 
     def update_prior(self, prior):
         """
-        
+
         Updates the prior for the pyhsics model
 
-        **Arguments**
-        
-        - prior -> PhysicsModel: The prior
-        
+        Args:
+           prior(PhysicsModel): The prior
+
         """
 
-        if hasattr(prior, '__call__'):
-            self.on_update_prior(prior)
-        elif isinstance(prior,type(self.prior)):
-            self.on_update_prior(prior)
-        elif self.prior == None:
-            self.on_update_prior(prior)
+        if prior is None and self.prior is None:
+            raise ValueError("{}: requires a prior".format(self.get_inform(1)))
         else:
-            raise TypeError("{:} prior for update must be the same type as previous prior".format(self.getInform(2)))
+            self._on_update_prior(prior)
         # end
 
         return
 
     # end
 
-    def _on_update_prior(self, prior):
+    def get_sigma(self, *args, **kwargs):
+        """Gets the covariance matrix of the model
         """
-        """
-        self.prior = prior
-# end 
 
+        raise NotImplementedError('{} has not defined a covariance matrix'\
+                                  .format(self.get_inform(1)))    
+
+    def shape(self):
+        """Gets the degrees of freedom of the experiment and retursn them
+        
+        Return:
+           (tuple): Dimensions
+
+        """
+        return (0)
+
+    def set_dof(self):
+        """Gets the model degrees of freedom
+        
+        Args:
+           None
+
+        Return:
+           (Iterable): The iterable defining the model degrees of freedom
+
+        """
+
+        raise NotImplementedError()
+    
+    def get_dof(self, c_in):
+        """Sets the model degrees of freedom
+        
+        Args:
+           (Iterable): The new values for *all* modek degrees of freedom
+        
+        Return:
+           None
+        """
+
+        raise NotImplementedError()
+    
+    def _on_update_prior(self, prior):
+        """Instance specific prior update
+        """
+        
+        self.prior = prior
+# end
+
+class TestPhysModel(unittest.TestCase):
+
+    def test_standard_instantiation(self):
+        model = PhysicsModel(prior = 3.5)
+    # end
+
+    def test_update_prior(self):
+        model = PhysicsModel(prior = 3.5)
+
+        self.assertEqual(model.prior, 3.5)
+
+        model.update_prior(2.5)
+
+        self.assertEqual(model.prior, 2.5)
+    # end
+
+    def test_bad_update_prior(self):
+
+        model = PhysicsModel(prior = 3.5)
+
+        with self.assertRaises(TypeError):
+            model.update_prior('two point five')
+        # end
+    # end
+ # end
 
 if __name__ == '__main__':
-    import unittest
 
-    class test_object(unittest.TestCase):
-
-        def test_standard_instantiation(self):
-            model = PhysicsModel(prior = 3.5)
-        # end
-
-        def test_update_prior(self):
-            model = PhysicsModel(prior = 3.5)
-
-            self.assertEqual(model.prior, 3.5)
-            
-            model.update_prior(2.5)
-
-            self.assertEqual(model.prior, 2.5)
-        # end
-
-        def test_bad_update_prior(self):
-
-            model = PhysicsModel(prior = 3.5)
-
-            with self.assertRaises(TypeError):
-                model.update_prior('two point five')
-            # end
-        # end
-     # end
-        
     unittest.main(verbosity = 4)
-
-    
-    

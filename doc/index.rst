@@ -14,6 +14,7 @@ Contents:
    code
    utils
    models
+   experiments
    analysis
 
 Indices and tables

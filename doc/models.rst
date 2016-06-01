@@ -6,15 +6,33 @@ The pysics models used in the analysys
 pyIsentrope
 ...........
 
-.. automodule:: FUNCLE.pyIsentrope
+.. autoclass:: F_UNCLE.Models.Isentrope.Isentrope
    :members:
    :private-members:
    :special-members:
 
-pyGun Model
-...........
+Spline
+......
 
-.. automodule::  FUNCLE.pyGunModel
+.. autoclass:: F_UNCLE.Models.Isentrope.Spline
    :members:
    :private-members:
    :special-members:
+
+BumpEOS
+........
+
+.. autoclass:: F_UNCLE.Models.Isentrope.EOSBump
+   :members:
+   :private-members:
+   :special-members:
+
+EOSModel
+........
+
+.. autoclass:: F_UNCLE.Models.Isentrope.EOSModel
+   :members:
+   :private-members:
+   :special-members:
+
+   

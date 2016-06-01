@@ -1,4 +1,3 @@
-#/usr/bin/pyton
 """
 
 pyGunModel
@@ -39,10 +38,6 @@ import unittest
 # =========================
 import numpy as np
 
-from scipy.interpolate import InterpolatedUnivariateSpline as IU_Spline
-# For scipy.interpolate.InterpolatedUnivariateSpline. See:
-# https://github.com/scipy/scipy/blob/v0.14.0/scipy/interpolate/fitpack2.
-# from scipy.integrate import quad 
 from scipy.integrate import odeint
 
 # =========================
@@ -50,7 +45,7 @@ from scipy.integrate import odeint
 # =========================
 sys.path.append(os.path.abspath('./../../'))
 from F_UNCLE.Experiments.Experiment import Experiment
-from F_UNCLE.Models.Isentrope import EOSBump, EOSModel, Isentrope
+from F_UNCLE.Models.Isentrope import EOSBump, EOSModel, Isentrope, Spline
 
 
 # =========================
@@ -88,16 +83,16 @@ class Gun(Experiment):
                     'Final/muzzle position of projectile'],
             'm': [float, 100.0, 0.0, None, 'g',
                   'Mass of projectile'],
-            'mass_he': [float, 1.0, 0.0, None, 'g',
+            'mass_he': [float, 4E-4, 0.0, None, 'g',
                         'The initial mass of high explosives used to drive\
                         the projectile'],
             'area': [float, 1e-4, 0.0, None, 'm**2',
                      'Projectile cross section'],
-            'sigma': [float, 1.0e-0, 0.0, None, '??',
-                    'Variance attributed to v measurements'],
+            'sigma': [float, 1.0e-1, 0.0, None, '??',
+                      'Variance attributed to v measurements'],
             't_min': [float, 5.0e-6, 0.0, None, 'sec',
                       'Range of times for t2v spline'],
-            't_max': [float, 110.0e-6, 0.0, None, 'sec',
+            't_max': [float, 10.0e-6, 0.0, None, 'sec',
                       'Range of times for t2v spline'],
             'n_t': [int, 500, 0, None, '',
                     'Number of times for t2v spline']
@@ -108,7 +103,18 @@ class Gun(Experiment):
 
         Experiment.__init__(self, name=name, def_opts=def_opts, *args, **kwargs)
 
-
+    def update(self, model=None):
+        """Update the analysis with a new model
+        """
+        if model is None:
+            pass
+        elif isinstance(model, Isentrope):
+            self.model = model
+        else:
+            raise TypeError('{}: Model must be an isentrope for update'\
+                            .format(self.get_inform(1)))
+        #end
+        
     def _on_str(self, *args, **kwargs):
         """Print method of the gun model
 
@@ -276,7 +282,34 @@ class Gun(Experiment):
 
         """
 
-        pass
+        return Spline(time,vel)
+
+    def get_sigma(self):
+        """Returns the covariance matrix
+        """
+
+        return np.diag(np.ones(self.shape())* self.get_option('sigma'))
+
+    def shape(self):
+        """Returns the degrees of freedom of the model
+        """
+
+        return  self.get_option('n_t')
+
+    def compare(self, indep, dep, model_data):
+        """Compares a set of experimental data to the model
+
+        Args:
+           indep(np.ndarray): The list or array of independent variables
+           dep(np.ndarray): The list or array of dependant variables
+           model_data(list): Result of the simulations
+
+        Retrurns
+           (np.ndarray): The error between the dependant variables
+                         and the model for each value of independent variable
+        """
+
+        return dep - model_data[2](indep)
 
     def __call__(self, *args, **kwargs):
         """Performs the simulation / experiment using the internal EOS
@@ -284,9 +317,10 @@ class Gun(Experiment):
         Args:
 
         Returns:
-           (np.ndarray): Time history of the simulation
-           (np.ndarray): Position history of the simulation
-           (np.ndarray): Velociy history of the simulation
+           (np.ndarray): Time, the independent variable
+           (tuple): length 2 for the two depdendent variables
+                    [0] (np.ndarray): Position history of the simulation
+                    [1] (np.ndarray): Velociy history of the simulation
            (Spline): A spline representing the velocity-time history
 
         """
@@ -295,8 +329,7 @@ class Gun(Experiment):
 
         vt_spline = self._fit_t2v(states[:, 1], time)
 
-
-        return time, states[:, 0], states[:, 1], vt_spline
+        return time, (states[:, 0], states[:, 1]), vt_spline
 
 class TestGun(unittest.TestCase):
     """Tets of the Gun experiment
@@ -345,7 +378,7 @@ class TestGun(unittest.TestCase):
         self.assertEqual(len(pos), n_time)
         self.assertEqual(len(vel), n_time)
         
-    @unittest.skip('skipped plotting routine')
+    #@unittest.skip('skipped plotting routine')
     def test_shot_plot(self):
         """
         """
@@ -354,7 +387,7 @@ class TestGun(unittest.TestCase):
         eos = EOSBump()
         gun = Gun(eos)
 
-        time, pos, vel, spline = gun()
+        time, (pos, vel), spline = gun()
 
         n_time = gun.get_option('n_t')
 

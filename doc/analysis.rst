@@ -3,11 +3,12 @@ Analysys
 
 The methods used for the actual optimization
 
-pyBayesian
-..........
+Bayesian
+........
 
-.. automodule:: FUNCLE.pyBayesian
+.. automodule:: F_UNCLE.Opt.Bayesian
    :members:
-
+   :private-members:
+   :special-members:
 
 

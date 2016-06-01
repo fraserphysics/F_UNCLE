@@ -76,7 +76,7 @@ class Isentrope(PhysicsModel):
                           "Number of knots in the eos spline"],
             'spline_min': [float, 0.1, 0.0, None, 'cm**3/g',
                            "Minimum value of volume modeled by eos"],
-            'spline_max': [float, 100, 0.0, None, 'cm**3/g',
+            'spline_max': [float, 1.0, 0.0, None, 'cm**3/g',
                            "Maximum value of volume modeled by eos"],
             'spline_end' : [float, 4, 0, None, '',
                             "Number of zero nodes at end of spline"]
@@ -90,14 +90,20 @@ class Isentrope(PhysicsModel):
         return
     # end
 
+    def shape(self):
+        """Overloaded class to get isentrope DOF's
+        """
 
-class Spline(IU_Spline):
+        return (self.get_option('spline_N'),1)
+   
+class Spline(IU_Spline, Struc):
     """Overloaded scipy spline to work with like_eos
 
     Child of the Scipy IU spline class which provides access to details on the
     knots
 
     """
+       
     def get_t(self):
         """Gives the knot locations
 
@@ -109,17 +115,27 @@ class Spline(IU_Spline):
         return self._eval_args[0]
     # end
 
-    def get_c(self):
+    def get_c(self, spline_end = None):
         """Return the coefficients for the basis functions
+        
+        Keyword Args:
+           spline_end(int): The number of fixed nodes at the end of the spline
 
         Return:
             (numpy.ndarray): basis function spline coefficients
         """
+        if spline_end is None:
+            spline_end = self.get_option('spline_end')
+        elif not isinstance(spline_end, int):
+            raise TypeError("Error in Spline: spline_end must be an integer")
+        else:
+            pass
+        #end
+        
+        return self._eval_args[1][:-spline_end]
 
-        return self._eval_args[1][:-self.get_option('spline_end')]
-
-    def new_c(self, c_in):
-        """Return a new spline with updated coefficients
+    def set_c(self, c_in, spline_end = None):
+        """Updates the new spline with updated coefficients
 
         Return a new Spline_eos instance that is copy of self except
         that the coefficients for the basis functions are c.
@@ -127,16 +143,59 @@ class Spline(IU_Spline):
         Args:
             c_in(numpy.ndarray): The new set of spline coefficeints
 
+        Keyword Args:
+           spline_end(int): The number of fixed nodes at the end of the spline
+        
         Return
-            rv(Spline): A copy of self with the coefficients replaced by c
+            None
 
         """
-        rv = copy.deepcopy(self)
-        c_new = np.zeros(self._eval_args[1].shape)
-        c_new[:-self.get_option('spline_end')] = c_in
-        rv._eval_args = self._eval_args[0], c_new, self._eval_args[2]
-        return rv
+        
+        if spline_end is None:
+            spline_end = self.get_option('spline_end')
+        elif not isinstance(spline_end, int):
+            raise TypeError("Error in Spline: spline_end must be an integer")
+        else:
+            pass
+        #end
 
+        c_new = np.zeros(self._eval_args[1].shape)
+        c_new[:-spline_end] = c_in
+        self._eval_args =(self._eval_args[0],  c_new, self._eval_args[2])
+
+        return None
+
+    def get_basis(self, indep_vect, spline_end = None):
+        """Returns the matrix of basis functions of the spline
+        
+        Args:
+            indep_vect(np.ndarray): A vector of the independent variables over
+                                    which the basis function should be
+                                    calculated
+
+        Keyword Args:
+           spline_end(int): The number of fixed nodes at the end of the spline
+        
+        Return:
+           (np.ndarray): The n x m matrix of basis functions where the n rows 
+                         are the response over the independent variable vector
+                         to a unit step in the m'th spline coefficient                
+        """
+
+        initial_c = self.get_c(spline_end=spline_end)
+        tmp_c = np.zeros(initial_c.shape)
+        basis = np.zeros((len(indep_vect), len(initial_c)))
+        for j in range(len(tmp_c)):
+            tmp_c[j] = 1.0
+            self.set_c(tmp_c, spline_end=spline_end)
+            basis[:, j] = self.__call__(indep_vect)
+            tmp_c[j] = 0.0
+        #end
+
+        self.set_c(initial_c, spline_end = spline_end)
+        
+        return basis
+        
 class EOSBump(Isentrope):
     """Model of an ideal isentrope with gausian bumps
 
@@ -155,7 +214,7 @@ class EOSBump(Isentrope):
         """
 
         def_opts = {
-            'const_C': [float, 5e-3, 0.0, None, 'Pa',
+            'const_C': [float, 2.56e9, 0.0, None, 'Pa',
                         "Constant p = C/v**3"],
             'bumps' : [list, [(0.35, 0.06, 0.2)], None, None, '',
                        "Gausian bumps to the eos"]
@@ -255,13 +314,13 @@ class EOSModel(Spline, Isentrope):
             raise TypeError("{:} the initial eos estimate must be a function".\
                             format(self.get_inform(0)))
         #end
-
+        
         v = np.logspace(np.log10(self.get_option('spline_min')),
                         np.log10(self.get_option('spline_max')),
                         self.get_option('spline_N')
                        )
-        Spline.__init__(self, v, p_fun(v))
-
+        IU_Spline.__init__(self, v, p_fun(v))
+        
         self.prior = copy.deepcopy(self)
         
     def get_sigma(self):
@@ -269,7 +328,7 @@ class EOSModel(Spline, Isentrope):
         
         Return:
            (np.ndarray): Covariance matrix for the eos
-                         shape is (nxn) where n is the number of knots
+                         shape is (nxn) where n is the dof
         """
 
         sigma = self.get_option('spline_sigma')
@@ -287,14 +346,27 @@ class EOSModel(Spline, Isentrope):
 
         """
         
-        self.prior = copy.deepcopy(self)
+        if isinstance(prior, EOSModel):
+            self.prior = prior
+        else:
+            raise TypeError("{:} Model required an EOSModel type prior"\
+                           .format(self.get_inform(1)))
+        #end
 
-        self.prior_mean = self.prior.get_c().copy()
-        self.prior_var_inv = np.diag(1.0/(self.prior_mean * self.get_option('spline_sigma')**2))
-        if self.get_option('precondition'):
-            self.u_inv = np.diag(self.prior_mean * self.get_option('spline_sigma'))
-        # end
+    def get_dof(self):
+        """Returns the spline coefficients as the model degrees of fredom
+        """
+        return self.get_c()
 
+    def set_dof(self, c_in):
+        """Sets the spline coeffecients
+        
+        Args:
+           c_in(Iterable): The knot positions of the spline
+        """
+
+        self.set_c(c_in)
+        
 class TestIsentrope(unittest.TestCase):
     """Test of the isentrope object
     """
