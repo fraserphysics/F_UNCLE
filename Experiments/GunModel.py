@@ -79,22 +79,22 @@ class Gun(Experiment):
         def_opts = {
             'x_i': [float, 0.4, 0.0, None, 'cm',
                     'Initial position of projectile'],
-            'x_f': [float, 4.0, 0.0, None, 'cm',
+            'x_f': [float, 3.0, 0.0, None, 'cm',
                     'Final/muzzle position of projectile'],
-            'm': [float, 100.0, 0.0, None, 'g',
+            'm': [float, 500.0, 0.0, None, 'g',
                   'Mass of projectile'],
-            'mass_he': [float, 4E-4, 0.0, None, 'g',
+            'mass_he': [float, 4, 0.0, None, 'g',
                         'The initial mass of high explosives used to drive\
                         the projectile'],
-            'area': [float, 1e-4, 0.0, None, 'm**2',
+            'area': [float, 1.0, 0.0, None, 'cm**2',
                      'Projectile cross section'],
-            'sigma': [float, 1.0e-1, 0.0, None, '??',
+            'sigma': [float, 1.0e2, 0.0, None, '??',
                       'Variance attributed to v measurements'],
-            't_min': [float, 5.0e-6, 0.0, None, 'sec',
+            't_min': [float, 1.0e-6, 0.0, None, 'sec',
                       'Range of times for t2v spline'],
-            't_max': [float, 10.0e-6, 0.0, None, 'sec',
+            't_max': [float, 1.0e-2, 0.0, None, 'sec',
                       'Range of times for t2v spline'],
-            'n_t': [int, 500, 0, None, '',
+            'n_t': [int, 250, 0, None, '',
                     'Number of times for t2v spline']
         }
 
@@ -109,7 +109,7 @@ class Gun(Experiment):
         if model is None:
             pass
         elif isinstance(model, Isentrope):
-            self.model = model
+            self.eos = copy.deepcopy(model)
         else:
             raise TypeError('{}: Model must be an isentrope for update'\
                             .format(self.get_inform(1)))
@@ -149,7 +149,7 @@ class Gun(Experiment):
         area = self.get_option('area')
         mass_he = self.get_option('mass_he')
 
-        return self.eos(posn * area / mass_he) * area  * self.const['newton2dyne']
+        return self.eos(posn * area / mass_he) * area  * 1E-4
 
     # def _e(self, x):
     #     """Integrates the force up to position x
@@ -309,7 +309,7 @@ class Gun(Experiment):
                          and the model for each value of independent variable
         """
 
-        return dep - model_data[2](indep)
+        return model_data[2](indep) - dep
 
     def __call__(self, *args, **kwargs):
         """Performs the simulation / experiment using the internal EOS
@@ -377,34 +377,50 @@ class TestGun(unittest.TestCase):
         self.assertEqual(len(time), n_time)
         self.assertEqual(len(pos), n_time)
         self.assertEqual(len(vel), n_time)
-        
-    #@unittest.skip('skipped plotting routine')
+
+    
+    # @unittest.skip('skipped plotting routine')
     def test_shot_plot(self):
         """
         """
         import matplotlib.pyplot as plt
+
+        init_prior = np.vectorize(lambda v: 2.56e9 / v**3)
         
-        eos = EOSBump()
+        # Create the model and *true* EOS
+        eos = EOSModel(init_prior)
+        
+
         gun = Gun(eos)
 
-        time, (pos, vel), spline = gun()
+        time, (pos0, vel0), spline0 = gun()        
+        old_dof = eos.get_c()
+        old_dof[-25] *= 1.05
+        eos.set_dof(old_dof)
+        time, (pos1, vel1), spline1 = gun()
 
         n_time = gun.get_option('n_t')
 
         fig = plt.figure()
-        ax1 = fig.add_subplot(121)
-        ax2 = fig.add_subplot(122)
+        ax1 = fig.add_subplot(221)
+        ax2 = fig.add_subplot(223)
+        ax3 = fig.add_subplot(222)
+                              
         
         
-        ax1.plot(time, vel)
+        ax1.plot(time, vel1-vel0)
         ax1.set_xlabel('Time')
         ax1.set_ylabel('Velocity')        
 
-        eos_vect = lambda v_spec: eos(v_spec)
-        eos_vect = np.vectorize(eos_vect)
-
+        ax3.plot(pos1, vel1)
+        ax3.set_xlabel('Position')
+        ax3.set_ylabel('Velocity')        
+        
         v_spec_list = np.linspace(0.25, 0.65, 30)
-        ax2.plot(v_spec_list, eos_vect(v_spec_list))
+        ax2.plot(v_spec_list, eos(v_spec_list))
+        ax2.set_xlabel('Specific volume')
+        ax2.set_ylabel('Pressure')
+        
         plt.show()
 # end
 

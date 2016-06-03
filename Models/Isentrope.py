@@ -132,7 +132,7 @@ class Spline(IU_Spline, Struc):
             pass
         #end
         
-        return self._eval_args[1][:-spline_end]
+        return copy.deepcopy(self._eval_args[1][:-spline_end])
 
     def set_c(self, c_in, spline_end = None):
         """Updates the new spline with updated coefficients
@@ -161,7 +161,7 @@ class Spline(IU_Spline, Struc):
 
         c_new = np.zeros(self._eval_args[1].shape)
         c_new[:-spline_end] = c_in
-        self._eval_args =(self._eval_args[0],  c_new, self._eval_args[2])
+        self._eval_args =(self._eval_args[0], c_new, self._eval_args[2])
 
         return None
 
@@ -184,11 +184,12 @@ class Spline(IU_Spline, Struc):
 
         initial_c = self.get_c(spline_end=spline_end)
         tmp_c = np.zeros(initial_c.shape)
-        basis = np.zeros((len(indep_vect), len(initial_c)))
+        # indep_vect = self.get_t()
+        basis = np.zeros((len(initial_c), len(indep_vect)))
         for j in range(len(tmp_c)):
             tmp_c[j] = 1.0
             self.set_c(tmp_c, spline_end=spline_end)
-            basis[:, j] = self.__call__(indep_vect)
+            basis[j,:] = self.__call__(indep_vect)
             tmp_c[j] = 0.0
         #end
 
@@ -216,7 +217,8 @@ class EOSBump(Isentrope):
         def_opts = {
             'const_C': [float, 2.56e9, 0.0, None, 'Pa',
                         "Constant p = C/v**3"],
-            'bumps' : [list, [(0.35, 0.06, 0.2)], None, None, '',
+            'bumps' : [list, [(0.4, 0.1, 0.4),
+                              (0.5, 0.1, -0.3)], None, None, '',
                        "Gausian bumps to the eos"]
             }
 
@@ -333,7 +335,7 @@ class EOSModel(Spline, Isentrope):
 
         sigma = self.get_option('spline_sigma')
 
-        return np.diag(sigma * self.get_c())
+        return np.diag((sigma * self.get_c())**2)
         
     def update_prior(self, prior, *args, **kwargs):
         """

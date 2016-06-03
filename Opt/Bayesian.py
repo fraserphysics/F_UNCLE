@@ -36,7 +36,7 @@ import pdb
 # Python Packages
 # =========================
 import numpy as np
-from numpy.linalg import inv 
+from numpy.linalg import inv
 from cvxopt import matrix, solvers
 
 # =========================
@@ -83,10 +83,10 @@ class Bayesian(Struc):
         """
 
         def_opts = {
-            'outer_atol' : [float, 1E-6, 0.0, 1.0, '-',
+            'outer_atol' : [float, 1E-4, 0.0, 1.0, '-',
                             'Absolute tolerance on change in likelyhood for\
                             outer loop convergence'],
-            'outer_rtol' : [float, 1E-6, 0.0, 1.0, '-',
+            'outer_rtol' : [float, 1E-3, 0.0, 1.0, '-',
                             'Relative tolerance on change in likelyhood for\
                             outer loop convergence'],
             'maxiter' : [int, 20, 1, 100, '-', 'Maximum iterations for convergence\
@@ -245,13 +245,13 @@ class Bayesian(Struc):
         reltol = self.get_option('outer_rtol')
         maxiter = self.get_option('maxiter')
 
-        model = self.model
+
         history = []
         dof_hist = []
         dhat_hist = []
         conv = False
         log_like = 0.0
-        
+
         initial_data = []
         for sim, exp in self.simulations:
             sim.update(model=self.model)
@@ -263,14 +263,15 @@ class Bayesian(Struc):
             print('Iter {} of {}'.format(i, maxiter))
             # Solve all simulations with the curent model
 
-            print ('prior log like', self.model_log_like())
-            print ('sim log like', self.sim_log_like(initial_data))            
-            new_log_like = self.model_log_like()\
-                           + self.sim_log_like(initial_data)
+            print ('prior log like', -self.model_log_like())
+            print ('sim log like', -self.sim_log_like(initial_data))
+            new_log_like = -self.model_log_like()\
+                           - self.sim_log_like(initial_data)
+            print ('total log like', new_log_like)
 
             history.append(new_log_like)#, self.model.get_dof()))
 
-            
+
             # if new_log_like > log_like:
             #     self.model.set_dof(dof_hist[-2])
             #     continue
@@ -283,55 +284,63 @@ class Bayesian(Struc):
             #end
 
             self._get_sens(initial_data)
+            # self.plot_sens_matrix(initial_data)
 
-            local_sol = self._local_opt(initial_data)
-                
+            try:
+                local_sol = self._local_opt(initial_data)
+            except ValueError as err:
+                print(err)
+                break
             #end
 
-            # Perfirm basic line search along direction of best improvement
+            # Perform basic line search along direction of best improvement
             d_hat = np.array(local_sol['x']).reshape(-1)
 
             dhat_hist.append(d_hat)
-            
+
             n_steps = 4
-            xs = np.linspace(0,1, n_steps)
+            xs = np.linspace(0, 1, n_steps)
             costs = np.zeros(n_steps)
             tmp_data = [[]]*n_steps
-            for i,x in enumerate(xs):
-                model.set_dof(self.model.get_dof() + x * d_hat)
-                costs[i] += self.model_log_like()
-                
+            for i, x in enumerate(xs):
+                self.model.set_dof(self.model.get_dof() + x * d_hat)
+                costs[i] = -self.model_log_like()
                 for sim, exp in self.simulations:
-                    sim.update(model = self.model)
+                    sim.update(model=self.model)
                     tmp_data[i].append(sim())
                 #end
 
-                costs[i] += self.sim_log_like(tmp_data[i])
-                
-            i = len(xs)-1
+                costs[i] -= self.sim_log_like(tmp_data[i])
 
+            i = np.argmin(costs)
+            print(costs)
+            print("{:d} {:f}".format(i, costs[i]))
             print("Step size ", xs[i])
+            print("d_hat ", d_hat)
             self.model.set_dof(self.model.get_dof()\
                                 + d_hat * xs[i])
             initial_data = tmp_data[i]
+            for sim, exp in self.simulations:
+                sim.update(model = self.model)
+            # end
 
             print(self.model.get_dof())
-                               
+
         if not conv:
             print("{}: Outer loop could not converge to the given\
                              tolerance in the maximum number of iterations"\
                             .format(self.get_inform(1)))
         #end
-        
+
         dof_hist = np.array(dof_hist)
         dhat_hist = np.array(dhat_hist)
-        
+
         import matplotlib.pyplot as plt
         fig = plt.figure()
         ax1 = fig.add_subplot(121)
         ax2 = fig.add_subplot(122)
         for i in xrange(dof_hist.shape[1]):
-            ax1.plot(dof_hist[:, i])
+            ax1.plot(dof_hist[:, i]/dof_hist[0,i])
             ax2.plot(dhat_hist[:, i])
         #end
         fig.suptitle('Convergence of iterative process')
@@ -341,12 +350,14 @@ class Bayesian(Struc):
         ax2.set_xlabel('Iteration number')
         fig.savefig('EOS_convergence.pdf')
 
+
         return self.model, history
 
     def _local_opt(self, initial_data):
         """
         """
         constrain = self.get_option('constrain')
+        # constrain = False
 
         # Get constraints
         G,h = self._get_constraints()
@@ -358,7 +369,7 @@ class Bayesian(Struc):
         q_mat += tmp[1]
 
         P_mat *= 0.5
-        
+
         solvers.options['show_progress'] = True
         solvers.options['maxiters'] = 100  # 100 default
         solvers.options['reltol'] = 1e-6   # 1e-6 default
@@ -370,14 +381,14 @@ class Bayesian(Struc):
             sol = solvers.qp(matrix(P_mat), matrix(q_mat), matrix(G), matrix(h))
         else:
             sol = solvers.qp(matrix(P_mat), matrix(q_mat))
-        
+
         if sol['status'] != 'optimal':
             for key, value in sol.items():
                 print(key, value)
             raise RuntimeError('{} The optimization algorithm could not locate\
                                an optimal point'.format(self.get_inform(1)))
         return sol
-    
+
     def _get_constraints(self):
         r"""EOS MODEL - get the constraints on the model
 
@@ -474,7 +485,7 @@ class Bayesian(Struc):
         """
 
         spline_end = 4
-        
+
         D_mat = self.sens_matrix
         P_mat = np.zeros((self.shape()[0], self.shape()[0]))
         q_mat = np.zeros(self.shape()[0])
@@ -483,17 +494,18 @@ class Bayesian(Struc):
             dim_k = exp.shape()
             sens_k = D_mat[:,i:i+dim_k]
             exp_indep, (exp_dep1, exp_dep2), exp_spline = exp()
-            basis_k = sim_data[2].get_basis(exp_indep,
-                                            spline_end = spline_end)
-            sens_k = np.dot(sens_k, basis_k)
+            # basis_k = sim_data[2].get_basis(exp_indep,
+            #                                 spline_end = spline_end)
+            # sens_k = np.dot(sens_k, basis_k)
             epsilon = sim.compare(exp_indep, exp_dep2, sim_data)
-            P_mat += np.dot(sens_k,np.dot(inv(sim.get_sigma()),sens_k.T))
-            q_mat += np.dot(epsilon,np.dot(inv(sim.get_sigma()),sens_k.T))
+            print('epsilon ', epsilon)
+            P_mat += np.dot(np.dot(sens_k, inv(sim.get_sigma())), sens_k.T)
+            q_mat += np.dot(np.dot(epsilon, inv(sim.get_sigma())), sens_k.T)
             i += dim_k
         #end
 
-        return P_mat, q_mat
-    
+        return P_mat, -q_mat
+
     def _get_sens(self, initial_data):
         """Gets the sensitivity of the simulated experiment to the EOS
 
@@ -502,13 +514,13 @@ class Bayesian(Struc):
                                curent best model
         """
         simulations = self.simulations
-        model = self.model
+        model = copy.deepcopy(self.model)
         step_frac = 2E-2
         spline_end = 4
-        
+
         original_dofs = model.get_dof()
         sens_matrix = np.zeros(self.shape())
-        
+
         for i in xrange(len(original_dofs)):
             new_dofs = copy.deepcopy(original_dofs)
             step = new_dofs[i] * step_frac
@@ -520,15 +532,17 @@ class Bayesian(Struc):
             k = 0 # counter for simulation number
             # pdb.set_trace()
             for (sim, exp), sim_data in zip(simulations,initial_data):
-                original_response = sim_data[2].get_c(spline_end=spline_end)
+#                original_response = sim_data[2].get_c(spline_end=spline_end)
+                original_response = sim_data
                 sim.update(model = model)
                 new_data = sim()
-                dim = sim.shape()                
-                delta = original_response - new_data[2].get_c(spline_end=spline_end)
+                dim = sim.shape()
+                # delta = original_response - new_data[2].get_c(spline_end=spline_end)
+                delta = sim.compare(original_response[0],
+                                    original_response[1][1], new_data)
                 sens_matrix[i,j:j+dim] = delta / step
                 j += dim
             # end
-            
             k += 1
         #end
 
@@ -541,6 +555,47 @@ class Bayesian(Struc):
         self.sens_matrix = sens_matrix
     # end
 
+    def plot_sens_matrix(self, initial_data):
+        """Prints the sensitivity matrix
+        """
+
+        import matplotlib.pyplot as plt
+        spline_end = 4
+        sens_matrix = self.sens_matrix
+
+        sim, exp = self.simulations[0]
+        sim_data = initial_data[0]
+        exp_indep, (exp_dep1, exp_dep2), exp_spline = exp()
+        basis_k = sim_data[2].get_basis(exp_indep,
+                                        spline_end = spline_end)
+
+        basis_f = self.model.get_basis(self.model.get_t())
+
+        fig = plt.figure()
+        ax1 = fig.add_subplot(221)
+        ax2 = fig.add_subplot(222)
+        ax3 = fig.add_subplot(223)
+        ax4 = fig.add_subplot(224)
+
+
+
+        for i in xrange(sens_matrix.shape[0]):
+            ax1.plot(sens_matrix[i,:])
+
+        for i in xrange(0,basis_k.shape[0],5):
+            ax2.plot(exp_indep, basis_k[i,:])
+
+        for i in xrange(-8,0):
+            ax4.plot(exp_indep, basis_k[i,:])
+            # ax4.plot(basis_f[i,:])
+        #end
+
+        BC = np.dot(sens_matrix,basis_k)
+        for i in xrange(BC.shape[0]):
+            ax3.plot(exp_indep, BC[i,:])
+        # end
+
+        plt.show()
 class TestBayesian(unittest.TestCase):
     """Test class for the bayesian object
     """
