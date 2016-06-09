@@ -49,7 +49,7 @@ from scipy.interpolate import InterpolatedUnivariateSpline as IU_Spline
 # =========================
 sys.path.append(os.path.abspath('./../../'))
 from F_UNCLE.Utils.Struc import Struc
-from F_UNCLE.Models.PhysicsModel import PhysicsModel
+from F_UNCLE.Utils.PhysicsModel import PhysicsModel
 # =========================
 # Main Code
 # =========================
@@ -57,6 +57,22 @@ from F_UNCLE.Models.PhysicsModel import PhysicsModel
 
 class Isentrope(PhysicsModel):
     """Abstract class for an isentrope
+    
+    The equation of state for an isentropic expansion of high explosive is 
+    modeled by this class. The experiments for which this model is used 
+    occur at such short timescales that the process can be considered 
+    adiabatic
+
+    **Units**
+    
+    Isentropes are assumed to be in CGS units
+
+    **Diagram**
+    
+    .. figure:: /_static/eos.png
+       
+       The assumed shape of the equation of state isentrope
+
     """
 
     def __init__(self, name='Isentrope', *args, **kwargs):
@@ -92,6 +108,11 @@ class Isentrope(PhysicsModel):
 
     def shape(self):
         """Overloaded class to get isentrope DOF's
+        
+        Overloads :py:meth:`F_UNCLE.Utils.PhysModel.PhysModel.shape`
+
+        Return:
+            (tuple): (n,1) where n is the number of dofs
         """
 
         return (self.get_option('spline_N'),1)
@@ -122,12 +143,12 @@ class Isentrope(PhysicsModel):
         return fig
         
         
-class Spline(IU_Spline, Struc):
-    """Overloaded scipy spline to work with like_eos
+class Spline(IU_Spline):
+    """Overloaded scipy spline to work as a PhysicsModel
 
-    Child of the Scipy IU spline class which provides access to details on the
-    knots
-
+    Child of the Scipy IU spline class which provides access to details to 
+    the knots which are treated as degrees of freedom
+    
     """
        
     def get_t(self):
@@ -163,16 +184,15 @@ class Spline(IU_Spline, Struc):
     def set_c(self, c_in, spline_end = None):
         """Updates the new spline with updated coefficients
 
-        Return a new Spline_eos instance that is copy of self except
-        that the coefficients for the basis functions are c.
-
+        Sets the spline coefficeints of this instance to the given values
+    
         Args:
             c_in(numpy.ndarray): The new set of spline coefficeints
 
         Keyword Args:
            spline_end(int): The number of fixed nodes at the end of the spline
         
-        Return
+        Returns:
             None
 
         """
@@ -196,16 +216,15 @@ class Spline(IU_Spline, Struc):
         
         Args:
             indep_vect(np.ndarray): A vector of the independent variables over
-                                    which the basis function should be
-                                    calculated
-
+                which the basis function should be calculated
+                
         Keyword Args:
            spline_end(int): The number of fixed nodes at the end of the spline
         
         Return:
-           (np.ndarray): The n x m matrix of basis functions where the n rows 
-                         are the response over the independent variable vector
-                         to a unit step in the m'th spline coefficient                
+            (np.ndarray): The n x m matrix of basis functions where the n rows 
+                are the response over the independent variable vector to a unit 
+                step in the m'th spline coefficient                
         """
 
         initial_c = self.get_c(spline_end=spline_end)
@@ -225,6 +244,8 @@ class Spline(IU_Spline, Struc):
         
 class EOSBump(Isentrope):
     """Model of an ideal isentrope with gausian bumps
+    
+    This is treated as the *true* EOS 
 
     """
 
@@ -263,13 +284,13 @@ class EOSBump(Isentrope):
             pr(float): Pressure
 
         """
-        C = self.get_option('const_C')
+        const_C = self.get_option('const_C')
         bumps = self.get_option('bumps')
-        pr = C/vs**(3.0)
-        for v_0, w, s in bumps:
-            z = (vs-v_0)/w
-            pr += np.exp(-z*z/2)*s*C/(v_0**3)
-        return pr
+        pressure = const_C/vs**(3.0)
+        for v_0, width, scale in bumps:
+            center = (vs-v_0)/width
+            pressure += np.exp(-center*center/2)*scale*const_C/(v_0**3)
+        return pressure
     # end
 
     def derivative(self, n=1):
@@ -305,20 +326,17 @@ class EOSBump(Isentrope):
         # end
 
 
-
-
 class EOSModel(Spline, Isentrope):
     """Spline based EOS model
+    
+    Multiply inhereited structure from both `Isentrope` and `Spline`
     """
 
     def __init__(self, p_fun, name='Equation of State Spline', *args, **kwargs):
-        """
-
-        **Arguments**
-
+        """Instantiates the object
 
         Args:
-            p_fun(function): A function defining the initial EOS
+            p_fun(function): A function defining the prior EOS
             *args: Variable length argument list.
             **kwargs: Arbitrary keyword arguments.
 
@@ -353,6 +371,14 @@ class EOSModel(Spline, Isentrope):
 
     def get_scaling(self):
         """Returns a scaling matrix to make the dofs of the same scale
+        
+        The scaling matrix is a diagonal matrix with off diagonal terms zero
+        the terms along the diagonal are the prior DOFs times the variance in
+        the DOF values.
+        
+        Return:
+            (np.ndarray): A nxn matrix where n is the number of model DOFs.
+
         """
         dev = self.prior.get_dof() * self.get_option('spline_sigma')
         return np.diag(dev)
@@ -362,8 +388,8 @@ class EOSModel(Spline, Isentrope):
         """Returns the covariance matrix of the spline
         
         Return:
-           (np.ndarray): Covariance matrix for the eos
-                         shape is (nxn) where n is the dof
+            (np.ndarray): Covariance matrix for the eos
+                shape is (nxn) where n is the dof of the model
         """
 
         sigma = self.get_option('spline_sigma')
@@ -373,12 +399,10 @@ class EOSModel(Spline, Isentrope):
     def update_prior(self, prior, *args, **kwargs):
         """
 
-        Updated the values and statistics of the prior
-
-        ** Arguments **
-
-        - prior -> function: A function which defines the prior EOS shape
-
+        Updated the prior 
+        
+        Args:
+            prior(EOSModel): A function which defines the prior EOS shape
         """
         
         if isinstance(prior, EOSModel):
@@ -390,6 +414,9 @@ class EOSModel(Spline, Isentrope):
 
     def get_dof(self, *args, **kwargs):
         """Returns the spline coefficients as the model degrees of fredom
+        
+        Return:
+            (np.ndarray): The degrees of freedom of the model
         """
         return self.get_c()
 

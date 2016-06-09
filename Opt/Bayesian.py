@@ -44,8 +44,8 @@ from cvxopt import matrix, solvers
 # Custom Packages
 # =========================
 sys.path.append(os.path.abspath('./../../'))
-from F_UNCLE.Experiments.Experiment import Experiment
-from F_UNCLE.Models.PhysicsModel import PhysicsModel
+from F_UNCLE.Utils.Experiment import Experiment
+from F_UNCLE.Utils.PhysicsModel import PhysicsModel
 from F_UNCLE.Utils.Struc import Struc
 
 # =========================
@@ -56,8 +56,9 @@ class Bayesian(Struc):
     """A calss for performing bayesian inference on a model given data
 
     Attributes:
-       simulations(tuple): [0] Simulation object
-                           [1] Experimental data
+       simulations(list):  Each element is a tupple with the following elemnts
+                           [0] A simulation 
+                           [1] Experimental results
        model(PhysicsModel): The model under consideration
        sens_matrix(nump.ndarray): The (nxm) sensitivity matrix
                                   n - model degrees of freedom
@@ -112,23 +113,57 @@ class Bayesian(Struc):
     def _on_str(self):
         """Print method for bayesian model
         """
-
         out_str = ''
-        out_str += 'Model\n'
-        out_str += '=====\n'
+        out_str += "=========================================================\n"         
+        out_str += "=========================================================\n" 
+        out_str += "             ____                        _               \n" 
+        out_str += "            |  _ \                      (_)              \n" 
+        out_str += "            | |_) | __ _ _   _  ___  ___ _  __ _ _ __    \n" 
+        out_str += "            |  _ < / _` | | | |/ _ \/ __| |/ _` | '_ \   \n" 
+        out_str += "            | |_) | (_| | |_| |  __/\__ \ | (_| | | | |  \n" 
+        out_str += "            |____/ \__,_|\__, |\___||___/_|\__,_|_| |_|  \n" 
+        out_str += "                          __/ |                          \n" 
+        out_str += "                         |___/                           \n"
+        out_str += "=========================================================\n"
+        out_str += "=========================================================\n"        
+        out_str += "  __  __           _      _ \n"
+        out_str += " |  \/  |         | |    | |\n" 
+        out_str += " | \  / | ___   __| | ___| |\n" 
+        out_str += " | |\/| |/ _ \ / _` |/ _ \ |\n" 
+        out_str += " | |  | | (_) | (_| |  __/ |\n"
+        out_str += " |_|  |_|\___/ \__,_|\___|_|\n" 
         out_str += str(self.model)
-
-        out_str += 'Experiments\n'
-        out_str += '===========\n'
+        out_str += " _____      _             \n"
+        out_str += "|  __ \    (_)            \n"
+        out_str += "| |__) | __ _  ___  _ __  \n"
+        out_str += "|  ___/ '__| |/ _ \| '__| \n"
+        out_str += "| |   | |  | | (_) | |    \n"
+        out_str += "|_|   |_|  |_|\___/|_|    \n"
+        out_str += str(self.model.prior)
+        out_str+=" ______                      _                      _        \n"
+        out_str+="|  ____|                    (_)                    | |       \n"
+        out_str+="| |__  __  ___ __   ___ _ __ _ _ __ ___   ___ _ __ | |_ ___  \n"
+        out_str+="|  __| \ \/ / '_ \ / _ \ '__| | '_ ` _ \ / _ \ '_ \| __/ __| \n"
+        out_str+="| |____ >  <| |_) |  __/ |  | | | | | | |  __/ | | | |_\__ \ \n"
+        out_str+="|______/_/\_\ .__/ \___|_|  |_|_| |_| |_|\___|_| |_|\__|___/ \n"
+        out_str+="            | |                                              \n"
+        out_str+="            |_|                                              \n"
         for sim, exp in self.simulations:
             out_str += str(exp)
         #end
-
-        out_str += 'Simulations\n'
-        out_str += '===========\n'
+        out_str += "  _____ _                 _       _   _                  \n"
+        out_str += " / ____(_)               | |     | | (_)                 \n"
+        out_str += "| (___  _ _ __ ___  _   _| | __ _| |_ _  ___  _ __  ___  \n"
+        out_str += " \___ \| | '_ ` _ \| | | | |/ _` | __| |/ _ \| '_ \/ __| \n"
+        out_str += " ____) | | | | | | | |_| | | (_| | |_| | (_) | | | \__ \ \n"
+        out_str += "|_____/|_|_| |_| |_|\__,_|_|\__,_|\__|_|\___/|_| |_|___/ \n"
         for sim, exp in self.simulations:
             out_str += str(sim)
         #end
+
+                                                                                                 
+
+
 
         return out_str
 
@@ -246,8 +281,6 @@ class Bayesian(Struc):
            (Isentrope): The isentrope which gives best agreement over the space
            (list): The history of candiate prior DOF's
         """
-        import matplotlib.pyplot as plt
-        
         precondition = self.get_option('precondition')
         atol = self.get_option('outer_atol')
         reltol = self.get_option('outer_rtol')
@@ -294,11 +327,9 @@ class Bayesian(Struc):
 
             
             #self.plot_sens_matrix(initial_data)
-
             
             local_sol = self._local_opt(sims, model, initial_data)
-            
-
+          
             # Perform basic line search along direction of best improvement
             d_hat = np.array(local_sol['x']).reshape(-1)
             if precondition:
@@ -357,21 +388,6 @@ class Bayesian(Struc):
         self.model = model
         self.simulations = sims
         
-        fig = plt.figure()
-        ax1 = fig.add_subplot(121)
-        ax2 = fig.add_subplot(122)
-        for i in xrange(dof_hist.shape[1]):
-            ax1.plot(dof_hist[:, i]/dof_hist[0,i])
-            ax2.plot(dhat_hist[:, i])
-        #end
-        fig.suptitle('Convergence of iterative process')
-        ax1.set_ylabel('Spline knot value')
-        ax1.set_xlabel('Iteration number')
-        ax2.set_ylabel('Step direction vector component')
-        ax2.set_xlabel('Iteration number')
-        fig.savefig('EOS_convergence.pdf')
-
-
         return model, history
 
     def get_fisher_matrix(self, simid = 0, sens_calc = True):
@@ -473,42 +489,6 @@ class Bayesian(Struc):
 
         return vals, vecs, funcs, v
 
-    def plot_fisher_data(self, fisher_data, filename = None):
-        """
-        
-        Args:
-            fisher_dat(tuple): Data from the fisher_decomposition function
-                               *see docscring for definition*
-
-        Keyword Args:
-            filename(str or None): If none, do not make a hardcopy, otherwise 
-                                   save to the file specified
-        
-        """
-
-        fig = plt.figure()
-        ax1 = plt.subplot(121)
-        ax2 = plt.subplot(122)
-
-        eigs = fisher_data[0]
-        eig_vects = fisher_data[1]
-        eig_func = fisher_data[2]
-        indep = fisher_data[3]
-
-        ax1.bar(np.arange(eigs.shape[0]), eigs , width = 0.9 , color = 'black',
-                edgecolor='none', orientation = 'vertical')
-
-        ax1.set_xlabel("Eigenvalue number /")
-        ax1.set_ylabel("Eigenvalue /")
-        
-        for i in xrange(eig_func.shape[0]):
-            ax2.plot(indep, eig_func[i], label = "eig {:d}".format(i))
-        #end
-
-        ax2.set_xlabel("Specific volume / cm**3 g**-1")
-        ax2.set_ylabel("Eigenfunction response / Pa")
-
-        fig.tight_layout()
                           
     def _local_opt(self, sims, model,  initial_data):
         """
@@ -759,7 +739,57 @@ class Bayesian(Struc):
         #end
         
         self.sens_matrix = sens_matrix
-    # end
+
+    def plot_fisher_data(self, fisher_data, filename = None):
+        """
+        
+        Args:
+            fisher_dat(tuple): Data from the fisher_decomposition function
+                               *see docscring for definition*
+
+        Keyword Args:
+            filename(str or None): If none, do not make a hardcopy, otherwise 
+                                   save to the file specified
+        
+        """
+
+        fig = plt.figure()
+        ax1 = plt.subplot(121)
+        ax2 = plt.subplot(122)
+
+        eigs = fisher_data[0]
+        eig_vects = fisher_data[1]
+        eig_func = fisher_data[2]
+        indep = fisher_data[3]
+
+        ax1.bar(np.arange(eigs.shape[0]), eigs , width = 0.9 , color = 'black',
+                edgecolor='none', orientation = 'vertical')
+
+        ax1.set_xlabel("Eigenvalue number /")
+        ax1.set_ylabel("Eigenvalue /")
+        
+        for i in xrange(eig_func.shape[0]):
+            ax2.plot(indep, eig_func[i], label = "eig {:d}".format(i))
+        #end
+
+        ax2.set_xlabel("Specific volume / cm**3 g**-1")
+        ax2.set_ylabel("Eigenfunction response / Pa")
+
+        fig.tight_layout()
+
+    def plot_convergence(self, hist, dof_hist):
+        """
+        """
+        fig = plt.figure()
+        ax1 = fig.add_subplot(121)
+        ax2 = fig.add_subplot(122)
+        for i in xrange(dof_hist.shape[1]):
+            ax1.plot(dof_hist[:, i]/dof_hist[0,i])
+        #end
+        fig.suptitle('Convergence of iterative process')
+        ax1.set_ylabel('Spline knot value')
+        ax1.set_xlabel('Iteration number')
+        fig.savefig('EOS_convergence.pdf')
 
     def plot_sens_matrix(self, initial_data):
         """Prints the sensitivity matrix
@@ -867,6 +897,7 @@ class TestBayesian(unittest.TestCase):
         bayes = Bayesian(simulations = [(self.sim1, self.exp1)],
                          model = self.eos_model)
 
+        print(bayes)
         shape = bayes.shape()
 
         exp_shape = self.exp1.shape()
@@ -875,7 +906,7 @@ class TestBayesian(unittest.TestCase):
         
         initial_data = [self.sim1()]
         P, q = bayes._get_sim_PQ([(self.sim1, self.exp1)], self.eos_model, initial_data)
-
+        
         self.assertEqual(P.shape, (mod_shape, mod_shape))
         self.assertEqual(q.shape, (mod_shape, ))
 

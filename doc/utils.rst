@@ -6,24 +6,15 @@ These are abstract classes which are used in the analysis
 Struc
 .....
 
-.. automodule:: F_UNCLE.Utils.Struc
+.. autoclass:: F_UNCLE.Utils.Struc.Struc
    :members:
    :private-members:
    :special-members:
-
-Container
-.........
-
-.. automodule:: F_UNCLE.Utils.Container
-   :members:
-   :private-members:
-   :special-members:
-
 
 PhysicsModel
 ............
 
-.. automodule:: F_UNCLE.Models.PhysicsModel
+.. autoclass:: F_UNCLE.Utils.PhysicsModel.PhysicsModel
    :members:
    :private-members:
    :special-members:
@@ -31,8 +22,21 @@ PhysicsModel
 Experiment
 ..........
 
-.. automodule:: F_UNCLE.Experiments.Experiment
+.. autoclass:: F_UNCLE.Utils.Experiment.Experiment
+   :members:
+
+Spline
+......
+
+.. autoclass:: F_UNCLE.Models.Isentrope.Spline
    :members:
    :private-members:
    :special-members:
 
+.. Container
+.. .........
+
+.. .. autoclass:: F_UNCLE.Utils.Container.Container
+..    :members:
+..    :private-members:
+..    :special-members:

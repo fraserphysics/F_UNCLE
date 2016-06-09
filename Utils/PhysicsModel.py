@@ -52,21 +52,37 @@ class PhysicsModel(Struc):
     """
 
     Abstract class for a pysics model
+
+    A physics model is computer code that represents how some physical process
+    responds to changes in the regime.
+    
+    DOF
+        A physics model has degrees of freedom, dof, which represent how many 
+        parameters the model has which can be adjusted to affect its response
+    
+    Prior
+         A physics model has a prior, which represents the best esimate of the
+         model's degrees of freedom. This prior is used by Bayesian methods
+    
+    ..note::
+    
+        **all** abstract methods must be overloaded for a physics model to 
+        work in the `F_UNCLE` framework
     
     Attributes:
        prior(PhysicsModel): the prior
-
 
     """
 
     def __init__(self, prior, name='Abstract Physics Model', *args, **kwargs):
         """
-
+        
         Args:
-           None
+           prior: Can be either a PhysicsModel' object or a function or a vector
+                  which defines the prior
 
-        Keyword Args
-           prior(PhysicsModel): The prior for the pysics model. *Default = None*
+        Keyword Args:
+            name(str): A name for the model
 
         """
 
@@ -79,9 +95,7 @@ class PhysicsModel(Struc):
     # end
 
     def update_prior(self, prior):
-        """
-
-        Updates the prior for the pyhsics model
+        """Updates the prior for the pyhsics model
 
         Args:
            prior(PhysicsModel): The prior
@@ -98,24 +112,42 @@ class PhysicsModel(Struc):
 
     # end
 
+    def get_scale(self):
+        """**ABSTRACT** Returns a matrix to scale the model degrees of fredom
+
+        Scaling the model dofs may be necessary where there are large changes in
+        the magnitude of the dofs
+        
+        Return:
+            (np.ndarray): 
+        """
+        return
     def get_sigma(self, *args, **kwargs):
-        """Gets the covariance matrix of the model
+        """**Abstract** Gets the covariance matrix of the model
+        
+        Args:
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
         """
 
         raise NotImplementedError('{} has not defined a covariance matrix'\
                                   .format(self.get_inform(1)))    
 
     def shape(self):
-        """Gets the degrees of freedom of the experiment and retursn them
+        """**ABSTRACT** Returns the degrees of freedom of the experiment
         
         Return:
            (tuple): Dimensions
 
         """
-        return (0)
+
+        raise NotImplementedError("{} does not have a shape"\
+                                  .format(self.get_inform(1)))
+        
 
     def set_dof(self):
-        """Gets the model degrees of freedom
+        """**ABSTRACT** Gets the model degrees of freedom
         
         Args:
            None
@@ -125,19 +157,22 @@ class PhysicsModel(Struc):
 
         """
 
-        raise NotImplementedError()
+        raise NotImplementedError("{} does not set the model dof"\
+                                  .format(self.get_inform(1)))
     
-    def get_dof(self, c_in):
-        """Sets the model degrees of freedom
+    def get_dof(self, dof_in):
+        """**ABSTRACT** Sets the model's degrees of freedom
         
         Args:
-           (Iterable): The new values for *all* modek degrees of freedom
+           dof_in(Iterable): The new values for *all* model degrees of freedom
         
         Return:
            None
         """
 
-        raise NotImplementedError()
+        raise NotImplementedError("{} does not provide model dofs"\
+                                  .format(self.get_inform(1)))
+
     
     def _on_update_prior(self, prior):
         """Instance specific prior update

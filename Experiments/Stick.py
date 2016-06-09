@@ -42,7 +42,7 @@ from scipy.optimize import brentq
 # Custom Packages
 # =========================
 sys.path.append(os.path.abspath('./../../'))
-from F_UNCLE.Experiments.Experiment import Experiment
+from F_UNCLE.Utils.Experiment import Experiment
 from F_UNCLE.Models.Isentrope import EOSBump, EOSModel, Isentrope
 
 
@@ -51,6 +51,16 @@ from F_UNCLE.Models.Isentrope import EOSBump, EOSModel, Isentrope
 # =========================
 class Stick(Experiment):
     """A toy physics model representing a rate stick
+    
+    **Units**
+    
+    Units are based on CGS system
+
+    **Diagram**
+
+    .. figure:: /_static/stick.png
+       
+       The assumed geometry of the rate stick
 
     Attributes:
         const(dict): A dictionary of conversion factors

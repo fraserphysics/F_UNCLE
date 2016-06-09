@@ -44,7 +44,7 @@ from scipy.integrate import odeint
 # Custom Packages
 # =========================
 sys.path.append(os.path.abspath('./../../'))
-from F_UNCLE.Experiments.Experiment import Experiment
+from F_UNCLE.Utils.Experiment import Experiment
 from F_UNCLE.Models.Isentrope import EOSBump, EOSModel, Isentrope, Spline
 
 
@@ -54,9 +54,24 @@ from F_UNCLE.Models.Isentrope import EOSBump, EOSModel, Isentrope, Spline
 class Gun(Experiment):
     """A toy physics model representing a gun type experiment
 
-    Attributes:
-        const(dict): A dictionary of conversion factors
+    The problem integrates the differential equation for a mass being 
+    accelerated down the barrel of a gun by an the expanding products-
+    of-detonation of a high explosive. The gun has finite dimensions 
+    and the integration lasts beyond when the projectile exits the gun.
 
+    **Units**
+    
+    This model is based on the CGS units system
+    
+    **Diagram**
+
+    .. figure:: /_static/gun.png
+
+       variables defining the gun experiment
+
+    Attributes:
+         eos(Isentrope): A model of the products-of-detonation equation of
+             state  
     """
     def __init__(self, eos, name='Gun Toy Computational Experiment', *args, **kwargs):
         """Instantiate the Experiment object
@@ -97,9 +112,6 @@ class Gun(Experiment):
             'n_t': [int, 250, 0, None, '',
                     'Number of times for t2v spline']
         }
-
-        self.const = {'newton2dyne':1e5,
-                      'cm2km':1.0e5}
 
         Experiment.__init__(self, name=name, def_opts=def_opts, *args, **kwargs)
 
@@ -142,7 +154,7 @@ class Gun(Experiment):
         Args:
             posn(float): The scalar position
 
-        Retun
+        Retun:
             (float): The force in dynes
 
         """
@@ -150,56 +162,6 @@ class Gun(Experiment):
         mass_he = self.get_option('mass_he')
 
         return self.eos(posn * area / mass_he) * area  * 1E-4
-
-    # def _e(self, x):
-    #     """Integrates the force up to position x
-
-    #     Args:
-    #         x(float): Scalar position
-
-    #     Return:
-    #         (float): The intergral of the foce over the distance to x
-
-    #     """
-
-    #     x_i = self.get_option('x_i')
-    #     x_f = self.get_option('x_f')
-
-    #     rv, err = quad(self._f, x_i, min(x,x_f))
-
-    #     if np.isnan(rv):
-    #         raise Exception("{:} NaN encountered when intergating energy"\
-    #                         .format(self.get_inform(1)))
-    #     # end
-
-    #     return rv
-
-    # def _x_dot(self, x):
-    #     """Calculate the projectile velocity
-
-    #     Calculates at a single position x, or
-    #     if x is an array, calculate the velocity for each element of x
-
-    #     Args:
-    #        x(float or np.ndarray): scalar position
-
-    #     Return
-    #        (np.ndarray): velocity
-    #     """
-    #     x_i = self.get_option('x_i')
-    #     x_f = self.get_option('x_f')
-    #     m = self.get_option('m')
-
-    #     if isinstance(x, np.ndarray):
-    #         return np.array([self._x_dot(x_) for x_ in x])
-    #     elif isinstance(x, (float,np.float)):
-    #         if x <= x_i:
-    #             return 0.0
-    #         # assert(self._E(x) > =0.0),'E(%s)=%s'%(x,self._E(x))
-    #         return np.sqrt(2*self._E(x)/m) # Invert E = (mv^2)/2
-    #     else:
-    #         raise TypeError('x has type %s'%(type(x),))
-    #     # end
 
     def _shoot(self):
         """ Run a simulation and return the results: t, [x,v]
@@ -286,12 +248,16 @@ class Gun(Experiment):
 
     def get_sigma(self):
         """Returns the covariance matrix
+        
+        see :py:meth:`F_UNCLE.Utils.Experiment.Experiment.get_sigma`
         """
 
         return np.diag(np.ones(self.shape())* self.get_option('sigma'))
 
     def shape(self):
         """Returns the degrees of freedom of the model
+
+        see :py:meth:`F_UNCLE.Utils.Experiment.Experiment.shape`
         """
 
         return  self.get_option('n_t')
@@ -299,14 +265,7 @@ class Gun(Experiment):
     def compare(self, indep, dep, model_data):
         """Compares a set of experimental data to the model
 
-        Args:
-           indep(np.ndarray): The list or array of independent variables
-           dep(np.ndarray): The list or array of dependant variables
-           model_data(list): Result of the simulations
-
-        Retrurns
-           (np.ndarray): The error between the dependant variables
-                         and the model for each value of independent variable
+        see :py:meth:`F_UNCLE.Utils.Experiment.Experiment.compare`
         """
 
 #        return dep - model_data[1][1]

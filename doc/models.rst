@@ -3,7 +3,7 @@ Models
 
 The pysics models used in the analysys
 
-pyIsentrope
+Isentrope
 ...........
 
 .. autoclass:: F_UNCLE.Models.Isentrope.Isentrope
@@ -11,13 +11,6 @@ pyIsentrope
    :private-members:
    :special-members:
 
-Spline
-......
-
-.. autoclass:: F_UNCLE.Models.Isentrope.Spline
-   :members:
-   :private-members:
-   :special-members:
 
 BumpEOS
 ........

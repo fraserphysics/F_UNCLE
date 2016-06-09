@@ -2,5 +2,7 @@
 *~
 *.pdf
 .DS_Store
-doc/build
+doc/_build
 build
+TAGS
+

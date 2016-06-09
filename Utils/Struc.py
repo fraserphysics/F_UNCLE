@@ -44,11 +44,11 @@ class Struc(object):
     """Abstract object to contain properties and warnings
 
     Attributes:
-        name (str): The name of the object
-        def_opts (dict): Default options and bounds
+        name(str): The name of the object
+        def_opts(dict): Default options and bounds
         informs(dict): Important user information prompts
-        warns (dict): Optional warnings
-        options (dict): The options as set by the user
+        warns(dict): Optional warnings
+        options(dict): The options as set by the user
 
     """
     def __init__(self, name, def_opts=None, informs=None, warns=None,
@@ -60,13 +60,15 @@ class Struc(object):
             *args: Variable length argument list.
             **kwargs: Arbitrary keyword arguments.
 
-        Keyword Args
-            def_opts(dict): Dictionary of the default options for the structure
-                 Formatted as follows:
-                 {option_name(str):
-                     [type(Type), default(num), lower_bound(num),
-                     upper_bound(num), unit(str), note(str)]
-                 }
+        Keyword Args:
+            def_opts(dict):
+                Dictionary of the default options for the structure
+                Formatted as follows::
+
+                     {option_name(str):
+                      [type(Type), default(num), lower_bound(num),
+                       upper_bound(num), unit(str), note(str)]
+                     }
             informs(dict): Dictionary of the default informs for the structure
             warns(dict): Dictionary of the warnings for the structure
 
@@ -256,6 +258,9 @@ class Struc(object):
                          string function
             *args: Variable length argument list.
             **kwargs: Arbitrary keyword arguments.
+        
+        Return:
+            (str): A string describing the object
         """
         def_opts = self.def_opts
         opts = self.options
@@ -367,20 +372,39 @@ class Struc(object):
         """
 
         return ''
-    def plot(self):
-        """Returns a plot of the object
+    
+    def plot(self, axis = None, hardcopy = None):
+        """Returns creates
+        
+        Args:
+            axis(plt.Axes): The axis on which to plot the figure, if None, 
+                creates a new figure object on which to plot.
+            hardcopy(bool): If a string, write the figure to the file specified
+
+        Return:
+            (plt.Figure): A reference to the figure containing the plot
 
         """
 
         raise NotImplementedError("Plotting not defined")
 
-    def write_to_file(self):
+    def write_to_file(self, filename):
         """Writes the object to a file
-
+        
+        Args:
+            filename(string): A path to a writeable location
+        
         """
+        out_str = str(self)
 
-        raise NotImplementedError("Data-file writing not defined")
-
+        try:
+            with open(filename, 'r') as fid:
+                fid.write(out_str)
+            #end
+        except IOError:
+            raise IOError("{:} Could not write to file {:}".\
+                          format(self.get_inform(1), filename))
+        #end
 
 class TestObject(unittest.TestCase):
     """
