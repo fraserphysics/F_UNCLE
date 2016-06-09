@@ -36,6 +36,7 @@ import pdb
 # Python Packages
 # =========================
 import numpy as np
+import matplotlib.pyplot as plt
 from numpy.linalg import inv
 from cvxopt import matrix, solvers
 
@@ -83,16 +84,19 @@ class Bayesian(Struc):
         """
 
         def_opts = {
-            'outer_atol' : [float, 1E-4, 0.0, 1.0, '-',
+            'outer_atol' : [float, 1E-6, 0.0, 1.0, '-',
                             'Absolute tolerance on change in likelyhood for\
                             outer loop convergence'],
-            'outer_rtol' : [float, 1E-3, 0.0, 1.0, '-',
+            'outer_rtol' : [float, 1E-4, 0.0, 1.0, '-',
                             'Relative tolerance on change in likelyhood for\
                             outer loop convergence'],
-            'maxiter' : [int, 20, 1, 100, '-', 'Maximum iterations for convergence\
+            'maxiter' : [int, 6, 1, 100, '-',
+                         'Maximum iterations for convergence\
                          of the likelyhood'],
-            'constrain': [bool, True, None, None, '-', 'Flag to constrain the\
-                          optimization']
+            'constrain': [bool, True, None, None, '-',
+                          'Flag to constrain the optimization'],
+            'precondition':[bool, True, None, None, '-',
+                            'Flag to scale the problem']
         }
 
         Struc.__init__(self, name=name, def_opts=def_opts)
@@ -125,6 +129,8 @@ class Bayesian(Struc):
         for sim, exp in self.simulations:
             out_str += str(sim)
         #end
+
+        return out_str
 
     def update(self, simulations=None, model=None):
         """Updates the properties of the bayesian analtsis
@@ -185,7 +191,7 @@ class Bayesian(Struc):
             m += exp.shape()
         #end
 
-        return (n, m)
+        return (m, n)
 
     def model_log_like(self):
         r"""Gets the log likelyhood of the model given the prior
@@ -205,7 +211,7 @@ class Bayesian(Struc):
 
         epsilon = model.get_dof() - model.prior.get_dof()
 
-        return -0.5 * np.dot(epsilon, np.dot(inv(model.get_sigma()), epsilon))
+        return -0.5 * np.dot(np.dot(epsilon,inv(model.get_sigma())), epsilon)
 
     def sim_log_like(self, initial_data):
         r"""Gets the log likelyhood of the simulations given the data
@@ -225,8 +231,8 @@ class Bayesian(Struc):
 
         log_like = 0
         for (sim, exp), sim_data in zip(self.simulations, initial_data):
-            exp_indep, (exp_dep1, exp_dep2), spline = exp()
-            epsilon = sim.compare(exp_indep, exp_dep2, sim_data)
+            exp_indep, exp_dep, spline = exp()
+            epsilon = sim.compare(exp_indep, exp_dep[0], sim_data)
             log_like += -0.5 * np.dot(epsilon,
                                       np.dot(inv(sim.get_sigma()), epsilon))
         #end
@@ -240,11 +246,15 @@ class Bayesian(Struc):
            (Isentrope): The isentrope which gives best agreement over the space
            (list): The history of candiate prior DOF's
         """
-
+        import matplotlib.pyplot as plt
+        
+        precondition = self.get_option('precondition')
         atol = self.get_option('outer_atol')
         reltol = self.get_option('outer_rtol')
         maxiter = self.get_option('maxiter')
 
+        sims = self.simulations
+        model = self.model
 
         history = []
         dof_hist = []
@@ -253,14 +263,16 @@ class Bayesian(Struc):
         log_like = 0.0
 
         initial_data = []
-        for sim, exp in self.simulations:
-            sim.update(model=self.model)
+        for sim, exp in sims:
+            sim.update(model=model)
             initial_data.append(sim())
         #end
 
         for i in xrange(maxiter):
-            dof_hist.append(self.model.get_dof())
+            dof_hist.append(model.get_dof())
             print('Iter {} of {}'.format(i, maxiter))
+            self._get_sens(sims, model, initial_data)
+            
             # Solve all simulations with the curent model
 
             print ('prior log like', -self.model_log_like())
@@ -272,9 +284,6 @@ class Bayesian(Struc):
             history.append(new_log_like)#, self.model.get_dof()))
 
 
-            # if new_log_like > log_like:
-            #     self.model.set_dof(dof_hist[-2])
-            #     continue
             if np.fabs(log_like - new_log_like) < atol\
                and np.fabs((log_like - new_log_like) / new_log_like) < reltol:
                 conv = True
@@ -283,49 +292,60 @@ class Bayesian(Struc):
                 log_like = new_log_like
             #end
 
-            self._get_sens(initial_data)
-            # self.plot_sens_matrix(initial_data)
+            
+            #self.plot_sens_matrix(initial_data)
 
-            try:
-                local_sol = self._local_opt(initial_data)
-            except ValueError as err:
-                print(err)
-                break
-            #end
+            
+            local_sol = self._local_opt(sims, model, initial_data)
+            
 
             # Perform basic line search along direction of best improvement
             d_hat = np.array(local_sol['x']).reshape(-1)
-
-            dhat_hist.append(d_hat)
-
-            n_steps = 4
-            xs = np.linspace(0, 1, n_steps)
-            costs = np.zeros(n_steps)
-            tmp_data = [[]]*n_steps
-            for i, x in enumerate(xs):
-                self.model.set_dof(self.model.get_dof() + x * d_hat)
-                costs[i] = -self.model_log_like()
-                for sim, exp in self.simulations:
-                    sim.update(model=self.model)
-                    tmp_data[i].append(sim())
-                #end
-
-                costs[i] -= self.sim_log_like(tmp_data[i])
-
-            i = np.argmin(costs)
-            print(costs)
-            print("{:d} {:f}".format(i, costs[i]))
-            print("Step size ", xs[i])
-            print("d_hat ", d_hat)
-            self.model.set_dof(self.model.get_dof()\
-                                + d_hat * xs[i])
-            initial_data = tmp_data[i]
-            for sim, exp in self.simulations:
-                sim.update(model = self.model)
+            if precondition:
+                d_hat = np.dot(model.get_scaling(), d_hat)
             # end
+            
+            dhat_hist.append(d_hat)            
+            n_steps = 5
 
-            print(self.model.get_dof())
+            costs = np.zeros(n_steps)
+            iter_data = []
+            initial_dof = model.get_dof()
+            besti = 0
+            max_step = 10
+            while besti == 0:
+                max_step /= 10.0
+                if max_step < 1E-10:
+                    besti = 1
+                    break
+                x_list = np.linspace(0, max_step, n_steps)
+                for i, x_i in enumerate(x_list):
+                    model.set_dof(initial_dof + x_i * d_hat)
+                    costs[i] = -self.model_log_like()
+                    tmp = []
+                    for sim, exp in sims:
+                        sim.update(model=model)
+                        tmp.append(sim())
+                    #end
+                    iter_data.append(tmp)
+                    costs[i] -= self.sim_log_like(tmp)
+                #end
+                besti = np.argmin(costs)
+                print('Zooming in to max step {:f}'.format(max_step/10.0))
+            #end
 
+
+            print(costs)
+            print("{:d} {:f}".format(i, costs[besti]))
+            print("Step size ", x_list[besti])
+           
+            model.set_dof(initial_dof + d_hat * x_list[besti])
+
+            initial_data = iter_data[besti]
+            for sim, exp in sims:
+                sim.update(model = model)
+            # end
+        #end
         if not conv:
             print("{}: Outer loop could not converge to the given\
                              tolerance in the maximum number of iterations"\
@@ -334,8 +354,9 @@ class Bayesian(Struc):
 
         dof_hist = np.array(dof_hist)
         dhat_hist = np.array(dhat_hist)
-
-        import matplotlib.pyplot as plt
+        self.model = model
+        self.simulations = sims
+        
         fig = plt.figure()
         ax1 = fig.add_subplot(121)
         ax2 = fig.add_subplot(122)
@@ -351,19 +372,154 @@ class Bayesian(Struc):
         fig.savefig('EOS_convergence.pdf')
 
 
-        return self.model, history
+        return model, history
 
-    def _local_opt(self, initial_data):
+    def get_fisher_matrix(self, simid = 0, sens_calc = True):
+        """Returns the fisher information matrix of the simulation
+        
+        Keyword Args:
+            simid(int): The index of the simulation to be investigated
+                        *Default 0*
+            sens_calc(bool): Flag to recalcualte sensitivities
+                             *Default True*
+
+        Return:
+            (np.ndarray): The fisher information matrix, a nxn matrix where 
+                          `n` is the degrees of freedom of the model.
+        """
+        if not isinstance(simid, int):
+            raise TypeError("{:} the simid must be an integer"\
+                            .format(self.get_inform(1)))
+        elif simid >= len(self.simulations):
+            raise IndexError("{:} simulation index out of range"\
+                             .format(self.get_inform(1)))
+        else:
+            sim, exp = self.simulations[simid]
+        #end
+
+        if sens_calc:
+            initial_data = [sim()]
+            self._get_sens([(sim, exp)], self.model, initial_data)
+        #end
+        
+        for i in xrange(len(self.simulations)):
+            dim_k = self.simulations[i][1].shape()
+            if i == simid:
+                sens_k = self.sens_matrix[i:i+dim_k,:]
+            #end
+            i += dim_k
+
+        sigma = inv(sim.get_sigma())
+        
+        return np.dot(sens_k.T, np.dot(sigma, sens_k))
+
+    def fisher_decomposition(self, fisher, tol = 1E-3):
+        """
+        
+        Args:
+            fisher(np.ndarray): A nxn array where n is model dof
+        
+        Keyword Args:
+            tol(float): Eigen values less than tol are ignored
+        
+        Return:
+            (list): Eigenvalues greater than tol
+            (np.ndarray): nxm array. 
+                          n is number of eigenvalues greater than tol
+                          m is model dof
+            (np.ndarray): nxm array:
+                          n is the number of eigenvalues greater than tol
+                          m is an arbutary dimension of independent variable
+            (np.ndarray): vector of independent varible
+        
+        """
+        eos = self.model
+        
+        # Spectral decomposition of info matrix and sort by eigenvalues
+        eig_vals, eig_vecs = np.linalg.eigh(fisher)
+        eig_vals = np.maximum(eig_vals, 0)        # info is positive definite
+        i = np.argsort(eig_vals)[-1::-1]
+        vals = eig_vals[i]
+        vecs = eig_vecs.T[i]
+        
+        n_vals = max(len(np.where(vals > vals[0]*1e-3)[0]), 3)
+        n_vecs = len(np.where(vals > vals[0]*1e-2)[0])
+
+        # Find range of v that includes support of eigenfunctions
+        knots = eos.get_t()
+        v_min = knots[0]
+        v_max = knots[-1]
+        v = np.logspace(np.log10(v_min), np.log10(v_max), len(knots)*10)
+        max_k = 0
+        min_k = len(v)-1
+        funcs = []
+        for vec in vecs[:n_vecs]:
+            eos.set_dof(vec)
+            func = eos(v)  # An eigenfunction of the Fisher Information
+            a = np.abs(func)
+            argmax = np.argmax(a)
+            if func[argmax] < 0:
+                func *= -1
+            funcs.append(func)
+            big = np.where(a > a[argmax]*1e-4)[0]
+            min_k = min(big[0], min_k)
+            max_k = max(big[-1], max_k)
+
+        funcs = np.array(funcs)
+
+        vals = vals[np.where(vals>tol*vals[0])]
+        
+        k_range = np.arange(min_k, max_k+1)
+
+        return vals, vecs, funcs, v
+
+    def plot_fisher_data(self, fisher_data, filename = None):
+        """
+        
+        Args:
+            fisher_dat(tuple): Data from the fisher_decomposition function
+                               *see docscring for definition*
+
+        Keyword Args:
+            filename(str or None): If none, do not make a hardcopy, otherwise 
+                                   save to the file specified
+        
+        """
+
+        fig = plt.figure()
+        ax1 = plt.subplot(121)
+        ax2 = plt.subplot(122)
+
+        eigs = fisher_data[0]
+        eig_vects = fisher_data[1]
+        eig_func = fisher_data[2]
+        indep = fisher_data[3]
+
+        ax1.bar(np.arange(eigs.shape[0]), eigs , width = 0.9 , color = 'black',
+                edgecolor='none', orientation = 'vertical')
+
+        ax1.set_xlabel("Eigenvalue number /")
+        ax1.set_ylabel("Eigenvalue /")
+        
+        for i in xrange(eig_func.shape[0]):
+            ax2.plot(indep, eig_func[i], label = "eig {:d}".format(i))
+        #end
+
+        ax2.set_xlabel("Specific volume / cm**3 g**-1")
+        ax2.set_ylabel("Eigenfunction response / Pa")
+
+        fig.tight_layout()
+                          
+    def _local_opt(self, sims, model,  initial_data):
         """
         """
         constrain = self.get_option('constrain')
-        # constrain = False
-
+        
         # Get constraints
-        G,h = self._get_constraints()
+        G,h = self._get_constraints(model)
 
-        P_mat, q_mat = self._get_model_PQ()
-        tmp = self._get_sim_PQ(initial_data)
+        P_mat, q_mat = self._get_model_PQ(model)
+        tmp = self._get_sim_PQ(sims, model, initial_data)
 
         P_mat += tmp[0]
         q_mat += tmp[1]
@@ -389,9 +545,12 @@ class Bayesian(Struc):
                                an optimal point'.format(self.get_inform(1)))
         return sol
 
-    def _get_constraints(self):
+    def _get_constraints(self, model):
         r"""EOS MODEL - get the constraints on the model
-
+        
+        Args:
+           model(PhysicsModel): The physics model subject to 
+                                physical constraints
         Return:
            ():
            ():
@@ -436,8 +595,8 @@ class Bayesian(Struc):
         and it is sufficient to check eq:star at the knots.
 
         """
-
-        c_model = copy.deepcopy(self.model)
+        precondition = self.get_option('precondition')
+        c_model = copy.deepcopy(model)
         spline_end = c_model.get_option('spline_end')
         dim = c_model.shape()[0]
 
@@ -468,90 +627,137 @@ class Bayesian(Struc):
         h = np.dot(HI,h)
         G = np.dot(HI,G)
 
+        if precondition:
+            G = np.dot(G, c_model.get_scaling())
+        #end
+        
         return G,h
 
-    def _get_model_PQ(self):
+    def _get_model_PQ(self, model):
         """Gets the quadratic optimizaiton matrix contributions from the prior
+        
+        Args:
+           model(PhysicsModel): A physics model with degrees of freedom
+        
+        Retrun:
+            (np.ndarray): `P`, a nxn matrix where n is the model DOF
+            (np.ndarray): `q`, a nx1 matrix where n is the model DOF
+
         """
 
-        prior_var = inv(self.model.get_sigma())
+        precondition = self.get_option('precondition')
+        prior_scale = model.get_scaling()
+        prior_var = inv(model.get_sigma())
+        
+        prior_delta = model.get_dof() - model.prior.get_dof()
 
-        prior_delta = self.model.get_dof() - self.model.prior.get_dof()
+        if precondition:
+            return np.dot(prior_scale, np.dot(prior_var, prior_scale)),\
+                np.dot(prior_delta, prior_var)
+        else:
+            return prior_var,  np.dot(prior_scale,\
+                                      np.dot(prior_delta, prior_var))
 
-        return prior_var, np.dot(prior_delta, prior_var)
+    def _get_sim_PQ(self, sims, model, initial_data):
+        """Gets the QP contribytions from the model
 
-    def _get_sim_PQ(self, initial_data):
+        Args:
+           sims(list): A list of tuples of experiments each tuple contains
+                       [0] the simulation
+                       [1] the corresponding experiment
+           model(PhysicsModel): A physics model with degrees of freedom
+           initial_data(list): A list of the inital results from the simulations
+                               in the same order as in the `sim` list
+        
+        Retrun:
+            (np.ndarray): `P`, a nxn matrix where n is the model DOF
+            (np.ndarray): `q`, a nx1 matrix where n is the model DOF
+
         """
-        """
 
-        spline_end = 4
-
+        precondition = self.get_option('precondition')
+        prior_sigma = model.get_sigma()
+        prior_scale = model.get_scaling()        
         D_mat = self.sens_matrix
-        P_mat = np.zeros((self.shape()[0], self.shape()[0]))
-        q_mat = np.zeros(self.shape()[0])
+        P_mat = np.zeros((self.shape()[1], self.shape()[1]))
+        q_mat = np.zeros(self.shape()[1])
+
         i = 0
-        for (sim, exp), sim_data in zip(self.simulations, initial_data):
+        
+        for (sim, exp), sim_data in zip(sims, initial_data):
             dim_k = exp.shape()
-            sens_k = D_mat[:,i:i+dim_k]
-            exp_indep, (exp_dep1, exp_dep2), exp_spline = exp()
+            sens_k = D_mat[i:i+dim_k,:]
+            exp_indep, exp_dep, exp_spline = exp()
             # basis_k = sim_data[2].get_basis(exp_indep,
             #                                 spline_end = spline_end)
             # sens_k = np.dot(sens_k, basis_k)
-            epsilon = sim.compare(exp_indep, exp_dep2, sim_data)
-            print('epsilon ', epsilon)
-            P_mat += np.dot(np.dot(sens_k, inv(sim.get_sigma())), sens_k.T)
-            q_mat += np.dot(np.dot(epsilon, inv(sim.get_sigma())), sens_k.T)
+            epsilon = sim.compare(exp_indep, exp_dep[0], sim_data)
+
+            P_mat = np.dot(np.dot(sens_k.T, inv(sim.get_sigma())), sens_k)
+            q_mat = np.dot(np.dot(epsilon, inv(sim.get_sigma())), sens_k)
             i += dim_k
         #end
 
+        if precondition:
+            P_mat = np.dot(prior_scale, np.dot(P_mat, prior_scale))
+            q_mat = np.dot(prior_scale, q_mat)
+        #end
+        
         return P_mat, -q_mat
 
-    def _get_sens(self, initial_data):
+    def _get_sens(self, sims, model, initial_data):
         """Gets the sensitivity of the simulated experiment to the EOS
 
         Args:
            initial_data(list): The results of each simulation with the
                                curent best model
         """
-        simulations = self.simulations
-        model = copy.deepcopy(self.model)
+
+        model = copy.deepcopy(model)
+        sens_tol = 1E-12
         step_frac = 2E-2
-        spline_end = 4
 
         original_dofs = model.get_dof()
-        sens_matrix = np.zeros(self.shape())
+        sens_matrix = np.empty(self.shape())
+        new_dofs = copy.deepcopy(original_dofs)
+
+        # initial_data = []
+        # for sim, exp in sims:
+        #      initial_data.append(sim())
+        # #end
 
         for i in xrange(len(original_dofs)):
-            new_dofs = copy.deepcopy(original_dofs)
-            step = new_dofs[i] * step_frac
+            step = float(new_dofs[i] * step_frac)
             new_dofs[i] += step
 
             model.set_dof(new_dofs)
 
             j = 0 # counter for the starting column of this sim's data
-            k = 0 # counter for simulation number
-            # pdb.set_trace()
-            for (sim, exp), sim_data in zip(simulations,initial_data):
-#                original_response = sim_data[2].get_c(spline_end=spline_end)
-                original_response = sim_data
+
+            for (sim, exp), sim_data in zip(sims,initial_data):
                 sim.update(model = model)
                 new_data = sim()
                 dim = sim.shape()
-                # delta = original_response - new_data[2].get_c(spline_end=spline_end)
-                delta = sim.compare(original_response[0],
-                                    original_response[1][1], new_data)
-                sens_matrix[i,j:j+dim] = delta / step
+                delta = sim.compare(sim_data[0],
+                                    sim_data[1][0],
+                                    new_data)
+                delta /= -step
+                # If the sensitivity is less than the tolerance, make it
+                # zero
+                sens_matrix[j:j+dim,i] = np.where(np.fabs(delta) > sens_tol,\
+                                                  delta,\
+                                                  np.zeros(len(delta)))
                 j += dim
-            # end
-            k += 1
+            #end
+            new_dofs[i] -= step
         #end
 
         # Return all simulations to original state
         model.set_dof(original_dofs)
-        for sim, exp in simulations:
+        for sim, exp in sims:
             sim.update(model = model)
         #end
-
+        
         self.sens_matrix = sens_matrix
     # end
 
@@ -560,40 +766,52 @@ class Bayesian(Struc):
         """
 
         import matplotlib.pyplot as plt
-        spline_end = 4
         sens_matrix = self.sens_matrix
 
-        sim, exp = self.simulations[0]
-        sim_data = initial_data[0]
-        exp_indep, (exp_dep1, exp_dep2), exp_spline = exp()
-        basis_k = sim_data[2].get_basis(exp_indep,
-                                        spline_end = spline_end)
-
-        basis_f = self.model.get_basis(self.model.get_t())
-
         fig = plt.figure()
-        ax1 = fig.add_subplot(221)
-        ax2 = fig.add_subplot(222)
-        ax3 = fig.add_subplot(223)
-        ax4 = fig.add_subplot(224)
+        ax1 = fig.add_subplot(321)
+        ax2 = fig.add_subplot(322)
+        ax3 = fig.add_subplot(323)
+        ax4 = fig.add_subplot(324)
+        ax5 = fig.add_subplot(325)
+        ax6 = fig.add_subplot(326)        
+
+        knot_post = self.model.get_t()
+        
+        for i in xrange(10):
+            ax1.plot( sens_matrix[:,i], label = "{:4.3f}".format(knot_post[i]))
+        ax1.legend(loc = 'best')
+
+        for i in xrange(10,20):
+            ax2.plot( sens_matrix[:,i], label = "{:4.3f}".format(knot_post[i]))
+        ax2.legend(loc = 'best')
+
+        for i in xrange(20,30):
+            ax3.plot( sens_matrix[:,i], label = "{:4.3f}".format(knot_post[i]))
+        ax3.legend(loc = 'best')
+
+        for i in xrange(30,40):
+            ax4.plot( sens_matrix[:,i], label = "{:4.3f}".format(knot_post[i]))
+        ax4.legend(loc = 'best')
+
+        for i in xrange(40,50):
+            ax5.plot( sens_matrix[:,i], label = "{:4.3f}".format(knot_post[i]))
+        ax5.legend(loc = 'best')
 
 
+        
+        # for i in xrange(0,basis_k.shape[0],5):
+        #     ax2.plot(exp_indep, basis_k[i,:])
 
-        for i in xrange(sens_matrix.shape[0]):
-            ax1.plot(sens_matrix[i,:])
+        # for i in xrange(-8,0):
+        #     ax4.plot(exp_indep, basis_k[i,:])
+        #     # ax4.plot(basis_f[i,:])
+        # #end
 
-        for i in xrange(0,basis_k.shape[0],5):
-            ax2.plot(exp_indep, basis_k[i,:])
-
-        for i in xrange(-8,0):
-            ax4.plot(exp_indep, basis_k[i,:])
-            # ax4.plot(basis_f[i,:])
-        #end
-
-        BC = np.dot(sens_matrix,basis_k)
-        for i in xrange(BC.shape[0]):
-            ax3.plot(exp_indep, BC[i,:])
-        # end
+        # BC = np.dot(sens_matrix,basis_k)
+        # for i in xrange(BC.shape[0]):
+        #     ax3.plot(exp_indep, BC[i,:])
+        # # end
 
         plt.show()
 class TestBayesian(unittest.TestCase):
@@ -603,9 +821,23 @@ class TestBayesian(unittest.TestCase):
         """Setup script for each test
         """
 
-        self.exp = Experiment(name="Dummy experiment")
-        self.mod = Experiment(name="Dummy model")
-        self.model = Experiment(name="Dummy prior")
+        from F_UNCLE.Experiments.GunModel import Gun
+        from F_UNCLE.Experiments.Stick import Stick
+        from F_UNCLE.Models.Isentrope import EOSModel, EOSBump
+
+        # Initial estimate of prior functional form
+        init_prior = np.vectorize(lambda v: 2.56e9 / v**3)
+
+        # Create the model and *true* EOS
+        self.eos_model = EOSModel(init_prior)
+        self.eos_true = EOSBump()
+
+        # Create the objects to generate simulations and pseudo experimental data
+        self.exp1 = Gun(self.eos_true)
+        self.sim1 = Gun(self.eos_model)
+
+        self.exp2 = Stick(self.eos_true)
+        self.sim2 = Stick(self.eos_model)
 
     # end
 
@@ -613,9 +845,10 @@ class TestBayesian(unittest.TestCase):
         """Test that the object can instantiate correctly
         """
 
-        bayes = Bayesian(self.exp, self.mod, self.prior)
+        bayes = Bayesian(simulations = [(self.sim1, self.exp1)],
+                         model = self.eos_model)
 
-        print(bayes)
+        # print(bayes)
 
         self.assertIsInstance(bayes, Bayesian)
     # end
@@ -627,6 +860,136 @@ class TestBayesian(unittest.TestCase):
         pass
     # end
 
+    def test_singel_case_PQ_mod(self):
+        """Tests the P and Q matrix generation for a single case
+        """
+
+        bayes = Bayesian(simulations = [(self.sim1, self.exp1)],
+                         model = self.eos_model)
+
+        shape = bayes.shape()
+
+        exp_shape = self.exp1.shape()
+        sim_shape = self.sim1.shape()
+        mod_shape = self.eos_model.shape()[0]
+        
+        initial_data = [self.sim1()]
+        P, q = bayes._get_sim_PQ([(self.sim1, self.exp1)], self.eos_model, initial_data)
+
+        self.assertEqual(P.shape, (mod_shape, mod_shape))
+        self.assertEqual(q.shape, (mod_shape, ))
+
+    def test_mlt_case_PQ_mod(self):
+        """Tests the P and Q matrix generation for a multiple case
+        """
+
+        bayes = Bayesian(simulations = [(self.sim1, self.exp1),
+                                        (self.sim2, self.exp2)],
+                         model = self.eos_model)
+
+        shape = bayes.shape()
+
+        exp_shape = self.exp1.shape() + self.exp2.shape()
+        sim_shape = self.sim1.shape() + self.sim2.shape()
+        mod_shape = self.eos_model.shape()[0]
+        
+        initial_data = [self.sim1(), self.sim2()]
+        P, q = bayes._get_sim_PQ([(self.sim1, self.exp1),(self.sim2, self.exp2)],
+                                  self.eos_model, initial_data)
+
+        self.assertEqual(P.shape, (mod_shape, mod_shape))
+        self.assertEqual(q.shape, (mod_shape, ))
+
+    def test_gun_case_sens(self):
+        """
+        """
+
+        bayes = Bayesian(simulations = [(self.sim1, self.exp1)],
+                         model = self.eos_model)
+
+        shape = bayes.shape()
+
+        exp_shape = self.exp1.shape()
+        sim_shape = self.sim1.shape()
+        mod_shape = self.eos_model.shape()[0]
+        
+        initial_data = [self.sim1()]
+
+        bayes._get_sens([(self.sim1, self.exp1)], self.eos_model, initial_data)
+        self.assertEqual(bayes.sens_matrix.shape, (exp_shape, mod_shape))
+        # bayes.plot_sens_matrix(initial_data)
+
+    def test_stick_case_sens(self):
+        """Test of the sensitivity of the stick model to the eos
+        """
+
+        bayes = Bayesian(simulations = [(self.sim2, self.exp2)],
+                         model = self.eos_model)
+
+        shape = bayes.shape()
+
+        exp_shape = self.exp2.shape()
+        sim_shape = self.sim2.shape()
+        mod_shape = self.eos_model.shape()[0]
+        
+        initial_data = [self.sim2()]
+
+        bayes._get_sens([(self.sim2, self.exp2)],
+                        self.eos_model, initial_data)
+        self.assertEqual(bayes.sens_matrix.shape, (exp_shape, mod_shape))
+        #bayes.plot_sens_matrix(initial_data)
+        
+    def test_mult_case_sens(self):
+        """Test of sens matrix generation for mult models
+        """
+        bayes = Bayesian(simulations = [(self.sim1, self.exp1),
+                                        (self.sim2, self.exp2)],
+                         model = self.eos_model)
+
+        shape = bayes.shape()
+
+        exp_shape = self.exp1.shape() + self.exp2.shape()
+        sim_shape = self.sim1.shape() + self.sim1.shape()
+        mod_shape = self.eos_model.shape()[0]
+        
+        initial_data = [self.sim1(), self.sim2()]
+
+        bayes._get_sens([(self.sim1, self.exp1),
+                         (self.sim2, self.exp2)],
+                        self.eos_model, initial_data)
+
+        self.assertEqual(bayes.sens_matrix.shape, (exp_shape, mod_shape))
+        
+        # bayes.plot_sens_matrix(initial_data)
+
+    def test_model_pq(self):
+        """Tests the pq matrix generation by the model
+        """
+
+        pass
+
+    def test_fisher_matrix(self):
+        """Tests if the fisher information matrix can be generated correctly
+        """
+
+        bayes = Bayesian(simulations = [(self.sim1, self.exp1),
+                                        (self.sim2, self.exp2)],
+                         model = self.eos_model)
+        
+        fisher = bayes.get_fisher_matrix(simid = 1)
+
+        n_model = bayes.shape()[1]
+
+        self.assertIsInstance(fisher, np.ndarray)
+        self.assertEqual(fisher.shape, (n_model, n_model))
+
+        data = bayes.fisher_decomposition(fisher)
+        bayes.plot_fisher_data(data)
+        plt.show()
+        
+        
+        
+    
 if __name__ == '__main__':
 
     unittest.main(verbosity=4)

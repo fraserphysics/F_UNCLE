@@ -37,7 +37,7 @@ import unittest
 # Python Packages
 # =========================
 import numpy as np
-
+import matplotlib.pyplot as plt
 from scipy.integrate import odeint
 
 # =========================
@@ -88,7 +88,7 @@ class Gun(Experiment):
                         the projectile'],
             'area': [float, 1.0, 0.0, None, 'cm**2',
                      'Projectile cross section'],
-            'sigma': [float, 1.0e2, 0.0, None, '??',
+            'sigma': [float, 1.0e0, 0.0, None, '??',
                       'Variance attributed to v measurements'],
             't_min': [float, 1.0e-6, 0.0, None, 'sec',
                       'Range of times for t2v spline'],
@@ -309,7 +309,11 @@ class Gun(Experiment):
                          and the model for each value of independent variable
         """
 
-        return model_data[2](indep) - dep
+#        return dep - model_data[1][1]
+
+        return dep - model_data[2](indep)
+
+
 
     def __call__(self, *args, **kwargs):
         """Performs the simulation / experiment using the internal EOS
@@ -319,8 +323,8 @@ class Gun(Experiment):
         Returns:
            (np.ndarray): Time, the independent variable
            (tuple): length 2 for the two depdendent variables
-                    [0] (np.ndarray): Position history of the simulation
-                    [1] (np.ndarray): Velociy history of the simulation
+                    [0] (np.ndarray): Velocity history of the simulation
+                    [1] (np.ndarray): Position history of the simulation
            (Spline): A spline representing the velocity-time history
 
         """
@@ -329,7 +333,60 @@ class Gun(Experiment):
 
         vt_spline = self._fit_t2v(states[:, 1], time)
 
-        return time, (states[:, 0], states[:, 1]), vt_spline
+        return time, (states[:, 1], states[:, 0]), vt_spline
+
+    def plot(self, axis = None, level = 0, data = None, *args, **kwargs):
+        """Plots the gun experiment
+        """
+
+        if axis == None:
+            fig = plt.figure()
+
+        elif isinstance(ax1,plt.Axes):
+            fig = None
+            ax1 = axis
+        else:
+            raise TypeError("{} axis must be a matplotlib Axis obect".\
+                            format(self.get_inform(1)))
+        #end
+        
+        if level == 0:
+            """Plot the velocity time history
+            """
+            pass
+        elif level == 1:
+            """Plot the position time history
+            """
+            pass
+        elif level == 2:
+            """Plot everything
+            """
+
+            ax1 = fig.add_subplot(221)
+            ax2 = fig.add_subplot(222)
+            ax3 = fig.add_subplot(223)
+            ax4 = fig.add_subplot(224)
+
+            v_spec = data[0][1][0] * self.get_option('area')/self.get_option('mass_he')
+            ax1.plot(data[0][0],data[0][1][0], 'k')
+            ax2.plot(data[0][0],data[0][1][1], 'k')
+            ax3.plot(v_spec, data[0][1][1], 'k')
+            ax3.axhline(self.get_option('x_f'))
+            self.eos.plot(axis = ax4)
+
+            if len(data) == 2:
+                ax1.plot(data[0][0],10+(data[0][1][1] - data[1][1][1]), 'r')
+                ax2.plot(data[0][0],1 +(data[0][1][0] - data[1][1][0]), 'r')
+#                ax3.plot(v_spec, 10+(data[0][1][1] - data[1][1][1]), 'r')
+            #end
+            
+            ax1.set_xlabel("Simulation time / s")
+            ax1.set_ylabel("Projectile velocity / cm s**-1")
+            ax2.set_xlabel("Simulation time / s")
+            ax2.set_ylabel("Projectile position / cm")
+            ax3.set_xlabel("HE Specific volume / cm**3 g**-1")
+            ax3.set_ylabel("Projectile position / cm s**-1")
+        
 
 class TestGun(unittest.TestCase):
     """Tets of the Gun experiment
@@ -352,7 +409,7 @@ class TestGun(unittest.TestCase):
         eos = EOSBump()
         gun = Gun(eos)
 
-        time, pos, vel, spline = gun()
+        time, (vel, pos), spline = gun()
 
         n_time = gun.get_option('n_t')
 
@@ -370,7 +427,7 @@ class TestGun(unittest.TestCase):
 
         print gun
         
-        time, pos, vel, spline = gun()
+        time, (vel, pos), spline = gun()
 
         n_time = gun.get_option('n_t')
 
@@ -393,33 +450,38 @@ class TestGun(unittest.TestCase):
 
         gun = Gun(eos)
 
-        time, (pos0, vel0), spline0 = gun()        
+        data0  = gun()        
         old_dof = eos.get_c()
-        old_dof[-25] *= 1.05
+        old_dof[0] *= 1.02
         eos.set_dof(old_dof)
-        time, (pos1, vel1), spline1 = gun()
+        gun.update(model = eos)
+        data1 = gun()
 
-        n_time = gun.get_option('n_t')
+        gun.plot(level = 2, data = [data0, data1] )
+        # n_time = gun.get_option('n_t')
 
-        fig = plt.figure()
-        ax1 = fig.add_subplot(221)
-        ax2 = fig.add_subplot(223)
-        ax3 = fig.add_subplot(222)
+        # fig = plt.figure()
+        # ax1 = fig.add_subplot(221)
+        # ax2 = fig.add_subplot(223)
+        # ax3 = fig.add_subplot(222)
                               
         
         
-        ax1.plot(time, vel1-vel0)
-        ax1.set_xlabel('Time')
-        ax1.set_ylabel('Velocity')        
+        # ax1.plot(time, vel1)
+        # ax1.plot(time, spline1(time))
+        # ax1.set_xlabel('Time')
+        # ax1.set_ylabel('Velocity')        
 
-        ax3.plot(pos1, vel1)
-        ax3.set_xlabel('Position')
-        ax3.set_ylabel('Velocity')        
+        # ax3.plot(pos1, vel1)
+        # ax3.set_xlabel('Position')
+        # ax3.set_ylabel('Velocity')        
         
-        v_spec_list = np.linspace(0.25, 0.65, 30)
-        ax2.plot(v_spec_list, eos(v_spec_list))
-        ax2.set_xlabel('Specific volume')
-        ax2.set_ylabel('Pressure')
+        # v_spec_list = np.linspace(0.01, 10.0, 30)
+        # ax2.plot(v_spec_list, eos(v_spec_list))
+        # ax2.set_xlabel('Specific volume')
+        # ax2.set_ylabel('Pressure')
+        # ax3 = ax2.twinx()
+        # ax3.plot(pos1*gun.get_option('area')/gun.get_option('mass_he'), vel1)
         
         plt.show()
 # end

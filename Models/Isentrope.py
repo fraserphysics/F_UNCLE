@@ -38,7 +38,7 @@ import numpy.testing as npt
 # Python Packages
 # =========================
 import numpy as np
-
+import matplotlib.pyplot as plt
 from scipy.interpolate import InterpolatedUnivariateSpline as IU_Spline
 # For scipy.interpolate.InterpolatedUnivariateSpline. See:
 # https://github.com/scipy/scipy/blob/v0.14.0/scipy/interpolate/fitpack2.py
@@ -95,7 +95,33 @@ class Isentrope(PhysicsModel):
         """
 
         return (self.get_option('spline_N'),1)
-   
+
+    def plot(self, axis = None, *args, **kwargs ):
+        """Plots the EOS
+        """
+
+        if axis == None:
+            fig = plt.figure()
+            ax1 = fig.gca()
+        elif isinstance(axis,plt.Axes):
+            fig = None
+            ax1 = axis
+        else:
+            raise TypeError("{} axis must be a matplotlib Axis obect".\
+                            format(self.get_inform(1)))
+        #end
+
+
+        v_spec = np.logspace(np.log10(self.get_option('spline_min')),\
+                        np.log10(self.get_option('spline_max')),\
+                        50)
+        ax1.plot(v_spec, self(v_spec), *args, **kwargs)
+        ax1.set_xlabel('Specific volume / cm**3 g**-1')
+        ax1.set_ylabel('Pressure / Pa')
+
+        return fig
+        
+        
 class Spline(IU_Spline, Struc):
     """Overloaded scipy spline to work with like_eos
 
@@ -217,8 +243,8 @@ class EOSBump(Isentrope):
         def_opts = {
             'const_C': [float, 2.56e9, 0.0, None, 'Pa',
                         "Constant p = C/v**3"],
-            'bumps' : [list, [(0.4, 0.1, 0.4),
-                              (0.5, 0.1, -0.3)], None, None, '',
+            'bumps' : [list, [(0.2, 0.1, 0.4),
+                              (0.3, 0.1, -0.3)], None, None, '',
                        "Gausian bumps to the eos"]
             }
 
@@ -239,7 +265,7 @@ class EOSBump(Isentrope):
         """
         C = self.get_option('const_C')
         bumps = self.get_option('bumps')
-        pr = C/vs**3
+        pr = C/vs**(3.0)
         for v_0, w, s in bumps:
             z = (vs-v_0)/w
             pr += np.exp(-z*z/2)*s*C/(v_0**3)
@@ -324,7 +350,14 @@ class EOSModel(Spline, Isentrope):
         IU_Spline.__init__(self, v, p_fun(v))
         
         self.prior = copy.deepcopy(self)
+
+    def get_scaling(self):
+        """Returns a scaling matrix to make the dofs of the same scale
+        """
+        dev = self.prior.get_dof() * self.get_option('spline_sigma')
+        return np.diag(dev)
         
+
     def get_sigma(self):
         """Returns the covariance matrix of the spline
         
@@ -355,12 +388,12 @@ class EOSModel(Spline, Isentrope):
                            .format(self.get_inform(1)))
         #end
 
-    def get_dof(self):
+    def get_dof(self, *args, **kwargs):
         """Returns the spline coefficients as the model degrees of fredom
         """
         return self.get_c()
 
-    def set_dof(self, c_in):
+    def set_dof(self, c_in, *args, **kwargs):
         """Sets the spline coeffecients
         
         Args:

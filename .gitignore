@@ -1,1 +1,6 @@
 *.pyc
+*~
+*.pdf
+.DS_Store
+doc/build
+build
