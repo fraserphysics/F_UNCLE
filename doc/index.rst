@@ -9,14 +9,14 @@ Welcome to F_UNCLE's documentation!
 Contents:
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    code
-   utils
    models
    experiments
    analysis
-
+   utils
+   
 Indices and tables
 ==================
 

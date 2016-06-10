@@ -24,7 +24,8 @@ Experiment
 
 .. autoclass:: F_UNCLE.Utils.Experiment.Experiment
    :members:
-
+   :special-members:
+      
 Spline
 ......
 

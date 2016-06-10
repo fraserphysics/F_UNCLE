@@ -18,7 +18,6 @@ ToDo
 
 None
 
-
 """
 
 # =========================
@@ -27,7 +26,6 @@ None
 
 import sys
 import os
-import pdb
 import copy
 import unittest
 
@@ -51,20 +49,23 @@ from F_UNCLE.Models.Isentrope import EOSBump, EOSModel, Isentrope
 # =========================
 class Stick(Experiment):
     """A toy physics model representing a rate stick
-    
+
     **Units**
-    
+
     Units are based on CGS system
 
     **Diagram**
 
     .. figure:: /_static/stick.png
-       
+
        The assumed geometry of the rate stick
 
-    Attributes:
-        const(dict): A dictionary of conversion factors
+    **Attributes**
 
+    Attributes:
+        eos(Isentrope): The products-of-detonation equation of state
+
+    **Methods**
     """
     def __init__(self, eos, name='Rate Stick  Computational Experiment',\
                  *args, **kwargs):
@@ -88,13 +89,13 @@ class Stick(Experiment):
 
         def_opts = {
             'sigma_t': [float, 1.0e0, 0.0, None, 's',
-                      'Variance attributed to t measurements'],
+                        'Variance attributed to t measurements'],
             'sigma_x': [float, 1.0e0, 0.0, None, 'cm',
                         'Variance attributed to x positions'],
             'd_min': [float, 1.0e5, 0.0, None, 'cm sec**-1',
                       'Lower search range for detonation velocity'],
             'd_max': [float, 1.0e6, 0.0, None, 'cm sec**-1',
-                      'Uper search range for detonation velocity'],
+                      'Upper search range for detonation velocity'],
             'vol_0': [float, 1.835**-1, 0.0, None, 'cm**3 g**-1',
                       'The pre detonation specific volume of HE'],
             'x_min': [float, 0.0, None, 'cm',
@@ -111,7 +112,13 @@ class Stick(Experiment):
         Experiment.__init__(self, name=name, def_opts=def_opts, *args, **kwargs)
 
     def update(self, model=None):
-        """Update the analysis with a new model
+        """Update the analysis with a new EOS model
+
+        Args:
+            model(Isentrope): The EOS model
+
+        Return:
+            None
         """
         if model is None:
             pass
@@ -141,7 +148,21 @@ class Stick(Experiment):
         return out_str
 
     def get_sigma(self):
-        """Returns the variance matrix
+        r"""Returns the variance matrix
+
+        variance is
+
+        .. math::
+
+            \Sigma_i = \sigma_t^2 + \frac{\sigma_x^2}{V_{CJ}}
+
+        **Where**
+            - :math:`\sigma_t` is the error in time measurements
+            - :math:`\sigma_x` is the error in sensor position
+            - :math:`V_{CJ}` is the detonation velocity
+
+        see :py:meth:`F_UNCLE.Utils.Experiment.Experiment.get_sigma`
+
         """
         vol_0 = self.get_option('vol_0')
         eos = self.eos
@@ -154,6 +175,9 @@ class Stick(Experiment):
 
     def shape(self):
         """Returns the shape of the object
+
+        see :py:meth:`F_UNCLE.Utils.Experiment.Experiment.shape`
+
         """
 
         return self.get_option('n_x')
@@ -162,24 +186,35 @@ class Stick(Experiment):
         """Performs the rate stick experiment
 
         Return:
-            (np.ndarray): The independent variabe, the `n` sensor positions
-            (tuple): The dependent varaibles
-                [0] (None)
-                [1] (np.ndarray): The arrival `n` times at each sensor
-            (tuple): The other solution data
-                [0] the detonation velocity
-                [1] the specific volume at the CJ point
-                [2] the pressure at the CJ point
-                [3] a rayleight ling function
+            (tuple): Length 3. Elements are
 
-                    p = ray(v, vel, vol0, eos)
-                    Args:
-                        v(np.ndarray): The specific volume
-                        vel(float): Detonation velocity
-                        vol_0(float): Specific volume ahead of the shock
-                        eos(Isentrope): An equation of state model
-                    Return:
-                        p(float): The pressure along the Rayleight line at v
+                0. (np.ndarray): The independent variable, the `n` sensor
+                   positions
+                1. (tuple): The dependent variables, elements are:
+
+                   0. (None)
+                   1. (np.ndarray): The arrival `n` times at each sensor
+                2. (tuple): The other solution data
+
+                   0. the detonation velocity
+                   1. the specific volume at the CJ point
+                   2. the pressure at the CJ point
+                   3. a Rayleigh line function, see below
+
+        *Rayleigh Line Function*
+
+            `p = ray(v, vel, vol0, eos)`
+
+            Args:
+
+                - v(np.ndarray): The specific volume
+                - vel(float): Detonation velocity
+                - vol_0(float): Specific volume ahead of the shock
+                - eos(Isentrope): An equation of state model
+            Return:
+
+                - p(float): The pressure along the Rayleigh line at v
+
         """
         x_min = self.get_option('x_min')
         x_max = self.get_option('x_max')
@@ -198,12 +233,9 @@ class Stick(Experiment):
     def compare(self, indep, dep, data):
         """Compares the model instance to other data
 
-        Args:
-           indep(np.ndarray): The sensor positions of the other model
-           dep(np.ndarray): The data from the other model
-           data(tuple): Summary of data for comparisson
+        The error is the difference in arrival times, dep less data.
 
-        Return:
+        see :py:meth:`F_UNCLE.Utils.Experiment.Experiment.compare`
 
         """
 
@@ -213,8 +245,31 @@ class Stick(Experiment):
         return dep - indep/det_vel
 
     def _get_cj_point(self, eos, vol_0):
-        '''Find CJ conditions using two nested line searches.
-        '''
+        """Find CJ conditions using two nested line searches.
+
+        The CJ point is the location on the EOS where a Rayleigh line
+        originating at the pre-detonation volume and pressure is tangent to
+        the equation of state isentrope.
+
+        This method uses two nested line searches implemented by the
+        :py:meth:`scipy.optimize.brentq` algorithm to locate the velocity
+        corresponding to this tangent Rayleigh line
+
+        Args:
+            eos(Isentrope): The products of detonation equation of state
+            vol_0(float): The specific volume of the equation of state before
+                the shock arrives
+
+        Return:
+            (tuple): Length 3 elements are:
+
+                0.  (float): The detonation velocity
+                1.  (float): The specific volume at the CJ point
+                2.  (float): The pressure at the CJ point
+                3.  (function): A function defining the Rayleigh line which
+                    passes through the CJ point
+
+        """
         # Search for det velocity between 1 and 10 km/sec
         d_min = 2.0e5 # cm s**-1
         d_max = 7.0e5 # cm s**-1
@@ -232,7 +287,7 @@ class Stick(Experiment):
 
         # arg_min(vel, self) finds volume that minimizes self(v) - R(v)
         arg_min = lambda vel, eos, vol_0: brentq(derr_dvol, v_min, v_max,
-                                          args=(vel, eos, vol_0))
+                                                 args=(vel, eos, vol_0))
 
         error = lambda vel, eos, vol_0: rayl_err(vel, arg_min(vel, eos, vol_0), eos, vol_0)
 
@@ -249,8 +304,8 @@ class Stick(Experiment):
         # print "err dmax ", error(d_max, eos)
         # print "err dmin ", error(d_min, eos)
 
-        vel_cj = brentq(error, d_min, d_max, args=(eos,vol_0))
-        vol_cj = arg_min(vel_cj,eos, vol_0)
+        vel_cj = brentq(error, d_min, d_max, args=(eos, vol_0))
+        vol_cj = arg_min(vel_cj, eos, vol_0)
         p_cj = eos(vol_cj)
 
         # plt.figure()
@@ -266,26 +321,33 @@ class Stick(Experiment):
 
         return vel_cj, vol_cj, p_cj, rayl_line
 
-    def plot(self, axis = None):
+    def plot(self, axis=None, hardcopy=None):
+        """Plots the EOS and Rayleigh line
+        Plots the critical Rayleigh line corresponding to the detonation
+        velocity tangent to the EOS.
 
+        see :py:meth:`F_UNCLE.Utils.Struc.Struc.plot`
+        """
         v_min = self.eos.get_option('spline_min')
         v_max = self.eos.get_option('spline_max')
         v_0 = self.get_option('vol_0')
         if axis is None:
             fig = plt.figure()
             ax1 = fig.gca()
+        else:
+            fig = None
+            ax1 = axis
         # end
 
-        self.eos.plot(axis = ax1)
+        self.eos.plot(axis=ax1)
         vel_cj, vol_cj, p_cj, rayl_line = self._get_cj_point(self.eos, 1.835**-1)
 
         v_eos = np.logspace(np.log10(v_min), np.log10(v_max), 30)
 
-        ax1.plot(v_eos, rayl_line(vel_cj,v_eos, self.eos, v_0), '-k')
-        ax1.plot(vol_cj,p_cj,'sk')
+        ax1.plot(v_eos, rayl_line(vel_cj, v_eos, self.eos, v_0), '-k')
+        ax1.plot(vol_cj, p_cj, 'sk')
 
-        plt.show()
-
+        return fig
 
 class TestStick(unittest.TestCase):
     """Test of the Stick experiment
@@ -296,7 +358,7 @@ class TestStick(unittest.TestCase):
         init_prior = np.vectorize(lambda v: 2.56e9 / v**3)
 
         self.true_eos = EOSBump()
-        self.model_eos =  EOSModel(init_prior)
+        self.model_eos = EOSModel(init_prior)
     def test_instatntiation(self):
         """Tests basic instantiation
         """
@@ -323,24 +385,24 @@ class TestStick(unittest.TestCase):
         # Check the independent data
         self.assertEqual(len(indep), n_data)
 
-        # Check the depdendent data
-        self.assertEqual(len(dep),1)
+        # Check the dependent data
+        self.assertEqual(len(dep), 1)
         self.assertEqual(len(dep[0]), n_data)
 
         # Check the summary data
-        self.assertEqual(len(smry),4)
+        self.assertEqual(len(smry), 4)
         self.assertIsInstance(smry[0], float)
         self.assertIsInstance(smry[1], float)
         self.assertIsInstance(smry[2], float)
         self.assertTrue(hasattr(smry[3], '__call__'))
 
     def test_eos_step(self):
-        """Tets that the sitck model is sensitive to changes in eos
+        """Tests that the stick model is sensitive to changes in EOS
         """
         stick = Stick(self.model_eos)
 
         n_data = stick.get_option('n_x')
-        
+
         data1 = stick()
         stick.plot()
         i = np.argmin(np.fabs(self.model_eos.get_t() - data1[2][1]))
@@ -359,18 +421,18 @@ class TestStick(unittest.TestCase):
 
             self.model_eos.set_dof(new_dof)
 
-            stick.update(model = self.model_eos)
+            stick.update(model=self.model_eos)
 
             data2 = stick()
-            # stick.plot()        
+            # stick.plot()
             plt.plot((data1[1][0] - data2[1][0])/delta)
 
         plt.show()
-        
-        
-        
+
+
+
     def test_compare(self):
-        """Tests the comparisson function
+        """Tests the comparison function
         """
 
         true_stick = Stick(self.true_eos)
@@ -409,8 +471,4 @@ class TestStick(unittest.TestCase):
         self.assertEqual(var.shape, (dim, dim))
 
 if __name__ == '__main__':
-    try:
-        unittest.main(verbosity=4)
-    except Exception as inst:
-        print inst
-        pdb.post_moretem()
+    unittest.main(verbosity=4)

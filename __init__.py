@@ -2,6 +2,21 @@
 
 Functional UNcertainty Constrained by Law and Experiment 
 
+Authors
+-------
+
+ - Andrew Fraser (AF)
+ - Stephen A Andrews (SA)
+
+Revision History
+----------------
+
+0.0 - Initial class creation (09-10-2015)
+
+License
+-------
+
+
 """
 # from pyStruc import Struc 
 # from pyContainer import Container

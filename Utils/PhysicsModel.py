@@ -51,32 +51,37 @@ from F_UNCLE.Utils.Struc import Struc
 class PhysicsModel(Struc):
     """
 
-    Abstract class for a pysics model
+    Abstract class for a physics model
 
     A physics model is computer code that represents how some physical process
     responds to changes in the regime.
-    
+
+    **Definitions**
+
     DOF
-        A physics model has degrees of freedom, dof, which represent how many 
+        A physics model has degrees of freedom, dof, which represent how many
         parameters the model has which can be adjusted to affect its response
-    
+
     Prior
-         A physics model has a prior, which represents the best esimate of the
+         A physics model has a prior, which represents the best estimate of the
          model's degrees of freedom. This prior is used by Bayesian methods
-    
-    ..note::
-    
-        **all** abstract methods must be overloaded for a physics model to 
+
+    .. note::
+
+        **all** abstract methods must be overloaded for a physics model to
         work in the `F_UNCLE` framework
-    
+
+    **Attributes**
+
     Attributes:
        prior(PhysicsModel): the prior
 
+    **Methods**
     """
 
     def __init__(self, prior, name='Abstract Physics Model', *args, **kwargs):
         """
-        
+
         Args:
            prior: Can be either a PhysicsModel' object or a function or a vector
                   which defines the prior
@@ -95,48 +100,66 @@ class PhysicsModel(Struc):
     # end
 
     def update_prior(self, prior):
-        """Updates the prior for the pyhsics model
+        """Updates the prior for the physics model
 
         Args:
            prior(PhysicsModel): The prior
 
         """
 
-        if prior is None and self.prior is None:
-            raise ValueError("{}: requires a prior".format(self.get_inform(1)))
-        else:
-            self._on_update_prior(prior)
-        # end
+        if self.prior is None:
+            pass
+        elif not isinstance(prior, type(self.prior)):
+            raise TypeError("{} New prior must be the same type as the old".\
+                            format(self.get_inform(1)))
+        #end
+        self._on_update_prior(prior)
+    def get_scaling(self):
+        """Returns a matrix to scale the model degrees of freedom
 
-        return
+        .. note::
 
-    # end
-
-    def get_scale(self):
-        """**ABSTRACT** Returns a matrix to scale the model degrees of fredom
+           Abstract Method: Must be overloaded to work with `F_UNCLE`
 
         Scaling the model dofs may be necessary where there are large changes in
         the magnitude of the dofs
-        
+
         Return:
-            (np.ndarray): 
+            (np.ndarray):
+                 a n x n matrix of scaling factors to make all dofs of the same
+                 order of magnitude.
         """
-        return
+
+        raise NotImplementedError('{} has not defined a co-variance matrix'\
+                          .format(self.get_inform(1)))
+
     def get_sigma(self, *args, **kwargs):
-        """**Abstract** Gets the covariance matrix of the model
-        
+        """Gets the co-variance matrix of the model
+
+        .. note::
+
+           Abstract Method: Must be overloaded to work with `F_UNCLE`
+
         Args:
             *args: Variable length argument list.
             **kwargs: Arbitrary keyword arguments.
 
+        Return:
+            (np.ndarray):
+                A n x n diagonal matrix of the uncertainty in each dof.
+                where n is the model degrees of freedom
         """
 
-        raise NotImplementedError('{} has not defined a covariance matrix'\
-                                  .format(self.get_inform(1)))    
+        raise NotImplementedError('{} has not defined a co-variance matrix'\
+                                  .format(self.get_inform(1)))
 
     def shape(self):
-        """**ABSTRACT** Returns the degrees of freedom of the experiment
-        
+        """Returns the shape of the model dof space
+
+        .. note::
+
+           Abstract Method: Must be overloaded to work with `F_UNCLE`
+
         Return:
            (tuple): Dimensions
 
@@ -144,51 +167,72 @@ class PhysicsModel(Struc):
 
         raise NotImplementedError("{} does not have a shape"\
                                   .format(self.get_inform(1)))
-        
 
-    def set_dof(self):
-        """**ABSTRACT** Gets the model degrees of freedom
-        
+
+    def set_dof(self, dof_in):
+        """Sets the model degrees of freedom
+
+        .. note::
+
+           Abstract Method: Must be overloaded to work with `F_UNCLE`
+
         Args:
-           None
+           dof_in(Iterable): The new values for *all* model degrees of freedom
 
         Return:
-           (Iterable): The iterable defining the model degrees of freedom
+            None
 
         """
 
         raise NotImplementedError("{} does not set the model dof"\
                                   .format(self.get_inform(1)))
-    
-    def get_dof(self, dof_in):
-        """**ABSTRACT** Sets the model's degrees of freedom
-        
+
+    def get_dof(self):
+        """Returns the model degrees of freedom
+
+        .. note::
+
+           Abstract Method: Must be overloaded to work with `F_UNCLE`
+
         Args:
-           dof_in(Iterable): The new values for *all* model degrees of freedom
-        
-        Return:
            None
+
+        Return:
+           (np.ndarray): The model degrees of freedom
         """
 
         raise NotImplementedError("{} does not provide model dofs"\
                                   .format(self.get_inform(1)))
 
-    
+
     def _on_update_prior(self, prior):
         """Instance specific prior update
+
+        Args:
+            prior(PhysicsModel): The prior
+
+        Return:
+            None
         """
-        
+
         self.prior = prior
 # end
 
 class TestPhysModel(unittest.TestCase):
-
+    """Test of PhysicsModel object
+    """
     def test_standard_instantiation(self):
-        model = PhysicsModel(prior = 3.5)
+        """Tests that teh model can be instantiated
+        """
+        model = PhysicsModel(prior=3.5)
+
+        self.assertIsInstance(model, PhysicsModel)
     # end
 
     def test_update_prior(self):
-        model = PhysicsModel(prior = 3.5)
+        """Tests setting and updating the prior
+        """
+        model = PhysicsModel(prior=3.5)
 
         self.assertEqual(model.prior, 3.5)
 
@@ -198,8 +242,9 @@ class TestPhysModel(unittest.TestCase):
     # end
 
     def test_bad_update_prior(self):
-
-        model = PhysicsModel(prior = 3.5)
+        """Tests bad use of prior setting
+        """
+        model = PhysicsModel(prior=3.5)
 
         with self.assertRaises(TypeError):
             model.update_prior('two point five')
@@ -209,4 +254,4 @@ class TestPhysModel(unittest.TestCase):
 
 if __name__ == '__main__':
 
-    unittest.main(verbosity = 4)
+    unittest.main(verbosity=4)

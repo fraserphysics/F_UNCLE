@@ -16,3 +16,12 @@ Stick
 
 .. autoclass:: F_UNCLE.Experiments.Stick.Stick
    :members:	     
+   :private-members:
+   :special-members:
+
+Cylinder
+........
+
+.. note::
+
+   Cylinder has not been implemented yet

@@ -29,7 +29,6 @@ To Do
 # Python Standard Libraries
 # =========================
 import unittest
-import pdb
 from math import ceil
 # =========================
 # Python Packages
@@ -43,6 +42,8 @@ from math import ceil
 class Struc(object):
     """Abstract object to contain properties and warnings
 
+    **Attributes**
+
     Attributes:
         name(str): The name of the object
         def_opts(dict): Default options and bounds
@@ -50,6 +51,7 @@ class Struc(object):
         warns(dict): Optional warnings
         options(dict): The options as set by the user
 
+    **Methods**
     """
     def __init__(self, name, def_opts=None, informs=None, warns=None,
                  *args, **kwargs):
@@ -200,7 +202,7 @@ class Struc(object):
                                      format(self.get_inform(1), name))
                 else:
                     pass
-                #end                
+                #end
         #end
 
         # NotImplementedError -> units test
@@ -250,15 +252,15 @@ class Struc(object):
             return warns[warn_id]
         #end
 
-    def __str__(self, inner = False, *args, **kwargs):
-        """Returns a string representation of the object       
+    def __str__(self, inner=False, *args, **kwargs):
+        """Returns a string representation of the object
 
         Args:
             inner(bool): Flag if the string is being called within another
                          string function
             *args: Variable length argument list.
             **kwargs: Arbitrary keyword arguments.
-        
+
         Return:
             (str): A string describing the object
         """
@@ -310,10 +312,9 @@ class Struc(object):
                     for line in descr[1:]:
                         out_str += " "*57 + line + "\n"
                     #end
-                #end                
+                #end
             elif isinstance(opts[key], (tuple, list)):
                 # Print out lists
-
                 # Print first row
                 if isinstance(opts[key][0], (float, int)):
                     out_str += "{:<15s}{:< 10g}{:12s}{:< 10g}{:< 10g}{:<23s}\n".\
@@ -326,7 +327,6 @@ class Struc(object):
                                        def_opts[key][4], lower_bound,
                                        upper_bound, descr[0])
                 #end
-
                 # Print following rows
                 if len(opts[key]) > 1:
                     for i in xrange(len(opts[key])-1):
@@ -336,7 +336,6 @@ class Struc(object):
                         else:
                             descr_line = ""
                         #end
-                        
                         if isinstance(opts[key][i+1], (int, float)):
                             out_str += "{:<15s}{:< 10g}{:32s}{:<23s}\n".\
                                        format('', opts[key][i+1], '', descr_line)
@@ -346,7 +345,6 @@ class Struc(object):
                         #end
                     #end
                 #end
-
                 # Print extra lines if the description takes more lines
                 # than the option
                 if len(opts[key]) < len(descr):
@@ -361,25 +359,25 @@ class Struc(object):
         return out_str
 
     def _on_str(self, *args, **kwargs):
-        """Print methods of childeren
+        """Print methods of children
 
         Args:
             *args: Variable length argument list.
             **kwargs: Arbitrary keyword arguments.
-        
+
         Return:
             (str): A string representing the object
         """
 
         return ''
-    
-    def plot(self, axis = None, hardcopy = None):
+
+    def plot(self, axis=None, hardcopy=None):
         """Returns creates
-        
+
         Args:
-            axis(plt.Axes): The axis on which to plot the figure, if None, 
+            axis(plt.Axes): The axis on which to plot the figure, if None,
                 creates a new figure object on which to plot.
-            hardcopy(bool): If a string, write the figure to the file specified
+            hard-copy(bool): If a string, write the figure to the file specified
 
         Return:
             (plt.Figure): A reference to the figure containing the plot
@@ -390,10 +388,13 @@ class Struc(object):
 
     def write_to_file(self, filename):
         """Writes the object to a file
-        
+
         Args:
-            filename(string): A path to a writeable location
-        
+            filename(string): A path to a writable location
+
+        Return:
+            None
+
         """
         out_str = str(self)
 
@@ -428,7 +429,7 @@ class TestObject(unittest.TestCase):
             }
         self.name = "Test Structure Object"
 
-        
+
     def test_standard_instantiation(self):
         """
 
@@ -507,7 +508,7 @@ class TestObject(unittest.TestCase):
         with self.assertRaises(ValueError):
             my_struc.set_option('apples', 11)
         #end
-        
+
     def test_inst_at_bounds(self):
         """
 
