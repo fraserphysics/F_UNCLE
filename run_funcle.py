@@ -12,17 +12,18 @@ from F_UNCLE.Experiments.GunModel import Gun
 from F_UNCLE.Experiments.Stick import Stick
 from F_UNCLE.Models.Isentrope import EOSModel, EOSBump
 from F_UNCLE.Opt.Bayesian import Bayesian
+# from F_UNCLE.Opt.BayesPyOpt import BayesPyOpt as Bayesian
 
 # Initial estimate of prior functional form
 init_prior = np.vectorize(lambda v: 2.56e9 / v**3)
 
 # Create the model and *true* EOS
 eos_model = EOSModel(init_prior)
-eos_true = EOSBump()
+eos_true = EOSBump(const_C = 2.4E9, bumps=[])
 
 # Create the objects to generate simulations and pseudo experimental data
-gun_experiment = Gun(eos_true)
-gun_simulation = Gun(eos_model)
+gun_experiment = Gun(eos_true, mass_he = 1.0)
+gun_simulation = Gun(eos_model, mass_he = 1.0)
 gun_prior_sim =gun_simulation()
 
 stick_experiment = Stick(eos_true)
@@ -30,9 +31,9 @@ stick_simulation = Stick(eos_model)
 
 stick_prior_sim = stick_simulation()
 # Create the analysis object
-analysis = Bayesian(simulations = [(gun_simulation, gun_experiment)],
-#                                   (stick_simulation, stick_experiment)],
-                    model = eos_model, constrain = True, precondition = False)
+analysis = Bayesian(simulations = [(gun_simulation, gun_experiment),
+                                   (stick_simulation, stick_experiment)],
+                    model = eos_model, constrain=True, precondition=True, maxiter=5)
 
 # Run the analysis
 best_eos, history = analysis()
@@ -53,9 +54,9 @@ v_max = eos_model.get_option('spline_max')
 v = np.logspace(np.log10(v_min), np.log10(v_max), 50)
 plt.figure()
 ax1 = plt.gca()
-ax1.plot(v, best_eos(v)-best_eos.prior(v), '--r', label = 'Best EOS model')
+ax1.semilogy(v, np.fabs(best_eos(v)-best_eos.prior(v)), '--r', label = 'Best EOS model')
 # ax1.plot(v, best_eos.prior(v), label = 'Prior')
-ax1.plot(v, eos_true(v) - best_eos.prior(v), '-.k', label ='True EOS')
+ax1.semilogy(v, np.fabs(eos_true(v) - best_eos.prior(v)), '-.k', label ='True EOS')
 ax1.set_title('The Equation of state models')
 ax1.set_xlabel('Specific volume')
 ax1.set_ylabel('Pressure')
@@ -90,16 +91,16 @@ ax2.set_ylabel('Error')
 
 plt.savefig('vel_hist.pdf')
 
-# stick_simulation.update(model = best_eos)
+stick_simulation.update(model = best_eos)
 
-# pos_s, (time_s), data_s = stick_simulation()
-# pos_e, (time_e), data_e = stick_experiment()
+pos_s, (time_s), data_s = stick_simulation()
+pos_e, (time_e), data_e = stick_experiment()
 
 
-# fig = plt.figure()
-# ax1 = fig.add_subplot(111)
-# ax1.plot(pos_s, time_s, '-k', label = 'Best EOS')
-# ax1.plot(pos_e, time_e, 'ok', label = 'Experiment')
-# ax1.plot(stick_prior_sim[0], stick_prior_sim[1][0], '-b', label = 'Prior')
-# ax1.legend(loc = 'best')
+fig = plt.figure()
+ax1 = fig.add_subplot(111)
+ax1.plot(pos_s, time_s[0], '-k', label = 'Best EOS')
+ax1.plot(pos_e, time_e[0], 'ok', label = 'Experiment')
+ax1.plot(stick_prior_sim[0], stick_prior_sim[1][0], '-b', label = 'Prior')
+ax1.legend(loc = 'best')
 plt.show()

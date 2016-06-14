@@ -100,7 +100,7 @@ class Stick(Experiment):
                       'The pre detonation specific volume of HE'],
             'x_min': [float, 0.0, None, 'cm',
                       'The position of the first sensor on the rate stick'],
-            'x_max': [float, 0.4, None, 'cm',
+            'x_max': [float, 17.7, None, 'cm',
                       'The position of the last sensor on the rate stick'],
             'n_x': [int, 10, 0, None, '',
                     'Number of sensor positions']

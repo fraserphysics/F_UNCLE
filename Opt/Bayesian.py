@@ -16,6 +16,11 @@ Revisions
 
 0 -> Initial class creation (03-16-2016)
 
+TODO
+----
+
+- Examine impact of prior weight **Prior weight currently zero**
+- Examine effect of choice of true eos
 
 """
 from __future__ import print_function
@@ -26,7 +31,7 @@ import sys
 import os
 import unittest
 import copy
-
+import pdb
 # =========================
 # Python Packages
 # =========================
@@ -67,29 +72,30 @@ class Bayesian(Struc):
 
     **Options**
 
-    +----------------+---------+------+------+------+-------+-------------------------------+
-    | Name           | Type    | Def  | Min  | Max  | Units | Description                   |
-    +----------------+---------+------+------+------+-------+-------------------------------+
-    | `outer_atol`   | (float) | 1E-6 | 0.0  | 1.0  | -     | Absolute tolerance            |
-    |                |         |      |      |      |       | on change in likelyhood       |
-    |                |         |      |      |      |       | for outer loop convergence    |
-    +----------------+---------+------+------+------+-------+-------------------------------+
-    | `outer_rtol`   | (float) | 1E-4 | 0.0  | 1.0  | -     | Relative tolerance on change  |
-    |                |         |      |      |      |       | in likelyhood for outer       |
-    |                |         |      |      |      |       | loop convergence              |
-    +----------------+---------+------+------+------+-------+-------------------------------+
-    | `maxiter`      | (int)   | 6    | 1    | 100  | -     | Maximum iterations for        |
-    |                |         |      |      |      |       | convergence of the likelyhood |
-    |                |         |      |      |      |       |                               |
-    +----------------+---------+------+------+------+-------+-------------------------------+
-    | `constrain`    | (bool)  | True | None | None | -     | Flag to constrain the         |
-    |                |         |      |      |      |       | optimization                  |
-    +----------------+---------+------+------+------+-------+-------------------------------+
-    | `precondition` | (bool)  | True | None | None | -     | Flag to scale the problem     |
-    +----------------+---------+------+------+------+-------+-------------------------------+
-    | `verb`         | (bool)  | True | None | None | -     | Flag to print stats during    |
-    |                |         |      |      |      |       | optimization                  |
-    +----------------+---------+------+------+------+-------+-------------------------------+
+    +--------------+-------+-----+-----+-----+-----+----------------------------+
+    |Name          |Type   |Def  |Min  |Max  |Units|Description                 |
+    +==============+=======+=====+=====+=====+=====+============================+
+    |`outer_atol`  |(float)|1E-6 |0.0  |1.0  |-    |Absolute tolerance on change|
+    |              |       |     |     |     |     |in likelyhood for outer loop|
+    |              |       |     |     |     |     |convergence                 |
+    +--------------+-------+-----+-----+-----+-----+----------------------------+
+    |`outer_rtol`  |(float)|1E-4 |0.0  |1.0  |-    |Relative tolerance on change|
+    |              |       |     |     |     |     |in likelyhood for outer loop|
+    |              |       |     |     |     |     |convergence                 |
+    +--------------+-------+-----+-----+-----+-----+----------------------------+
+    |`maxiter`     |(int)  |6    |1    |100  |-    |Maximum iterations for      |
+    |              |       |     |     |     |     |convergence of the          |
+    |              |       |     |     |     |     |likelyhood                  |
+    +--------------+-------+-----+-----+-----+-----+----------------------------+
+    |`constrain`   |(bool) |True |None |None |-    |Flag to constrain the       |
+    |              |       |     |     |     |     |optimization                |
+    +--------------+-------+-----+-----+-----+-----+----------------------------+
+    |`precondition`|(bool) |True |None |None |-    |Flag to scale the problem   |
+    +--------------+-------+-----+-----+-----+-----+----------------------------+
+    |`verb`        |(bool) |True |None |None |-    |Flag to print stats during  |
+    |              |       |     |     |     |     |optimization                |
+    +--------------+-------+-----+-----+-----+-----+----------------------------+
+
 
     **Methods**
     """
@@ -128,7 +134,7 @@ class Bayesian(Struc):
                      'Flag to print stats during optimization']
         }
 
-        Struc.__init__(self, name=name, def_opts=def_opts)
+        Struc.__init__(self, name=name, def_opts=def_opts, *args, **kwargs)
 
         self.simulations = None
         self.model = None
@@ -297,9 +303,9 @@ class Bayesian(Struc):
         """
         log_like = 0
         for (sim, exp), sim_data in zip(self.simulations, initial_data):
-            exp_indep, exp_dep, spline = exp()
+            exp_indep, exp_dep = exp()[:2]
             epsilon = sim.compare(exp_indep, exp_dep[0], sim_data)
-            log_like += -0.5 * np.dot(epsilon,
+            log_like -= 0.5 * np.dot(epsilon,
                                       np.dot(inv(sim.get_sigma()), epsilon))
         #end
 
@@ -350,8 +356,8 @@ class Bayesian(Struc):
             # Solve all simulations with the curent model
             if verb: print('prior log like', -self.model_log_like())
             if verb: print('sim log like', -self.sim_log_like(initial_data))
-            new_log_like = -self.model_log_like()\
-                           - self.sim_log_like(initial_data)
+            new_log_like =  1.0*self.model_log_like()\
+                           +self.sim_log_like(initial_data)
             if verb: print('total log like', new_log_like)
 
             history.append(new_log_like)#, self.model.get_dof()))
@@ -359,21 +365,24 @@ class Bayesian(Struc):
 
             if np.fabs(log_like - new_log_like) < atol\
                and np.fabs((log_like - new_log_like) / new_log_like) < reltol:
-                conv = True
-                break
+                log_like = new_log_like
+                #conv = True
+                #break
             else:
                 log_like = new_log_like
             #end
 
             local_sol = self._local_opt(sims, model, initial_data)
 
+            # model.set_dof(local_sol)
+            
             # Perform basic line search along direction of best improvement
             d_hat = np.array(local_sol['x']).reshape(-1)
             if precondition:
                 d_hat = np.dot(model.get_scaling(), d_hat)
             # end
             dhat_hist.append(d_hat)
-            n_steps = 5
+            n_steps = 7
             costs = np.zeros(n_steps)
             iter_data = []
             initial_dof = model.get_dof()
@@ -387,27 +396,34 @@ class Bayesian(Struc):
                 x_list = np.linspace(0, max_step, n_steps)
                 for i, x_i in enumerate(x_list):
                     model.set_dof(initial_dof + x_i * d_hat)
-                    costs[i] = -self.model_log_like()
+                    costs[i] = -0.0*self.model_log_like()
                     tmp = []
                     for sim, exp in sims:
                         sim.update(model=model)
                         tmp.append(sim())
                     #end
                     iter_data.append(tmp)
-                    costs[i] -= self.sim_log_like(tmp)
+                    costs[i] -= self.sim_log_like(tmp)                    
                 #end
+
                 besti = np.argmin(costs)
-                if verb: print('Zooming in to max step {:f}'.format(max_step/10.0))
+
+                if verb and besti==0:
+                    print('Zooming in to max step {:f}'.format(max_step/10.0))
+                #end
             #end
+
             model.set_dof(initial_dof + d_hat * x_list[besti])
 
             initial_data = iter_data[besti]
             for sim, exp in sims:
                 sim.update(model=model)
             # end
+            # conv= True
+            # break
         #end
         if not conv:
-            raise Exception("{}: Outer loop could not converge to the given\
+            print("{}: Outer loop could not converge to the given\
                              tolerance in the maximum number of iterations"\
                             .format(self.get_inform(1)))
         #end
@@ -540,6 +556,7 @@ class Bayesian(Struc):
         # Get constraints
         g_mat, h_vec = self._get_constraints(model)
 
+        # pdb.set_trace()
         p_mat, q_mat = self._get_model_pq(model)
         tmp = self._get_sim_pq(sims, model, initial_data)
 
@@ -548,7 +565,8 @@ class Bayesian(Struc):
 
         p_mat *= 0.5
 
-        solvers.options['show_progress'] = True
+        solvers.options['show_progress'] = False
+        solvers.options['debug'] = False
         solvers.options['maxiters'] = 100  # 100 default
         solvers.options['reltol'] = 1e-6   # 1e-6 default
         solvers.options['abstol'] = 1e-7   # 1e-7 default
@@ -627,38 +645,37 @@ class Bayesian(Struc):
         spline_end = c_model.get_option('spline_end')
         dim = c_model.shape()[0]
 
-        v_all = c_model.get_t()
-        v_unique = v_all[spline_end-1:1-spline_end]
-        n_v = len(v_unique)
-        n_constraints = n_v + 2
+        v_unique = c_model.get_t()[spline_end-1:1-spline_end]
+        n_constraints = len(v_unique) + 2
 
 
-        G = np.zeros((n_constraints, dim))
-        c = np.zeros(dim)
+        G_mat = np.zeros((n_constraints, dim))
+        c_tmp = np.zeros(dim)
         c_init = c_model.get_dof()
+        scaling = c_model.get_scaling()
         for i in range(dim):
-            c[i] = 1.0
-            c_model.set_dof(c)
-            G[:-2, i] = -c_model.derivative(2)(v_unique)
-            G[-2, i] = c_model.derivative(1)(v_unique[-1])
-            G[-1, i] = -c_model(v_unique[-1])
-            c[i] = 0.0
+            c_tmp[i] = 1.0
+            c_model.set_dof(c_tmp)
+            G_mat[:-2, i] = -c_model.derivative(2)(v_unique)
+            G_mat[-2, i] = c_model.derivative(1)(v_unique[-1])
+            G_mat[-1, i] = -c_model(v_unique[-1])
+            c_tmp[i] = 0.0
         # end
 
-        h = -np.dot(G, c_init)
+        h_vec = -np.dot(G_mat, c_init)
 
-        scale = np.abs(h)
+        scale = np.abs(h_vec)
         scale = np.maximum(scale, scale.max()*1e-15)
         # Scale to make |h[i]| = 1 for all i
         HI = np.diag(1.0/scale)
-        h = np.dot(HI, h)
-        G = np.dot(HI, G)
+        h_vec = np.dot(HI, h_vec)
+        G_mat = np.dot(HI, G_mat)
 
         if precondition:
-            G = np.dot(G, c_model.get_scaling())
+            G_mat = np.dot(G_mat, scaling)
         #end
-
-        return G, h
+        
+        return G_mat, h_vec
 
     def _get_model_pq(self, model):
         """Gets the quadratic optimizaiton matrix contributions from the prior
@@ -681,10 +698,9 @@ class Bayesian(Struc):
 
         if precondition:
             return np.dot(prior_scale, np.dot(prior_var, prior_scale)),\
-                np.dot(prior_delta, prior_var)
+                np.dot(prior_scale, np.dot(prior_delta, prior_var))
         else:
-            return prior_var, np.dot(prior_scale,\
-                                     np.dot(prior_delta, prior_var))
+            return prior_var, np.dot(prior_delta, prior_var)
 
     def _get_sim_pq(self, sims, model, initial_data):
         """Gets the QP contribytions from the model
@@ -727,8 +743,8 @@ class Bayesian(Struc):
             # sens_k = np.dot(sens_k, basis_k)
             epsilon = sim.compare(exp_indep, exp_dep[0], sim_data)
 
-            p_mat = np.dot(np.dot(sens_k.T, inv(sim.get_sigma())), sens_k)
-            q_mat = np.dot(np.dot(epsilon, inv(sim.get_sigma())), sens_k)
+            p_mat += np.dot(np.dot(sens_k.T, inv(sim.get_sigma())), sens_k)
+            q_mat += np.dot(np.dot(epsilon, inv(sim.get_sigma())), sens_k)
             i += dim_k
         #end
 
@@ -778,10 +794,10 @@ class Bayesian(Struc):
                 sim.update(model=model)
                 new_data = sim()
                 dim = sim.shape()
-                delta = sim.compare(sim_data[0],
-                                    sim_data[1][0],
-                                    new_data)
-                delta /= -step
+                delta = sim.compare(new_data[0],
+                                    new_data[1][0],
+                                    sim_data)
+                delta /= step
                 # If the sensitivity is less than the tolerance, make it
                 # zero
                 sens_matrix[j:j+dim, i] = np.where(np.fabs(delta) > sens_tol,\

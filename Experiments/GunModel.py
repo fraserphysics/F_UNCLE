@@ -67,6 +67,35 @@ class Gun(Experiment):
     .. figure:: /_static/gun.png
 
        variables defining the gun experiment
+    
+    **Options**
+
+    +---------+-------+------+-----+-----+-----+--------------------------------+
+    |Name     |Type   |Def   |Min  |Max  |Units|Description                     |
+    +=========+=======+======+=====+=====+=====+================================+
+    |`X_i`    |(float)|0.4   |0.0  |None |cm   |Initial position of projectile  |
+    +---------+-------+------+-----+-----+-----+--------------------------------+
+    |`x_f`    |(float)|3.0   |0.0  |None |cm   |Final/muzzle position of        |
+    |         |       |      |     |     |     |projectile                      |
+    +---------+-------+------+-----+-----+-----+--------------------------------+
+    |`m`      |(float)|500.0 |0.0  |None |g    |Mass of projectile              |
+    +---------+-------+------+-----+-----+-----+--------------------------------+
+    |`mass_he`|(float)|4     |0.0  |None |g    |The initial mass of high        |
+    |         |       |      |     |     |     |explosives used to drive the    |
+    |         |       |      |     |     |     |projectile                      |
+    +---------+-------+------+-----+-----+-----+--------------------------------+
+    |`area`   |(float)|1.0   |0.0  |None |cm**2|Projectile cross section        |
+    +---------+-------+------+-----+-----+-----+--------------------------------+
+    |`sigma`  |(float)|1.0e0 |0.0  |None |??   |Variance attributed to v        |
+    |         |       |      |     |     |     |measurements                    |
+    +---------+-------+------+-----+-----+-----+--------------------------------+
+    |`t_min`  |(float)|1.0e-6|0.0  |None |sec  |Range of times for t2v spline   |
+    +---------+-------+------+-----+-----+-----+--------------------------------+
+    |`t_max`  |(float)|1.0e-2|0.0  |None |sec  |Range of times for t2v spline   |
+    +---------+-------+------+-----+-----+-----+--------------------------------+
+    |`n_t`    |(int)  |250   |0    |None |''   |Number of times for t2v spline  |
+    +---------+-------+------+-----+-----+-----+--------------------------------+
+
 
     **Attributes**
 
@@ -76,11 +105,13 @@ class Gun(Experiment):
 
     **Methods**
     """
-    def __init__(self, eos, name='Gun Toy Computational Experiment', *args, **kwargs):
+    def __init__(self, eos, name='Gun Toy Computational Experiment',
+                 *args, **kwargs):
         """Instantiate the Experiment object
 
         Args:
-            eos(Isentrope): The equation of state model used in the toy computational experiment
+            eos(Isentrope): The equation of state model used in the toy 
+                computational experiment
 
         Keyword Args:
             name(str): A name. (Default = 'Gun Toy Computational Experiment')
@@ -264,7 +295,7 @@ class Gun(Experiment):
         see :py:meth:`F_UNCLE.Utils.Experiment.Experiment.get_sigma`
         """
 
-        return np.diag(np.ones(self.shape())* self.get_option('sigma'))
+        return np.diag(np.ones(self.shape())* self.get_option('sigma')**2)
 
     def shape(self):
         """Returns the degrees of freedom of the model

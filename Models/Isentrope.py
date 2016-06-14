@@ -72,6 +72,24 @@ class Isentrope(PhysicsModel):
 
        The assumed shape of the equation of state isentrope
 
+    **Options**
+
+    +------------+-------+-----+-----+-----+---------+--------------------------+
+    |    Name    |Type   |Def  |Min  |Max  |Units    |Description               |
+    +============+=======+=====+=====+=====+=========+==========================+
+    |`spline_N`  |(int)  |50   |7    |None |''       |Number of knots in the EOS|
+    |            |       |     |     |     |         |spline                    |
+    +------------+-------+-----+-----+-----+---------+--------------------------+
+    |`spline_min`|(float)|0.1  |0.0  |None |'cm**3/g'|Minimum value of volume   |
+    |            |       |     |     |     |         |modeled by EOS            |
+    +------------+-------+-----+-----+-----+---------+--------------------------+
+    |`spline_max`|(float)|1.0  |0.0  |None |'cm**3/g'|Maximum value of volume   |
+    |            |       |     |     |     |         |modeled by EOS            |
+    +------------+-------+-----+-----+-----+---------+--------------------------+
+    |`spline_end`|(float)|4    |0    |None |''       |Number of zero nodes at   |
+    |            |       |     |     |     |         |end of spline             |
+    +------------+-------+-----+-----+-----+---------+--------------------------+
+
     """
 
     def __init__(self, name='Isentrope', *args, **kwargs):
@@ -256,7 +274,20 @@ class EOSBump(Isentrope):
     """Model of an ideal isentrope with Gaussian bumps
 
     This is treated as the *true* EOS
+    
+    **Options**
 
+    +---------+-------+----------------+-----+-----+-----+----------------------+
+    |Name     |Type   |Def             |Min  |Max  |Units|Description           |
+    +---------+-------+----------------+-----+-----+-----+----------------------+
+    |`const_C`|(float)|2.56e9          |0.0  |None |'Pa' |'Constant p = C/v**3' |
+    |         |       |                |     |     |     |                      |
+    +---------+-------+----------------+-----+-----+-----+----------------------+
+    |`bumps`  |(list) |[(0.2 0.1 0.4)  |None |None |''   |'Gaussian bumps to the|
+    |         |       |                |     |     |     |EOS'                  |
+    |         |       |(0.3 0.1 -0.3)] |     |     |     |                      |
+    +---------+-------+----------------+-----+-----+-----+----------------------+
+    
     """
 
     def __init__(self, name='Bump EOS', *args, **kwargs):
@@ -265,7 +296,7 @@ class EOSBump(Isentrope):
         Args:
             *args: Variable length argument list.
             **kwargs: Arbitrary keyword arguments.
-
+        
         Keyword Args:
             name(str): Name if the isentrope *Def 'Bump EOS'*
 
@@ -307,7 +338,7 @@ class EOSBump(Isentrope):
         """Returns the nth order derivative
 
         Keyword Args:
-            n(int): The order of the derivative. *Def 1*
+            order(int): The order of the derivative. *Def 1*
 
         Return:
             d1_fun(function):
@@ -340,6 +371,19 @@ class EOSModel(Spline, Isentrope):
     """Spline based EOS model
 
     Multiply inherited structure from both `Isentrope` and `Spline`
+
+    **Options**
+
+    +--------------+---------+------+-----+-----+-----+-------------------------+
+    |Name          |Type     |Def   |Min  |Max  |Units|Description              |
+    +==============+=========+======+=====+=====+=====+=========================+
+    |`Spline_sigma`|float    |5e-3  |0.0  |None |'??' |'Multiplicative          |
+    |              |         |      |     |     |     |uncertainty of the prior |
+    |              |         |      |     |     |     |(1/2%)                   |
+    +--------------+---------+------+-----+-----+-----+-------------------------+
+    |`precondition`|bool     |False |None |None |''   |Precondition flag        |
+    +--------------+---------+------+-----+-----+-----+-------------------------+
+
     """
 
     def __init__(self, p_fun, name='Equation of State Spline', *args, **kwargs):
