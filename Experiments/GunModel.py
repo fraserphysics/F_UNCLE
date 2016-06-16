@@ -343,7 +343,8 @@ class Gun(Experiment):
 
         return time, (states[:, 1], states[:, 0]), vt_spline
 
-    def plot(self, axis=None, hardcopy=None, level=0, data=None, *args, **kwargs):
+    def plot(self, axis=None, hardcopy=None, level=0, data=None,
+             style = '-k', err_style = '-r',  *args, **kwargs):
         """Plots the gun experiment
 
         Overloads :py:meth:`F_UNCLE.Utils.Struc.Struc.plot`
@@ -380,7 +381,16 @@ class Gun(Experiment):
 
         if level == 0:
             #Plot the velocity time history
-            pass
+            ax1.plot(data[0][0], data[0][1][0], style)
+            ax1.set_xlabel('Time / s')
+            ax1.set_ylabel('Velocity / cm s**-1')
+
+            if len(data) == 2:
+                ax2 = ax1.twinx()
+                ax2.plot(data[0][0], data[0][1][0] - data[1][1][0], err_style)
+                ax2.set_ylabel('Error / cm s**-1')
+            # end
+
         elif level == 1:
             #Plot the position time history
             pass

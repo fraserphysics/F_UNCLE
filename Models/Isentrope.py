@@ -134,7 +134,7 @@ class Isentrope(PhysicsModel):
 
         return (self.get_option('spline_N'), 1)
 
-    def plot(self, axis=None, hardcopy=None, *args, **kwargs):
+    def plot(self, axis=None, hardcopy=None, style = '-k', *args, **kwargs):
         """Plots the EOS
 
         Overloads the :py:meth:`F_UNCLE.Utils.Struc.Struc.plot` method to plot
@@ -143,8 +143,8 @@ class Isentrope(PhysicsModel):
         Args:
             axis(plt.Axes): The axis on which to plot the figure, if None,
                 creates a new figure object on which to plot.
-            hard-copy(bool): If a string, write the figure to the file specified
-
+            hard-copy(str): If a string, write the figure to the file specified
+            style(str): A :py:meth:`plt.Axis.plot` format string for the eos
         Return:
             (plt.Figure): A reference to the figure containing the plot
 
@@ -164,7 +164,7 @@ class Isentrope(PhysicsModel):
         v_spec = np.logspace(np.log10(self.get_option('spline_min')),\
                         np.log10(self.get_option('spline_max')),\
                         50)
-        ax1.plot(v_spec, self(v_spec), *args, **kwargs)
+        ax1.plot(v_spec, self(v_spec), style, *args, **kwargs)
         ax1.set_xlabel('Specific volume / cm**3 g**-1')
         ax1.set_ylabel('Pressure / Pa')
 
@@ -283,9 +283,9 @@ class EOSBump(Isentrope):
     |`const_C`|(float)|2.56e9          |0.0  |None |'Pa' |'Constant p = C/v**3' |
     |         |       |                |     |     |     |                      |
     +---------+-------+----------------+-----+-----+-----+----------------------+
-    |`bumps`  |(list) |[(0.2 0.1 0.4)  |None |None |''   |'Gaussian bumps to the|
+    |`bumps`  |(list) |[(0.4 0.1 0.25) |None |None |''   |'Gaussian bumps to the|
     |         |       |                |     |     |     |EOS'                  |
-    |         |       |(0.3 0.1 -0.3)] |     |     |     |                      |
+    |         |       |(0.5 0.1 -0.3)] |     |     |     |                      |
     +---------+-------+----------------+-----+-----+-----+----------------------+
     
     """
@@ -305,8 +305,8 @@ class EOSBump(Isentrope):
         def_opts = {
             'const_C': [float, 2.56e9, 0.0, None, 'Pa',
                         "Constant p = C/v**3"],
-            'bumps' : [list, [(0.2, 0.1, 0.4),
-                              (0.3, 0.1, -0.3)], None, None, '',
+            'bumps' : [list, [(0.4, 0.1, 0.25),
+                              (0.5, 0.1, -0.3)], None, None, '',
                        "Gaussian bumps to the EOS"]
             }
 

@@ -98,9 +98,9 @@ class Stick(Experiment):
                       'Upper search range for detonation velocity'],
             'vol_0': [float, 1.835**-1, 0.0, None, 'cm**3 g**-1',
                       'The pre detonation specific volume of HE'],
-            'x_min': [float, 0.0, None, 'cm',
+            'x_min': [float, 0.0, 0.0, None, 'cm',
                       'The position of the first sensor on the rate stick'],
-            'x_max': [float, 17.7, None, 'cm',
+            'x_max': [float, 17.7, 0.0, None, 'cm',
                       'The position of the last sensor on the rate stick'],
             'n_x': [int, 10, 0, None, '',
                     'Number of sensor positions']
@@ -321,16 +321,28 @@ class Stick(Experiment):
 
         return vel_cj, vol_cj, p_cj, rayl_line
 
-    def plot(self, axis=None, hardcopy=None):
+    def plot(self, axis=None, hardcopy=None, level = 1, data = None,
+             eos_style = '-k', ray_style = ':k', cj_style = 'ok', data_style = '-k'):
         """Plots the EOS and Rayleigh line
         Plots the critical Rayleigh line corresponding to the detonation
         velocity tangent to the EOS.
+        
+        Args:
+            level(int): Specified what to plot
+                 1. Plots the EOS with the Raylight line intersecting the CJ point
+                 2. Plots the output from a simulation
+            eos_style(str): :py:meth:`Axis.plot` format string for eos trend
+            ray_style(str): :py:meth:`Axis.plot` format string for Rayleigh trend
+            cj_style(str): :py:meth:`Axis.plot` format string for CJ point
+            data_style(str): :py:meth:`Axis.plot` format string for data point
+            data(list): The output from a call to Stick
 
         see :py:meth:`F_UNCLE.Utils.Struc.Struc.plot`
         """
         v_min = self.eos.get_option('spline_min')
         v_max = self.eos.get_option('spline_max')
         v_0 = self.get_option('vol_0')
+
         if axis is None:
             fig = plt.figure()
             ax1 = fig.gca()
@@ -339,14 +351,20 @@ class Stick(Experiment):
             ax1 = axis
         # end
 
-        self.eos.plot(axis=ax1)
-        vel_cj, vol_cj, p_cj, rayl_line = self._get_cj_point(self.eos, 1.835**-1)
+        if level == 1:
+            self.eos.plot(axis=ax1, style=eos_style)
+            vel_cj, vol_cj, p_cj, rayl_line = self._get_cj_point(self.eos, 1.835**-1)
 
-        v_eos = np.logspace(np.log10(v_min), np.log10(v_max), 30)
+            v_eos = np.logspace(np.log10(v_min), np.log10(v_max), 30)
 
-        ax1.plot(v_eos, rayl_line(vel_cj, v_eos, self.eos, v_0), '-k')
-        ax1.plot(vol_cj, p_cj, 'sk')
-
+            ax1.plot(v_eos, rayl_line(vel_cj, v_eos, self.eos, v_0), ray_style)
+            ax1.plot(vol_cj, p_cj, cj_style)
+        elif level == 2:
+            ax1.plot(data[0], 1E-3*data[1][0], data_style)
+            ax1.set_xlabel("Sensor position / cm")
+            ax1.set_ylabel("Shock arrival time / ms")
+        #end
+        
         return fig
 
 class TestStick(unittest.TestCase):

@@ -19,7 +19,7 @@ init_prior = np.vectorize(lambda v: 2.56e9 / v**3)
 
 # Create the model and *true* EOS
 eos_model = EOSModel(init_prior)
-eos_true = EOSBump(const_C = 2.4E9, bumps=[])
+eos_true = EOSBump()
 
 # Create the objects to generate simulations and pseudo experimental data
 gun_experiment = Gun(eos_true, mass_he = 1.0)
@@ -38,6 +38,7 @@ analysis = Bayesian(simulations = [(gun_simulation, gun_experiment),
 # Run the analysis
 best_eos, history = analysis()
 
+print analysis
 
 plt.figure()
 ax1 = plt.gca()
@@ -71,7 +72,11 @@ time_e, (vel_e, pos_e), spline_e = gun_experiment()
 fig = plt.figure()
 ax1 = fig.add_subplot(111)
 ax2 = ax1.twinx()
-l1 = ax1.plot(gun_prior_sim[0], gun_prior_sim[1][0], '-b', label = 'Prior EOS')
+
+time_s = pos_s * gun_simulation.get_option('area')/gun_simulation.get_option('mass_he')
+time_e = pos_e * gun_simulation.get_option('area')/gun_simulation.get_option('mass_he')
+
+l1 = ax1.plot(time_s, gun_prior_sim[1][0], '-b', label = 'Prior EOS')
 l2 = ax1.plot(time_s, vel_s, '--r', label = 'Best EOS')
 l3 = ax1.plot(time_e, vel_e, '-.k', label = 'True EOS')
 l4 = ax2.plot(time_e, vel_e - spline_s(time_e), '-g', label = 'Final error')
@@ -85,7 +90,8 @@ ax1.legend([l1[0],l2[0],l3[0],l4[0],l5[0]],
             'Prior Error'], loc = 'best')
 
 ax1.set_title('Velocity histories')
-ax1.set_xlabel('Time')
+#ax1.set_xlabel('Time')
+ax1.set_xlabel('Specific Volume')
 ax1.set_ylabel('Velocity')
 ax2.set_ylabel('Error')
 

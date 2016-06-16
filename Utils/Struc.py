@@ -29,6 +29,7 @@ To Do
 # Python Standard Libraries
 # =========================
 import unittest
+import copy
 from math import ceil
 # =========================
 # Python Packages
@@ -117,7 +118,7 @@ class Struc(object):
             if arg in kwargs:
                 self.set_option(arg, kwargs[arg])
             else:
-                self.options[arg] = self.def_opts[arg][1]
+                self.options[arg] = copy.deepcopy(self.def_opts[arg][1])
             #end
         #end
 
@@ -277,6 +278,7 @@ class Struc(object):
         out_str += "{:<15s}{:<10s}{:12s}{:<10s}{:<10s}{:<23s}\n".\
                     format("....", ".....", ".....", " ...", " ...", "...........")
         for key in def_opts:
+            
             if def_opts[key][2] is None:
                 lower_bound = float('nan')
             else:
@@ -290,11 +292,15 @@ class Struc(object):
             #end
 
             ## Divide long descriptions to span many lines
-            descr = []
-            for i in xrange(int(ceil(len(def_opts[key][5])/23.0))):
-                descr.append(def_opts[key][5][(i)*23:(i+1)*23])
-            #end
-
+            try:
+                descr = []
+                for i in xrange(int(ceil(len(def_opts[key][5])/23.0))):
+                    descr.append(def_opts[key][5][(i)*23:(i+1)*23])
+                #end
+            except:
+                import pdb
+                pdb.set_trace()
+                
             if isinstance(opts[key], (float, int)):
                 out_str += "{:<15s}{:< 10g}{:12s}{:< 10g}{:< 10g}{:<23s}\n".\
                            format(key, opts[key], def_opts[key][4], lower_bound,
@@ -313,9 +319,11 @@ class Struc(object):
                         out_str += " "*57 + line + "\n"
                     #end
                 #end
-            elif isinstance(opts[key], (tuple, list)):
+            elif isinstance(opts[key], (tuple, list)) and len(opts[key])>0:
                 # Print out lists
+
                 # Print first row
+
                 if isinstance(opts[key][0], (float, int)):
                     out_str += "{:<15s}{:< 10g}{:12s}{:< 10g}{:< 10g}{:<23s}\n".\
                                 format(key, opts[key][0],
@@ -327,6 +335,7 @@ class Struc(object):
                                        def_opts[key][4], lower_bound,
                                        upper_bound, descr[0])
                 #end
+
                 # Print following rows
                 if len(opts[key]) > 1:
                     for i in xrange(len(opts[key])-1):

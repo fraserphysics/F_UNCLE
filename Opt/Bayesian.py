@@ -31,6 +31,7 @@ import sys
 import os
 import unittest
 import copy
+import math
 import pdb
 # =========================
 # Python Packages
@@ -92,6 +93,10 @@ class Bayesian(Struc):
     +--------------+-------+-----+-----+-----+-----+----------------------------+
     |`precondition`|(bool) |True |None |None |-    |Flag to scale the problem   |
     +--------------+-------+-----+-----+-----+-----+----------------------------+
+    |`prior_weight`|(float)|1.0  |0.0  |0.0  |-    |Weight of the prior when    |
+    |              |       |     |     |     |     |calculating the log         |
+    |              |       |     |     |     |     |likelihood                  |
+    +--------------+-------+-----+-----+-----+-----+----------------------------+
     |`verb`        |(bool) |True |None |None |-    |Flag to print stats during  |
     |              |       |     |     |     |     |optimization                |
     +--------------+-------+-----+-----+-----+-----+----------------------------+
@@ -131,7 +136,10 @@ class Bayesian(Struc):
             'precondition':[bool, True, None, None, '-',
                             'Flag to scale the problem'],
             'verb': [bool, True, None, None, '-',
-                     'Flag to print stats during optimization']
+                     'Flag to print stats during optimization'],
+            'prior_weight': [float, 1.0, 0.0, 1.0, '-',
+                             'Weighting of the prior when calculating log\
+                             likelihood']
         }
 
         Struc.__init__(self, name=name, def_opts=def_opts, *args, **kwargs)
@@ -154,49 +162,49 @@ class Bayesian(Struc):
            (str): String describing the Bayesian object
         """
         out_str = ''
-        out_str += r"=======================================================\n"
-        out_str += r"=======================================================\n"
-        out_str += r"           ____                        _               \n"
-        out_str += r"          |  _ \                      (_)              \n"
-        out_str += r"          | |_) | __ _ _   _  ___  ___ _  __ _ _ __    \n"
-        out_str += r"          |  _ < / _` | | | |/ _ \/ __| |/ _` | '_ \   \n"
-        out_str += r"          | |_) | (_| | |_| |  __/\__ \ | (_| | | | |  \n"
-        out_str += r"          |____/ \__,_|\__, |\___||___/_|\__,_|_| |_|  \n"
-        out_str += r"                        __/ |                          \n"
-        out_str += r"                       |___/                           \n"
-        out_str += r"=======================================================\n"
-        out_str += r"=======================================================\n"
-        out_str += r"  __  __           _      _ \n"
-        out_str += r" |  \/  |         | |    | |\n"
-        out_str += r" | \  / | ___   __| | ___| |\n"
-        out_str += r" | |\/| |/ _ \ / _` |/ _ \ |\n"
-        out_str += r" | |  | | (_) | (_| |  __/ |\n"
-        out_str += r" |_|  |_|\___/ \__,_|\___|_|\n"
+        out_str += "=======================================================\n"
+        out_str += "=======================================================\n"
+        out_str += "           ____                        _               \n"
+        out_str += "          |  _ \                      (_)              \n"
+        out_str += "          | |_) | __ _ _   _  ___  ___ _  __ _ _ __    \n"
+        out_str += "          |  _ < / _` | | | |/ _ \/ __| |/ _` | '_ \   \n"
+        out_str += "          | |_) | (_| | |_| |  __/\__ \ | (_| | | | |  \n"
+        out_str += "          |____/ \__,_|\__, |\___||___/_|\__,_|_| |_|  \n"
+        out_str += "                        __/ |                          \n"
+        out_str += "                       |___/                           \n"
+        out_str += "=======================================================\n"
+        out_str += "=======================================================\n"
+        out_str += "  __  __           _      _ \n"
+        out_str += " |  \/  |         | |    | |\n"
+        out_str += " | \  / | ___   __| | ___| |\n"
+        out_str += " | |\/| |/ _ \ / _` |/ _ \ |\n"
+        out_str += " | |  | | (_) | (_| |  __/ |\n"
+        out_str += " |_|  |_|\___/ \__,_|\___|_|\n"
         out_str += str(self.model)
-        out_str += r" _____      _             \n"
-        out_str += r"|  __ \    (_)            \n"
-        out_str += r"| |__) | __ _  ___  _ __  \n"
-        out_str += r"|  ___/ '__| |/ _ \| '__| \n"
-        out_str += r"| |   | |  | | (_) | |    \n"
-        out_str += r"|_|   |_|  |_|\___/|_|    \n"
+        out_str += " _____      _             \n"
+        out_str += "|  __ \    (_)            \n"
+        out_str += "| |__) | __ _  ___  _ __  \n"
+        out_str += "|  ___/ '__| |/ _ \| '__| \n"
+        out_str += "| |   | |  | | (_) | |    \n"
+        out_str += "|_|   |_|  |_|\___/|_|    \n"
         out_str += str(self.model.prior)
-        out_str += r" ______                      _                      _        \n"
-        out_str += r"|  ____|                    (_)                    | |       \n"
-        out_str += r"| |__  __  ___ __   ___ _ __ _ _ __ ___   ___ _ __ | |_ ___  \n"
-        out_str += r"|  __| \ \/ / '_ \ / _ \ '__| | '_ ` _ \ / _ \ '_ \| __/ __| \n"
-        out_str += r"| |____ >  <| |_) |  __/ |  | | | | | | |  __/ | | | |_\__ \ \n"
-        out_str += r"|______/_/\_\ .__/ \___|_|  |_|_| |_| |_|\___|_| |_|\__|___/ \n"
-        out_str += r"            | |                                              \n"
-        out_str += r"            |_|                                              \n"
+        out_str += " ______                      _                      _        \n"
+        out_str += "|  ____|                    (_)                    | |       \n"
+        out_str += "| |__  __  ___ __   ___ _ __ _ _ __ ___   ___ _ __ | |_ ___  \n"
+        out_str += "|  __| \ \/ / '_ \ / _ \ '__| | '_ ` _ \ / _ \ '_ \| __/ __| \n"
+        out_str += "| |____ >  <| |_) |  __/ |  | | | | | | |  __/ | | | |_\__ \ \n"
+        out_str += "|______/_/\_\ .__/ \___|_|  |_|_| |_| |_|\___|_| |_|\__|___/ \n"
+        out_str += "            | |                                              \n"
+        out_str += "            |_|                                              \n"
         for sim, exp in self.simulations:
             out_str += str(exp)
         #end
-        out_str += r"  _____ _                 _       _   _                  \n"
-        out_str += r" / ____(_)               | |     | | (_)                 \n"
-        out_str += r"| (___  _ _ __ ___  _   _| | __ _| |_ _  ___  _ __  ___  \n"
-        out_str += r" \___ \| | '_ ` _ \| | | | |/ _` | __| |/ _ \| '_ \/ __| \n"
-        out_str += r" ____) | | | | | | | |_| | | (_| | |_| | (_) | | | \__ \ \n"
-        out_str += r"|_____/|_|_| |_| |_|\__,_|_|\__,_|\__|_|\___/|_| |_|___/ \n"
+        out_str += "  _____ _                 _       _   _                  \n"
+        out_str += " / ____(_)               | |     | | (_)                 \n"
+        out_str += "| (___  _ _ __ ___  _   _| | __ _| |_ _  ___  _ __  ___  \n"
+        out_str += " \___ \| | '_ ` _ \| | | | |/ _` | __| |/ _ \| '_ \/ __| \n"
+        out_str += " ____) | | | | | | | |_| | | (_| | |_| | (_) | | | \__ \ \n"
+        out_str += "|_____/|_|_| |_| |_|\__,_|_|\__,_|\__|_|\___/|_| |_|___/ \n"
         for sim, exp in self.simulations:
             out_str += str(sim)
         #end
@@ -333,6 +341,7 @@ class Bayesian(Struc):
         reltol = self.get_option('outer_rtol')
         maxiter = self.get_option('maxiter')
         verb = self.get_option('verb')
+        prior_weight = self.get_option('prior_weight')
         sims = self.simulations
         model = self.model
 
@@ -356,7 +365,7 @@ class Bayesian(Struc):
             # Solve all simulations with the curent model
             if verb: print('prior log like', -self.model_log_like())
             if verb: print('sim log like', -self.sim_log_like(initial_data))
-            new_log_like =  1.0*self.model_log_like()\
+            new_log_like =  prior_weight*self.model_log_like()\
                            +self.sim_log_like(initial_data)
             if verb: print('total log like', new_log_like)
 
@@ -382,7 +391,7 @@ class Bayesian(Struc):
                 d_hat = np.dot(model.get_scaling(), d_hat)
             # end
             dhat_hist.append(d_hat)
-            n_steps = 7
+            n_steps = 5
             costs = np.zeros(n_steps)
             iter_data = []
             initial_dof = model.get_dof()
@@ -396,17 +405,17 @@ class Bayesian(Struc):
                 x_list = np.linspace(0, max_step, n_steps)
                 for i, x_i in enumerate(x_list):
                     model.set_dof(initial_dof + x_i * d_hat)
-                    costs[i] = -0.0*self.model_log_like()
+                    costs[i] = prior_weight*self.model_log_like()
                     tmp = []
                     for sim, exp in sims:
                         sim.update(model=model)
                         tmp.append(sim())
                     #end
                     iter_data.append(tmp)
-                    costs[i] -= self.sim_log_like(tmp)                    
+                    costs[i] += self.sim_log_like(tmp)                    
                 #end
 
-                besti = np.argmin(costs)
+                besti = np.argmax(costs)
 
                 if verb and besti==0:
                     print('Zooming in to max step {:f}'.format(max_step/10.0))
@@ -457,16 +466,15 @@ class Bayesian(Struc):
         #end
 
         if sens_calc:
-            initial_data = [sim()]
-            self._get_sens([(sim, exp)], self.model, initial_data)
+            self._get_sens(self.simulations, self.model)
         #end
-
         for i in xrange(len(self.simulations)):
             dim_k = self.simulations[i][1].shape()
             if i == simid:
                 sens_k = self.sens_matrix[i:i+dim_k, :]
             #end
             i += dim_k
+        #end
 
         sigma = inv(sim.get_sigma())
 
@@ -507,7 +515,7 @@ class Bayesian(Struc):
         vals = eig_vals[i]
         vecs = eig_vecs.T[i]
 
-        n_vals = max(len(np.where(vals > vals[0]*1e-3)[0]), 3)
+        n_vals = max(len(np.where(vals > vals[0]*1e-2)[0]), 3)
         n_vecs = len(np.where(vals > vals[0]*1e-2)[0])
 
         # Find range of v that includes support of eigenfunctions
@@ -520,22 +528,16 @@ class Bayesian(Struc):
         funcs = []
         for vec in vecs[:n_vecs]:
             eos.set_dof(vec)
-            func = eos(vol)  # An eigenfunction of the Fisher Information
-            a = np.abs(func)
-            argmax = np.argmax(a)
-            if func[argmax] < 0:
-                func *= -1
-            funcs.append(func)
-            big = np.where(a > a[argmax]*1e-4)[0]
-            min_k = min(big[0], min_k)
-            max_k = max(big[-1], max_k)
-
+            funcs.append(eos(vol))
+            if funcs[-1][np.argmax(np.fabs(funcs[-1]))]<0:
+                funcs[-1] *= -1
+            #end
         funcs = np.array(funcs)
 
-        vals = vals[np.where(vals > tol*vals[0])]
+#        vals = vals[np.where(vals > tol*vals[0])]
 
 
-        return vals, vecs, funcs, vol
+        return vals[:n_vals], vecs, funcs, vol
 
 
     def _local_opt(self, sims, model, initial_data):
@@ -556,7 +558,6 @@ class Bayesian(Struc):
         # Get constraints
         g_mat, h_vec = self._get_constraints(model)
 
-        # pdb.set_trace()
         p_mat, q_mat = self._get_model_pq(model)
         tmp = self._get_sim_pq(sims, model, initial_data)
 
@@ -755,7 +756,7 @@ class Bayesian(Struc):
 
         return p_mat, -q_mat
 
-    def _get_sens(self, sims, model, initial_data):
+    def _get_sens(self, sims, model, initial_data = None):
         """Gets the sensitivity of the simulated experiment to the EOS
 
         .. note::
@@ -777,11 +778,13 @@ class Bayesian(Struc):
         sens_matrix = np.empty(self.shape())
         new_dofs = copy.deepcopy(original_dofs)
 
-        # initial_data = []
-        # for sim, exp in sims:
-        #      initial_data.append(sim())
-        # #end
-
+        if initial_data is None:
+            initial_data = []
+            for sim, exp in sims:
+                 initial_data.append(sim())
+            #end
+        #end
+        
         for i in xrange(len(original_dofs)):
             step = float(new_dofs[i] * step_frac)
             new_dofs[i] += step
@@ -830,42 +833,69 @@ class Bayesian(Struc):
         """
 
         fig = plt.figure()
-        ax1 = plt.subplot(121)
-        ax2 = plt.subplot(122)
+        ax1 = plt.subplot(211)
+        ax2 = plt.subplot(212)
 
         eigs = fisher_data[0]
         eig_vects = fisher_data[1]
         eig_func = fisher_data[2]
         indep = fisher_data[3]
 
-        ax1.bar(np.arange(eigs.shape[0]), eigs, width=0.9, color='black',
-                edgecolor='none', orientation='vertical')
-
+#        ax1.bar(np.arange(eigs.shape[0]), eigs, width=0.9, color='black',
+#                edgecolor='none', orientation='vertical')
+        ax1.plot(eigs, '-xk')
         ax1.set_xlabel("Eigenvalue number /")
         ax1.set_ylabel("Eigenvalue /")
 
-        for i in xrange(eig_func.shape[0]):
-            ax2.plot(indep, eig_func[i], label="eig {:d}".format(i))
-        #end
+        styles = ['-k', '-.k', '--k', ':k']*int(math.ceil(eig_func.shape[0]/4.0))
 
+        for i in xrange(eig_func.shape[0]):
+            ax2.plot(indep, eig_func[i], styles[i],
+                     label="Eigenfunction {:d}".format(i))
+        #end
+        
+        ax2.legend(loc = 'best')
         ax2.set_xlabel("Specific volume / cm**3 g**-1")
         ax2.set_ylabel("Eigenfunction response / Pa")
-
+        
         fig.tight_layout()
 
-    def plot_convergence(self, hist, dof_hist):
+        return fig
+
+    def plot_convergence(self, hist, dof_hist=None, axis = None, hardcopy = None):
         """
+        
+        Args:
+            axis(plt.Axis): A valid :py:class:`plt.Axis` object on which to plot.
+                if none, generates a new figure
+            hist(list): Convergence history of log likelyhood
+            dof_hist(list): List of model DOFs at each iteration
+        
         """
-        fig = plt.figure()
-        ax1 = fig.add_subplot(121)
-        ax2 = fig.add_subplot(122)
-        for i in xrange(dof_hist.shape[1]):
-            ax1.plot(dof_hist[:, i]/dof_hist[0, i])
+
+        if axis is None:
+            fig = plt.figure()
+            ax1 = fig.gca()
+        else:
+            fig = None
+            ax1 = axis
         #end
-        fig.suptitle('Convergence of iterative process')
-        ax1.set_ylabel('Spline knot value')
-        ax1.set_xlabel('Iteration number')
-        fig.savefig('EOS_convergence.pdf')
+
+        ax1.plot(hist, '-k')
+        
+        ax1.set_xlabel('Iteration numer / ')
+        ax1.set_ylabel('A poseori log likelyhood / ')
+        
+        # fig = plt.figure()
+        # ax1 = fig.add_subplot(121)
+        # ax2 = fig.add_subplot(122)
+        # for i in xrange(dof_hist.shape[1]):
+        #     ax1.plot(dof_hist[:, i]/dof_hist[0, i])
+        # #end
+        # fig.suptitle('Convergence of iterative process')
+        # ax1.set_ylabel('Spline knot value')
+        # ax1.set_xlabel('Iteration number')
+        # fig.savefig('EOS_convergence.pdf')
 
     def plot_sens_matrix(self, initial_data):
         """Prints the sensitivity matrix

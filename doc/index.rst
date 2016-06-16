@@ -16,6 +16,7 @@ Contents:
    experiments
    analysis
    utils
+   scipy16
    
 Indices and tables
 ==================
