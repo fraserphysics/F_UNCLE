@@ -39,7 +39,7 @@ import pdb
 import numpy as np
 from numpy.linalg import inv
 import matplotlib.pyplot as plt
-from cvxopt import matrix, solvers
+#from cvxopt import matrix, solvers
 
 # =========================
 # Custom Packages
@@ -311,8 +311,8 @@ class Bayesian(Struc):
         """
         log_like = 0
         for (sim, exp), sim_data in zip(self.simulations, initial_data):
-            exp_indep, exp_dep = exp()[:2]
-            epsilon = sim.compare(exp_indep, exp_dep[0], sim_data)
+            exp_dep = exp()[1]
+            epsilon = exp_dep[0] - sim_data[1]
             log_like -= 0.5 * np.dot(epsilon,
                                       np.dot(inv(sim.get_sigma()), epsilon))
         #end
@@ -351,12 +351,8 @@ class Bayesian(Struc):
         conv = False
         log_like = 0.0
 
-        initial_data = []
-        for sim, exp in sims:
-            sim.update(model=model)
-            initial_data.append(sim())
-        #end
-
+        initial_data = self.compare(sims,model)
+        
         for i in xrange(maxiter):
             dof_hist.append(model.get_dof())
             if verb: print('Iter {} of {}'.format(i, maxiter))
@@ -406,13 +402,8 @@ class Bayesian(Struc):
                 for i, x_i in enumerate(x_list):
                     model.set_dof(initial_dof + x_i * d_hat)
                     costs[i] = prior_weight*self.model_log_like()
-                    tmp = []
-                    for sim, exp in sims:
-                        sim.update(model=model)
-                        tmp.append(sim())
-                    #end
-                    iter_data.append(tmp)
-                    costs[i] += self.sim_log_like(tmp)                    
+                    iter_data.append(self.compare(sims,model))
+                    costs[i] += self.sim_log_like(iter_data[-1])           
                 #end
 
                 besti = np.argmax(costs)
@@ -468,6 +459,7 @@ class Bayesian(Struc):
         if sens_calc:
             self._get_sens(self.simulations, self.model)
         #end
+        
         for i in xrange(len(self.simulations)):
             dim_k = self.simulations[i][1].shape()
             if i == simid:
@@ -506,7 +498,7 @@ class Bayesian(Struc):
                 3. (np.ndarray): vector of independent varible
 
         """
-        eos = self.model
+        eos = copy.deepcopy(self.model)
 
         # Spectral decomposition of info matrix and sort by eigenvalues
         eig_vals, eig_vecs = np.linalg.eigh(fisher)
@@ -559,6 +551,7 @@ class Bayesian(Struc):
         g_mat, h_vec = self._get_constraints(model)
 
         p_mat, q_mat = self._get_model_pq(model)
+        print(q_mat)
         tmp = self._get_sim_pq(sims, model, initial_data)
 
         p_mat += tmp[0]
@@ -566,6 +559,9 @@ class Bayesian(Struc):
 
         p_mat *= 0.5
 
+        print(q_mat)
+
+        from cvxopt import matrix, solvers
         solvers.options['show_progress'] = False
         solvers.options['debug'] = False
         solvers.options['maxiters'] = 100  # 100 default
@@ -573,12 +569,19 @@ class Bayesian(Struc):
         solvers.options['abstol'] = 1e-7   # 1e-7 default
         solvers.options['feastol'] = 1e-7  # 1e-7 default
 
-        if constrain:
-            sol = solvers.qp(matrix(p_mat), matrix(q_mat),
-                             matrix(g_mat), matrix(h_vec))
-        else:
-            sol = solvers.qp(matrix(p_mat), matrix(q_mat))
-
+        try:
+            if constrain:
+                sol = solvers.qp(matrix(p_mat), matrix(q_mat),
+                                 matrix(g_mat), matrix(h_vec))
+            else:
+                sol = solvers.qp(matrix(p_mat), matrix(q_mat))
+        except ValueError as inst:
+            print(inst)
+            print("G "+str(g_mat.shape))
+            print("P "+str(p_mat.shape))
+            print("h "+str(h_vec.shape))
+            print("q "+str(q_mat.shape))            
+            pdb.post_mortem()
         if sol['status'] != 'optimal':
             for key, value in sol.items():
                 print(key, value)
@@ -696,7 +699,7 @@ class Bayesian(Struc):
         prior_var = inv(model.get_sigma())
 
         prior_delta = model.get_dof() - model.prior.get_dof()
-
+        
         if precondition:
             return np.dot(prior_scale, np.dot(prior_var, prior_scale)),\
                 np.dot(prior_scale, np.dot(prior_delta, prior_var))
@@ -738,12 +741,12 @@ class Bayesian(Struc):
         for (sim, exp), sim_data in zip(sims, initial_data):
             dim_k = exp.shape()
             sens_k = d_mat[i:i+dim_k, :]
-            exp_indep, exp_dep, exp_spline = exp()
+            exp_dep  = exp()[1]
             # basis_k = sim_data[2].get_basis(exp_indep,
             #                                 spline_end = spline_end)
             # sens_k = np.dot(sens_k, basis_k)
-            epsilon = sim.compare(exp_indep, exp_dep[0], sim_data)
-
+            epsilon = exp_dep[0] - sim_data[1]
+            print(epsilon)
             p_mat += np.dot(np.dot(sens_k.T, inv(sim.get_sigma())), sens_k)
             q_mat += np.dot(np.dot(epsilon, inv(sim.get_sigma())), sens_k)
             i += dim_k
@@ -756,8 +759,39 @@ class Bayesian(Struc):
 
         return p_mat, -q_mat
 
+    def compare(self, sims, model):
+        """
+        
+        Args:
+            sims(list): List of tuples of simulation, experiment pairs
+            model(PhysicsModel): A valid physics model instance
+
+        Return:
+            (list):
+                List of lists for experiment comparison data
+             
+                0. independent value
+                1. dependent value of interest
+        """
+
+        data = []
+        for sim, exp in sims:
+            sim.update(model = model)
+            exp_indep = exp()[0]
+            sim_data = sim()
+            data.append([exp_indep,
+                         -1*sim.compare(exp_indep,
+                                        np.zeros(len(exp_indep)),
+                                        sim_data)])
+        #end
+
+        return data
+        #end
     def _get_sens(self, sims, model, initial_data = None):
         """Gets the sensitivity of the simulated experiment to the EOS
+        
+        The sensitivity matrix is the attribute `self.sens_matrix` which is set
+        by this method
 
         .. note::
 
@@ -765,12 +799,20 @@ class Bayesian(Struc):
              This implementation is onlt for spline models of EOS
 
         Args:
-           initial_data(list): The results of each simulation with the current
-               best model. Each element in the list corresponds tho the output
-               from a `__call__` to each element in the `self.simulations` list
+            sims(list): List of tuples of simulation, experiment pairs
+            model(PhysicsModel): A valid physics model instance
+
+        Keyword Args:
+            initial_data(list): The results of each simulation with the current
+                best model. Each element in the list corresponds tho the output
+                from a `__call__` to each element in the `self.simulations` list
+   
+        Return:
+            None
         """
 
         model = copy.deepcopy(model)
+        sims = copy.deepcopy(sims)
         sens_tol = 1E-12
         step_frac = 2E-2
 
@@ -779,10 +821,7 @@ class Bayesian(Struc):
         new_dofs = copy.deepcopy(original_dofs)
 
         if initial_data is None:
-            initial_data = []
-            for sim, exp in sims:
-                 initial_data.append(sim())
-            #end
+            initial_data = self.compare(sims, model)
         #end
         
         for i in xrange(len(original_dofs)):
@@ -797,9 +836,9 @@ class Bayesian(Struc):
                 sim.update(model=model)
                 new_data = sim()
                 dim = sim.shape()
-                delta = sim.compare(new_data[0],
-                                    new_data[1][0],
-                                    sim_data)
+                delta = -sim.compare(sim_data[0],
+                                     sim_data[1],
+                                     new_data)
                 delta /= step
                 # If the sensitivity is less than the tolerance, make it
                 # zero
@@ -851,11 +890,11 @@ class Bayesian(Struc):
 
         for i in xrange(eig_func.shape[0]):
             ax2.plot(indep, eig_func[i], styles[i],
-                     label="Eigenfunction {:d}".format(i))
+                     label="{:d}".format(i))
         #end
         
         ax2.legend(loc = 'best')
-        ax2.set_xlabel("Specific volume / cm**3 g**-1")
+        ax2.set_xlabel(r"Specific volume / cm$^3$ g$^{-1}$")
         ax2.set_ylabel("Eigenfunction response / Pa")
         
         fig.tight_layout()

@@ -383,12 +383,12 @@ class Gun(Experiment):
             #Plot the velocity time history
             ax1.plot(data[0][0], data[0][1][0], style)
             ax1.set_xlabel('Time / s')
-            ax1.set_ylabel('Velocity / cm s**-1')
+            ax1.set_ylabel(r'Velocity / cm s$^{-1}$')
 
             if len(data) == 2:
                 ax2 = ax1.twinx()
                 ax2.plot(data[0][0], data[0][1][0] - data[1][1][0], err_style)
-                ax2.set_ylabel('Error / cm s**-1')
+                ax2.set_ylabel('Error / cm s$^{-1}$')
             # end
 
         elif level == 1:

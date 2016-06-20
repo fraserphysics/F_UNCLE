@@ -32,7 +32,7 @@ import os
 import copy
 import unittest
 import numpy.testing as npt
-
+import math
 # =========================
 # Python Packages
 # =========================
@@ -165,7 +165,7 @@ class Isentrope(PhysicsModel):
                         np.log10(self.get_option('spline_max')),\
                         50)
         ax1.plot(v_spec, self(v_spec), style, *args, **kwargs)
-        ax1.set_xlabel('Specific volume / cm**3 g**-1')
+        ax1.set_xlabel(r'Specific volume / cm$^3$ g$^{-1}$')
         ax1.set_ylabel('Pressure / Pa')
 
         return fig
@@ -436,6 +436,24 @@ class EOSModel(Spline, Isentrope):
         dev = self.prior.get_dof() * self.get_option('spline_sigma')
         return np.diag(dev)
 
+    def _on_str(self):
+        """Addeed information on the EOS
+        """
+
+        dof = self.get_dof()
+        out_str="\n\n"
+        out_str+="Degrees of Freedom\n"
+        out_str+="==================\n\n"
+        k = 8
+        for i in xrange(int(math.ceil(len(dof)*1.0/k))):
+            for j in xrange(min(8, len(dof)-k*i)):
+                out_str += "{: 3.2e} ".format(dof[k*i+j])
+            #end
+            out_str += '\n'
+        #end
+
+        return out_str
+            
 
     def get_sigma(self):
         """Returns the co-variance matrix of the spline
