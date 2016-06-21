@@ -81,8 +81,8 @@ if __name__ == '__main__':
 
     # 2. Create the model and *true* EOS
     eos_model = EOSModel(init_prior)
-    #eos_true = EOSBump(bumps=[], const_C=2.4e9)
-    eos_true = EOSBump()
+    eos_true = EOSBump(bumps=[], const_C=2.4e9)
+    # eos_true = EOSBump()
     
     # 3. Create the objects to generate simulations and pseudo experimental data
     gun_experiment = Gun(eos_true, mass_he=1.0)
@@ -102,6 +102,7 @@ if __name__ == '__main__':
                         prior_weight=1.0,
                         constrain=True,
                         precondition=True,
+                        debug = False,
                         maxiter=10)
 
     # 6. Run the analysis

@@ -39,7 +39,7 @@ import pdb
 import numpy as np
 from numpy.linalg import inv
 import matplotlib.pyplot as plt
-#from cvxopt import matrix, solvers
+from cvxopt import matrix, solvers
 
 # =========================
 # Custom Packages
@@ -97,6 +97,9 @@ class Bayesian(Struc):
     |              |       |     |     |     |     |calculating the log         |
     |              |       |     |     |     |     |likelihood                  |
     +--------------+-------+-----+-----+-----+-----+----------------------------+
+    |`debug`       |(bool) |False|None |None |-    |Flag to print debug         |         
+    |              |       |     |     |     |     |information                 |               
+    +--------------+-------+-----+-----+-----+-----+----------------------------+
     |`verb`        |(bool) |True |None |None |-    |Flag to print stats during  |
     |              |       |     |     |     |     |optimization                |
     +--------------+-------+-----+-----+-----+-----+----------------------------+
@@ -135,7 +138,10 @@ class Bayesian(Struc):
                           'Flag to constrain the optimization'],
             'precondition':[bool, True, None, None, '-',
                             'Flag to scale the problem'],
-            'verb': [bool, True, None, None, '-',
+            'debug' : [bool, False, None, None, '-',
+                       'Flag to print debug information'],
+        
+            'verb' : [bool, True, None, None, '-',
                      'Flag to print stats during optimization'],
             'prior_weight': [float, 1.0, 0.0, 1.0, '-',
                              'Weighting of the prior when calculating log\
@@ -341,6 +347,7 @@ class Bayesian(Struc):
         reltol = self.get_option('outer_rtol')
         maxiter = self.get_option('maxiter')
         verb = self.get_option('verb')
+
         prior_weight = self.get_option('prior_weight')
         sims = self.simulations
         model = self.model
@@ -351,7 +358,7 @@ class Bayesian(Struc):
         conv = False
         log_like = 0.0
 
-        initial_data = self.compare(sims,model)
+        initial_data = self.compare(sims, model)
         
         for i in xrange(maxiter):
             dof_hist.append(model.get_dof())
@@ -361,7 +368,7 @@ class Bayesian(Struc):
             # Solve all simulations with the curent model
             if verb: print('prior log like', -self.model_log_like())
             if verb: print('sim log like', -self.sim_log_like(initial_data))
-            new_log_like =  prior_weight*self.model_log_like()\
+            new_log_like = prior_weight*self.model_log_like()\
                            +self.sim_log_like(initial_data)
             if verb: print('total log like', new_log_like)
 
@@ -546,12 +553,13 @@ class Bayesian(Struc):
                 The step direction for greates improvement in log lieklyhood
         """
         constrain = self.get_option('constrain')
-
+        debug = self.get_option('debug')
+        
         # Get constraints
         g_mat, h_vec = self._get_constraints(model)
 
         p_mat, q_mat = self._get_model_pq(model)
-        print(q_mat)
+        if debug: print(q_mat)
         tmp = self._get_sim_pq(sims, model, initial_data)
 
         p_mat += tmp[0]
@@ -559,9 +567,9 @@ class Bayesian(Struc):
 
         p_mat *= 0.5
 
-        print(q_mat)
+        if debug: print(q_mat)
 
-        from cvxopt import matrix, solvers
+
         solvers.options['show_progress'] = False
         solvers.options['debug'] = False
         solvers.options['maxiters'] = 100  # 100 default
@@ -732,6 +740,7 @@ class Bayesian(Struc):
 
         precondition = self.get_option('precondition')
         prior_scale = model.get_scaling()
+        debug = self.get_option('debug')
         d_mat = self.sens_matrix
         p_mat = np.zeros((self.shape()[1], self.shape()[1]))
         q_mat = np.zeros(self.shape()[1])
@@ -746,7 +755,7 @@ class Bayesian(Struc):
             #                                 spline_end = spline_end)
             # sens_k = np.dot(sens_k, basis_k)
             epsilon = exp_dep[0] - sim_data[1]
-            print(epsilon)
+            if debug: print(epsilon)
             p_mat += np.dot(np.dot(sens_k.T, inv(sim.get_sigma())), sens_k)
             q_mat += np.dot(np.dot(epsilon, inv(sim.get_sigma())), sens_k)
             i += dim_k
