@@ -27,12 +27,13 @@ None
 # =========================
 # Python Standard Libraries
 # =========================
-import sys
-import os
 import copy
 import unittest
 import numpy.testing as npt
 import math
+import sys
+import os
+
 # =========================
 # Python Packages
 # =========================
@@ -46,9 +47,10 @@ from scipy.interpolate import InterpolatedUnivariateSpline as IU_Spline
 # =========================
 # Custom Packages
 # =========================
-sys.path.append(os.path.abspath('./../../'))
-from F_UNCLE.Utils.Struc import Struc
-from F_UNCLE.Utils.PhysicsModel import PhysicsModel
+sys.path.append(os.path.abspath('./../'))
+from Utils.PhysicsModel import PhysicsModel
+
+
 # =========================
 # Main Code
 # =========================

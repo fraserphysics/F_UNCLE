@@ -6,7 +6,7 @@ The pysics models used in the analysys
 Isentrope
 ...........
 
-.. autoclass:: F_UNCLE.Models.Isentrope.Isentrope
+.. autoclass:: Models.Isentrope.Isentrope
    :members:
    :private-members:
    :special-members:
@@ -15,7 +15,7 @@ Isentrope
 BumpEOS
 ........
 
-.. autoclass:: F_UNCLE.Models.Isentrope.EOSBump
+.. autoclass:: Models.Isentrope.EOSBump
    :members:
    :private-members:
    :special-members:
@@ -23,7 +23,7 @@ BumpEOS
 EOSModel
 ........
 
-.. autoclass:: F_UNCLE.Models.Isentrope.EOSModel
+.. autoclass:: Models.Isentrope.EOSModel
    :members:
    :private-members:
    :special-members:

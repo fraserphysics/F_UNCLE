@@ -27,11 +27,9 @@ None
 # =========================
 # Python Standard Libraries
 # =========================
-
+import unittest
 import sys
 import os
-import unittest
-
 # =========================
 # Python Packages
 # =========================
@@ -39,14 +37,12 @@ import unittest
 # =========================
 # Custom Packages
 # =========================
-
-sys.path.append(os.path.abspath('./../../'))
-from F_UNCLE.Utils.Struc import Struc
+sys.path.append(os.path.abspath('./../'))
+from Utils.Struc import Struc
 
 # =========================
 # Main Code
 # =========================
-
 
 class PhysicsModel(Struc):
     """

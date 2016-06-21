@@ -24,10 +24,10 @@ None
 # Python Standard Libraries
 # =========================
 
-import sys
-import os
 import copy
 import unittest
+import sys
+import os
 
 # =========================
 # Python Packages
@@ -39,10 +39,11 @@ from scipy.optimize import brentq
 # =========================
 # Custom Packages
 # =========================
-sys.path.append(os.path.abspath('./../../'))
-from F_UNCLE.Utils.Experiment import Experiment
-from F_UNCLE.Models.Isentrope import EOSBump, EOSModel, Isentrope
 
+sys.path.append(os.path.abspath('./../'))
+
+from Utils.Experiment import Experiment
+from Models.Isentrope import EOSBump, EOSModel, Isentrope
 
 # =========================
 # Main Code
@@ -211,6 +212,7 @@ class Stick(Experiment):
                 - vel(float): Detonation velocity
                 - vol_0(float): Specific volume ahead of the shock
                 - eos(Isentrope): An equation of state model
+
             Return:
 
                 - p(float): The pressure along the Rayleigh line at v

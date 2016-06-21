@@ -42,17 +42,17 @@ import matplotlib.pyplot as plt
 try:
     from cvxopt import matrix, solvers
 except:
-    print('cvxopt package not found. Install by running\n
-           `$ pip install cvxopt`')
+    print('cvxopt package not found. Install by running\n'+\
+          '`$ pip install cvxopt`')
 #end
 
 # =========================
 # Custom Packages
 # =========================
-sys.path.append(os.path.abspath('./../../'))
-from F_UNCLE.Utils.Experiment import Experiment
-from F_UNCLE.Utils.PhysicsModel import PhysicsModel
-from F_UNCLE.Utils.Struc import Struc
+
+from ..Utils.Experiment import Experiment
+from ..Utils.PhysicsModel import PhysicsModel
+from ..Utils.Struc import Struc
 
 # =========================
 # Main Code

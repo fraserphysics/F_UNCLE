@@ -27,10 +27,9 @@ To Do
 # Python Standard Libraries
 # =========================
 
+import unittest
 import sys
 import os
-import unittest
-
 # =========================
 # Python Packages
 # =========================
@@ -38,10 +37,8 @@ import unittest
 # =========================
 # External Packages
 # =========================
-sys.path.append(os.path.abspath('./../../'))
-
-#from pyStruc import Struc
-from F_UNCLE.Utils.Struc import Struc
+sys.path.append(os.path.abspath('./../'))
+from Utils.Struc import Struc
 # =========================
 # Main Code
 # =========================

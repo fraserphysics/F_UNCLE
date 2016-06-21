@@ -55,17 +55,14 @@ A trivial change to test git hub
 
 # Standard python packages
 
+# External python packages
 import sys
 import os
-import pdb
-
-# External python packages
-
 import numpy as np
 import matplotlib.pyplot as plt
 
 # F_UNLCE packages
-sys.path.append(os.path.abspath('./../'))
+sys.path.append('./../')
 from F_UNCLE.Experiments.GunModel import Gun
 from F_UNCLE.Experiments.Stick import Stick
 from F_UNCLE.Models.Isentrope import EOSModel, EOSBump
