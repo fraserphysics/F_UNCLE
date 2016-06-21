@@ -39,7 +39,12 @@ import pdb
 import numpy as np
 from numpy.linalg import inv
 import matplotlib.pyplot as plt
-from cvxopt import matrix, solvers
+try:
+    from cvxopt import matrix, solvers
+except:
+    print('cvxopt package not found. Install by running\n
+           `$ pip install cvxopt`')
+#end
 
 # =========================
 # Custom Packages
