@@ -4,8 +4,7 @@ setup(name='FUNCLE',
       version='0.1',
       description='Tools for understanding functional uncertanty',
       author='Andrew Fraser',
-      url='http://f-uncle.readthedocs.io/en/latest/')
-#      package_dir={'F_UNLCE':'.'},
+      url='http://f-uncle.readthedocs.io/en/latest/',
       packages=['FUNCLE'])
 #                'F_UNCLE.Models',
 #                'F_UNCLE.Utils'])

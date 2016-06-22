@@ -654,7 +654,7 @@ class Bayesian(Struc):
         p positive for v_max
 
         For cubic splines between knots, f'' is constant and f' is
-        affine.  Consequently, f''*rho + 2*f' is affine between knots
+        affine.  Consequently, :math:`f''rho + 2f'` is affine between knots
         and it is sufficient to check eq:star at the knots.
 
         """
