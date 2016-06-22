@@ -100,7 +100,7 @@ if __name__ == '__main__':
                         constrain=True,
                         precondition=True,
                         debug = False,
-                        maxiter=1)
+                        maxiter=10)
 
     # 6. Run the analysis
     best_eos, history = analysis()
