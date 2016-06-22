@@ -78,8 +78,8 @@ if __name__ == '__main__':
 
     # 2. Create the model and *true* EOS
     eos_model = EOSModel(init_prior)
-    eos_true = EOSBump(bumps=[], const_C=2.4e9)
-    # eos_true = EOSBump()
+    #eos_true = EOSBump(bumps=[], const_C=2.4e9)
+    eos_true = EOSBump()
     
     # 3. Create the objects to generate simulations and pseudo experimental data
     gun_experiment = Gun(eos_true, mass_he=1.0)
@@ -100,7 +100,7 @@ if __name__ == '__main__':
                         constrain=True,
                         precondition=True,
                         debug = False,
-                        maxiter=10)
+                        maxiter=1)
 
     # 6. Run the analysis
     best_eos, history = analysis()
@@ -144,8 +144,8 @@ if __name__ == '__main__':
                           eos_style='-k',
                           ray_style=':k',
                           cj_style='ok')
-    eos_model.prior.plot(axis=f1ax1, style='--k')
-    eos_true.plot(axis=f1ax1, style='-.k')
+    eos_model.prior.plot(axis=f1ax1, style='--b')
+    eos_true.plot(axis=f1ax1, style='-.g')
     f1ax1.legend(['Fit EOS',
                   'Rayleigh line',
                   'CJ point',
@@ -156,6 +156,17 @@ if __name__ == '__main__':
     fig1.tight_layout()
     fig1.savefig('scipy2016_figure1'+figtype, dpi = 1000)
 
+    # Figure 1
+    
+    fig1 = plt.figure(figsize=square)
+    f1ax1 = fig1.gca()
+    eos_model.prior.plot(axis=f1ax1, style='--b')
+    eos_true.plot(axis=f1ax1, style='-.g')
+    f1ax1.legend(['Prior EOS',
+                  'True EOS'])
+    fig1.tight_layout()
+    fig1.savefig('scipy2016_figure1eos'+figtype, dpi = 1000)
+    
     # Figure 5
 
     fisher = analysis.get_fisher_matrix(simid=0, sens_calc=True)
@@ -173,6 +184,7 @@ if __name__ == '__main__':
 
     fig2 = analysis.plot_fisher_data(spec_data)
     fig2.set_size_inches(tall)
+    fig2.tight_layout()
     fig2.savefig('scipy2016_figure2'+figtype, dpi = 1000)
 
     # Figure 3
@@ -184,15 +196,15 @@ if __name__ == '__main__':
                           data=(s_pos_s, (s_time_s), s_data_s))
 
 
-    stick_simulation.plot(axis=f3ax1, data_style='+k', level=2,
+    stick_simulation.plot(axis=f3ax1, data_style='+g', level=2,
                           data=(s_pos_e, (s_time_e), s_data_e))
 
 
-    stick_simulation.plot(axis=f3ax1, data_style='--k', level=2,
+    stick_simulation.plot(axis=f3ax1, data_style='--b', level=2,
                           data=stick_prior_sim)
 
     f3ax1.legend(['Fit EOS', 'True EOS', 'Prior EOS'], loc='best')
-
+    fig3.tight_layout()
     fig3.savefig('scipy2016_figure3'+figtype, dpi = 1000)
 
     # Figure 4
@@ -202,8 +214,8 @@ if __name__ == '__main__':
     f4ax2 = fig4.add_subplot(212)
 
     best_eos.plot(axis=f4ax1, style='-k')
-    eos_model.prior.plot(axis=f4ax1, style='--k')
-    eos_true.plot(axis=f4ax1, style='-.k')
+    eos_model.prior.plot(axis=f4ax1, style='--b')
+    eos_true.plot(axis=f4ax1, style='-.g')
     f4ax1.legend(['Fit EOS',
                   'Prior EOS',
                   'True EOS'], loc='best')
@@ -213,10 +225,10 @@ if __name__ == '__main__':
                         data=[(g_time_s, (g_vel_s, g_pos_s), g_spline_s),
                                 (g_time_e, (g_vel_e, g_pos_e), g_spline_e)])
 
-    gun_simulation.plot(axis=f4ax2, style='-.k' ,
+    gun_simulation.plot(axis=f4ax2, style='-.g' ,
                         data=[(g_time_e, (g_vel_e, g_pos_e), g_spline_e)])
 
-    gun_simulation.plot(axis=f4ax2, style='--k' ,
+    gun_simulation.plot(axis=f4ax2, style='--b' ,
                         data=[gun_prior_sim])
     fig4.tight_layout()
     fig4.savefig('scipy2016_figure4'+figtype, dpi = 1000)

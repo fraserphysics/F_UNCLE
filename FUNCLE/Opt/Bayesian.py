@@ -901,7 +901,7 @@ class Bayesian(Struc):
         ax1.set_xlabel("Eigenvalue number /")
         ax1.set_ylabel("Eigenvalue /")
 
-        styles = ['-k', '-.k', '--k', ':k']*int(math.ceil(eig_func.shape[0]/4.0))
+        styles = ['-g', '-.b', '--m', ':k']*int(math.ceil(eig_func.shape[0]/4.0))
 
         for i in xrange(eig_func.shape[0]):
             ax2.plot(indep, eig_func[i], styles[i],
