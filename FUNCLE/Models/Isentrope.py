@@ -29,7 +29,6 @@ None
 # =========================
 import copy
 import unittest
-import numpy.testing as npt
 import math
 import sys
 import os
@@ -38,6 +37,7 @@ import os
 # Python Packages
 # =========================
 import numpy as np
+import numpy.testing as npt
 import matplotlib.pyplot as plt
 from scipy.interpolate import InterpolatedUnivariateSpline as IU_Spline
 # For scipy.interpolate.InterpolatedUnivariateSpline. See:
@@ -47,8 +47,8 @@ from scipy.interpolate import InterpolatedUnivariateSpline as IU_Spline
 # =========================
 # Custom Packages
 # =========================
-sys.path.append(os.path.abspath('./../'))
-from Utils.PhysicsModel import PhysicsModel
+sys.path.append(os.path.abspath('./../../'))
+from FUNCLE.Utils.PhysicsModel import PhysicsModel
 
 
 # =========================

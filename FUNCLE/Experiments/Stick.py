@@ -40,10 +40,10 @@ from scipy.optimize import brentq
 # Custom Packages
 # =========================
 
-sys.path.append(os.path.abspath('./../'))
+sys.path.append(os.path.abspath('./../../'))
 
-from Utils.Experiment import Experiment
-from Models.Isentrope import EOSBump, EOSModel, Isentrope
+from FUNCLE.Utils.Experiment import Experiment
+from FUNCLE.Models.Isentrope import EOSBump, EOSModel, Isentrope
 
 # =========================
 # Main Code

@@ -6,7 +6,7 @@ The F_UNCLE project currently does not use any *true* experimental data
 Gun
 ...
 
-.. autoclass:: Experiments.GunModel.Gun
+.. autoclass:: FUNCLE.Experiments.GunModel.Gun
    :members:
    :private-members:
    :special-members:
@@ -14,7 +14,7 @@ Gun
 Stick
 .....
 
-.. autoclass:: Experiments.Stick.Stick
+.. autoclass:: FUNCLE.Experiments.Stick.Stick
    :members:	     
    :private-members:
    :special-members:

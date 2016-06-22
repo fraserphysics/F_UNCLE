@@ -50,9 +50,10 @@ except:
 # Custom Packages
 # =========================
 
-from ..Utils.Experiment import Experiment
-from ..Utils.PhysicsModel import PhysicsModel
-from ..Utils.Struc import Struc
+sys.path.append(os.path.abspath('./../../'))
+from FUNCLE.Utils.Experiment import Experiment
+from FUNCLE.Utils.PhysicsModel import PhysicsModel
+from FUNCLE.Utils.Struc import Struc
 
 # =========================
 # Main Code

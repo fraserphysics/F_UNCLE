@@ -38,8 +38,8 @@ import os
 # =========================
 # Custom Packages
 # =========================
-sys.path.append(os.path.abspath('./../'))
-from Utils.Struc import Struc
+sys.path.append(os.path.abspath('./../../'))
+from FUNCLE.Utils.Struc import Struc
 
 
 # =========================

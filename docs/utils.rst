@@ -6,7 +6,7 @@ These are abstract classes which are used in the analysis
 Struc
 .....
 
-.. autoclass:: Utils.Struc.Struc
+.. autoclass:: FUNCLE.Utils.Struc.Struc
    :members:
    :private-members:
    :special-members:
@@ -14,7 +14,7 @@ Struc
 PhysicsModel
 ............
 
-.. autoclass:: Utils.PhysicsModel.PhysicsModel
+.. autoclass:: FUNCLE.Utils.PhysicsModel.PhysicsModel
    :members:
    :private-members:
    :special-members:
@@ -22,14 +22,14 @@ PhysicsModel
 Experiment
 ..........
 
-.. autoclass:: Utils.Experiment.Experiment
+.. autoclass:: FUNCLE.Utils.Experiment.Experiment
    :members:
    :special-members:
       
 Spline
 ......
 
-.. autoclass:: Models.Isentrope.Spline
+.. autoclass:: FUNCLE.Models.Isentrope.Spline
    :members:
    :private-members:
    :special-members:
