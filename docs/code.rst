@@ -1,7 +1,7 @@
 Documentation
 *************
 
-.. automodule:: F_UNCLE
+.. automodule:: FUNCLE
 		
 
    
