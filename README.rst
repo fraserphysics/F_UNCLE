@@ -1,5 +1,5 @@
 
-Functional Uncertanty Constrained by Law and Experiment
+Functional Uncertainty Constrained by Law and Experiment
 =======================================================
 
 Authors
@@ -11,7 +11,7 @@ Authors
 Documentation
 -------------
 
-Documentation is availible on `readthedocs <http://f-uncle.readthedocs.io/en/latest/>`_
+Documentation is available on `readthedocs <http://f-uncle.readthedocs.io/en/latest/>`_
 
 Scipy 2016
 ----------
@@ -25,7 +25,7 @@ to generate all the figures
 License
 -------
 
-F_UNCLE: Tools for understanding functional uncertanty
+F_UNCLE: Tools for understanding functional uncertainty
 Copyright (C) 2016  A. Fraser and S. Andrews
 
 This program is free software: you can redistribute it and/or modify
