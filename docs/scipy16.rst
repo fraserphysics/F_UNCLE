@@ -2,4 +2,4 @@
 SciPy 2016
 ==========
 
-.. automodule:: FUNCLE.examples.scipy2016
+.. automodule:: F_UNCLE.examples.scipy2016

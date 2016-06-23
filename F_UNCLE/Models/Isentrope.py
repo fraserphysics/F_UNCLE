@@ -48,7 +48,7 @@ from scipy.interpolate import InterpolatedUnivariateSpline as IU_Spline
 # Custom Packages
 # =========================
 sys.path.append(os.path.abspath('./../../'))
-from FUNCLE.Utils.PhysicsModel import PhysicsModel
+from F_UNCLE.Utils.PhysicsModel import PhysicsModel
 
 
 # =========================

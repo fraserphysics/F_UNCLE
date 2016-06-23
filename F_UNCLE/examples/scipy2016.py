@@ -63,10 +63,10 @@ import matplotlib.pyplot as plt
 
 # F_UNLCE packages
 sys.path.append(os.path.abspath('./../../'))
-from FUNCLE.Experiments.GunModel import Gun
-from FUNCLE.Experiments.Stick import Stick
-from FUNCLE.Models.Isentrope import EOSModel, EOSBump
-from FUNCLE.Opt.Bayesian import Bayesian
+from F_UNCLE.Experiments.GunModel import Gun
+from F_UNCLE.Experiments.Stick import Stick
+from F_UNCLE.Models.Isentrope import EOSModel, EOSBump
+from F_UNCLE.Opt.Bayesian import Bayesian
 
 if __name__ == '__main__':
     #################

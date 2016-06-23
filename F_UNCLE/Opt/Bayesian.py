@@ -53,9 +53,9 @@ except:
 # =========================
 
 sys.path.append(os.path.abspath('./../../'))
-from FUNCLE.Utils.Experiment import Experiment
-from FUNCLE.Utils.PhysicsModel import PhysicsModel
-from FUNCLE.Utils.Struc import Struc
+from F_UNCLE.Utils.Experiment import Experiment
+from F_UNCLE.Utils.PhysicsModel import PhysicsModel
+from F_UNCLE.Utils.Struc import Struc
 
 # =========================
 # Main Code

@@ -42,8 +42,8 @@ from scipy.integrate import odeint
 # Custom Packages
 # =========================
 sys.path.append(os.path.abspath('./../../'))
-from FUNCLE.Utils.Experiment import Experiment
-from FUNCLE.Models.Isentrope import EOSBump, EOSModel, Isentrope, Spline
+from F_UNCLE.Utils.Experiment import Experiment
+from F_UNCLE.Models.Isentrope import EOSBump, EOSModel, Isentrope, Spline
 
 
 # =========================
