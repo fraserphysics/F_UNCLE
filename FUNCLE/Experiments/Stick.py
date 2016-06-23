@@ -89,9 +89,9 @@ class Stick(Experiment):
         # end
 
         def_opts = {
-            'sigma_t': [float, 1.0e0, 0.0, None, 's',
+            'sigma_t': [float, 1.0e-9, 0.0, None, 's',
                         'Variance attributed to t measurements'],
-            'sigma_x': [float, 1.0e0, 0.0, None, 'cm',
+            'sigma_x': [float, 2e-3, 0.0, None, 'cm',
                         'Variance attributed to x positions'],
             'd_min': [float, 1.0e5, 0.0, None, 'cm sec**-1',
                       'Lower search range for detonation velocity'],

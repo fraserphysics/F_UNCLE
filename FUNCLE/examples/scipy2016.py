@@ -77,17 +77,15 @@ if __name__ == '__main__':
     init_prior = np.vectorize(lambda v: 2.56e9 / v**3)
 
     # 2. Create the model and *true* EOS
-    eos_model = EOSModel(init_prior)
-    #eos_true = EOSBump(bumps=[], const_C=2.4e9)
-    #eos_true = EOSBump(bumps=[[0.4, 0.1, 0.05]], const_C=2.56e9)
+    eos_model = EOSModel(init_prior, Spline_sigma = 0.05)
     eos_true = EOSBump()
     
     # 3. Create the objects to generate simulations and pseudo experimental data
     gun_experiment = Gun(eos_true, mass_he=1.0)
-    gun_simulation = Gun(eos_model, mass_he=1.0)
+    gun_simulation = Gun(eos_model, mass_he=1.0, sigma=1.0)
 
     stick_experiment = Stick(eos_true)
-    stick_simulation = Stick(eos_model)
+    stick_simulation = Stick(eos_model, sigma_t=1E-9, sigma_x=2E-3)
 
     # 4. Generage data from the simulations using the prior
     gun_prior_sim = gun_simulation ()
@@ -97,9 +95,7 @@ if __name__ == '__main__':
     analysis = Bayesian(simulations=[(gun_simulation, gun_experiment),
                                      (stick_simulation, stick_experiment)],
                         model=eos_model,
-                        prior_weight=0.0,
                         constrain=True,
-                        outer_atol = 1E-3,
                         outer_reltol = 1E-6,
                         precondition=True,
                         debug = False,

@@ -39,6 +39,8 @@ import pdb
 import numpy as np
 from numpy.linalg import inv
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MultipleLocator, FormatStrFormatter
+
 try:
     from cvxopt import matrix, solvers
 except:
@@ -110,6 +112,10 @@ class Bayesian(Struc):
     |              |       |     |     |     |     |optimization                |
     +--------------+-------+-----+-----+-----+-----+----------------------------+
 
+    .. note::
+
+       The options `outer_atol` and `prior_weight` are depricated and should be
+       used for debugging purposes only
 
     **Methods**
     """
@@ -380,8 +386,8 @@ class Bayesian(Struc):
 
             history.append(new_log_like)#, self.model.get_dof()))
 
-            if np.fabs(log_like - new_log_like) < atol\
-               and np.fabs((log_like - new_log_like) / new_log_like) < reltol:
+            if np.fabs((log_like - new_log_like) / new_log_like) < reltol:
+            #np.fabs(log_like - new_log_like) < atol\             
                 log_like = new_log_like
                 conv = True
                 break
@@ -403,27 +409,40 @@ class Bayesian(Struc):
             costs = np.zeros(n_steps)
             iter_data = []
             initial_dof = model.get_dof()
-            besti = 0
             max_step = 0.5
-            while besti == 0:
-                x_list = np.linspace(0, max_step, n_steps)
-                for i, x_i in enumerate(x_list):
-                    model.set_dof(initial_dof + x_i * d_hat)
-                    costs[i] = prior_weight*self.model_log_like()
-                    iter_data.append(self.compare(sims,model))
-                    costs[i] += self.sim_log_like(iter_data[-1])           
-                #end
-
-                besti = np.argmax(costs)
-                max_step /= 2.0
-                if max_step < 1E-4:
-                    besti = 1
-                    break
-
-                if verb and besti==0:
-                    print('Zooming in to max step {:f}'.format(max_step/10.0))
-                #end
+            x_list = np.linspace(0, max_step, n_steps)
+            for i, x_i in enumerate(x_list):
+                model.set_dof(initial_dof + x_i * d_hat)
+                costs[i] = self.model_log_like()
+                iter_data.append(self.compare(sims,model))
+                costs[i] += self.sim_log_like(iter_data[-1])           
             #end
+            besti = np.argmax(costs)
+
+            ## Depricated zooming line search
+            # besti = 0
+            # max_step = 0.5
+            # while besti == 0:
+            #     x_list = np.linspace(0, max_step, n_steps)
+            #     for i, x_i in enumerate(x_list):
+            #         model.set_dof(initial_dof + x_i * d_hat)
+            #         costs[i] = prior_weight*self.model_log_like()
+            #         iter_data.append(self.compare(sims,model))
+            #         costs[i] += self.sim_log_like(iter_data[-1])           
+            #     #end
+
+            #     besti = np.argmax(costs)
+
+            #     break
+            #     max_step /= 2.0
+            #     if max_step < 1E-4:
+            #         besti = 1
+            #         break
+
+            #     if verb and besti==0:
+            #         print('Zooming in to max step {:f}'.format(max_step/10.0))
+            #     #end
+            # #end
 
             model.set_dof(initial_dof + d_hat * x_list[besti])
 
@@ -899,8 +918,11 @@ class Bayesian(Struc):
         ax1.semilogy(eigs, '-xk')
         ax1.set_xlabel("Eigenvalue number /")
         ax1.set_ylabel("Eigenvalue /")
+        ax1.xaxis.set_major_locator(MultipleLocator(1))
+        ax1.xaxis.set_major_formatter(FormatStrFormatter('%d'))
 
-        styles = ['-g', '-.b', '--m', ':k']*int(math.ceil(eig_func.shape[0]/4.0))
+        styles = ['-g', '-.b', '--m', ':k', '-c', '-.y', '--r']*\
+                 int(math.ceil(eig_func.shape[0]/4.0))
 
         for i in xrange(eig_func.shape[0]):
             ax2.plot(indep, eig_func[i], styles[i],
@@ -934,10 +956,13 @@ class Bayesian(Struc):
             ax1 = axis
         #end
 
-        ax1.plot(hist, '-k')
+        ax1.semilogy(-np.array(hist), '-k')
+
+        ax1.xaxis.set_major_locator(MultipleLocator(1))
+        ax1.xaxis.set_major_formatter(FormatStrFormatter('%d'))
         
         ax1.set_xlabel('Iteration numer / ')
-        ax1.set_ylabel('A poseori log likelyhood / ')
+        ax1.set_ylabel('Negative a posteori log likelyhood / ')
         
         # fig = plt.figure()
         # ax1 = fig.add_subplot(121)
