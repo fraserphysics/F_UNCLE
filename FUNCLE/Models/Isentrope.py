@@ -163,9 +163,12 @@ class Isentrope(PhysicsModel):
                             format(self.get_inform(1)))
         #end
 
-        v_spec = np.logspace(np.log10(self.get_option('spline_min')),\
-                        np.log10(self.get_option('spline_max')),\
-                        50)
+        # v_spec = np.logspace(np.log10(self.get_option('spline_min')),\
+        #                 np.log10(self.get_option('spline_max')),\
+        #                 50)
+        v_spec = np.linspace(0.2,
+                             0.6,
+                             200)        
         ax1.plot(v_spec, self(v_spec), style, *args, **kwargs)
         ax1.set_xlabel(r'Specific volume / cm$^3$ g$^{-1}$')
         ax1.set_ylabel('Pressure / Pa')

@@ -380,12 +380,11 @@ class Bayesian(Struc):
 
             history.append(new_log_like)#, self.model.get_dof()))
 
-
             if np.fabs(log_like - new_log_like) < atol\
                and np.fabs((log_like - new_log_like) / new_log_like) < reltol:
                 log_like = new_log_like
-                #conv = True
-                #break
+                conv = True
+                break
             else:
                 log_like = new_log_like
             #end
@@ -405,12 +404,8 @@ class Bayesian(Struc):
             iter_data = []
             initial_dof = model.get_dof()
             besti = 0
-            max_step = 10
+            max_step = 0.5
             while besti == 0:
-                max_step /= 10.0
-                if max_step < 1E-10:
-                    besti = 1
-                    break
                 x_list = np.linspace(0, max_step, n_steps)
                 for i, x_i in enumerate(x_list):
                     model.set_dof(initial_dof + x_i * d_hat)
@@ -420,6 +415,10 @@ class Bayesian(Struc):
                 #end
 
                 besti = np.argmax(costs)
+                max_step /= 2.0
+                if max_step < 1E-4:
+                    besti = 1
+                    break
 
                 if verb and besti==0:
                     print('Zooming in to max step {:f}'.format(max_step/10.0))
@@ -716,9 +715,9 @@ class Bayesian(Struc):
         
         if precondition:
             return np.dot(prior_scale, np.dot(prior_var, prior_scale)),\
-                np.dot(prior_scale, np.dot(prior_delta, prior_var))
+                -np.dot(prior_scale, np.dot(prior_delta, prior_var))
         else:
-            return prior_var, np.dot(prior_delta, prior_var)
+            return prior_var, -np.dot(prior_delta, prior_var)
 
     def _get_sim_pq(self, sims, model, initial_data):
         """Gets the QP contribytions from the model
@@ -763,7 +762,7 @@ class Bayesian(Struc):
             epsilon = exp_dep[0] - sim_data[1]
             if debug: print(epsilon)
             p_mat += np.dot(np.dot(sens_k.T, inv(sim.get_sigma())), sens_k)
-            q_mat += np.dot(np.dot(epsilon, inv(sim.get_sigma())), sens_k)
+            q_mat -= np.dot(np.dot(epsilon, inv(sim.get_sigma())), sens_k)
             i += dim_k
         #end
 
@@ -772,7 +771,7 @@ class Bayesian(Struc):
             q_mat = np.dot(prior_scale, q_mat)
         #end
 
-        return p_mat, -q_mat
+        return p_mat, q_mat
 
     def compare(self, sims, model):
         """
@@ -897,7 +896,7 @@ class Bayesian(Struc):
 
 #        ax1.bar(np.arange(eigs.shape[0]), eigs, width=0.9, color='black',
 #                edgecolor='none', orientation='vertical')
-        ax1.plot(eigs, '-xk')
+        ax1.semilogy(eigs, '-xk')
         ax1.set_xlabel("Eigenvalue number /")
         ax1.set_ylabel("Eigenvalue /")
 
@@ -1009,9 +1008,9 @@ class TestBayesian(unittest.TestCase):
         """Setup script for each test
         """
 
-        from F_UNCLE.Experiments.GunModel import Gun
-        from F_UNCLE.Experiments.Stick import Stick
-        from F_UNCLE.Models.Isentrope import EOSModel, EOSBump
+        from FUNCLE.Experiments.GunModel import Gun
+        from FUNCLE.Experiments.Stick import Stick
+        from FUNCLE.Models.Isentrope import EOSModel, EOSBump
 
         # Initial estimate of prior functional form
         init_prior = np.vectorize(lambda v: 2.56e9 / v**3)

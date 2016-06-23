@@ -170,8 +170,8 @@ class Stick(Experiment):
 
         vel_cj, vol_cj, p_cj, rayl_line = self._get_cj_point(eos, vol_0)
 
-        var = np.ones(self.get_option('n_x'))*(self.get_option('sigma_t')**2)
-        var += (self.get_option('sigma_x')/vel_cj)**2
+        var = np.ones(self.get_option('n_x'))
+        var *= (self.get_option('sigma_t')**2 + (self.get_option('sigma_x')/vel_cj)**2)
         return np.diag(var)
 
     def shape(self):
@@ -341,8 +341,8 @@ class Stick(Experiment):
 
         see :py:meth:`F_UNCLE.Utils.Struc.Struc.plot`
         """
-        v_min = self.eos.get_option('spline_min')
-        v_max = self.eos.get_option('spline_max')
+        v_min = 0.2 # self.eos.get_option('spline_min')
+        v_max = 0.6 # self.eos.get_option('spline_max')
         v_0 = self.get_option('vol_0')
 
         if axis is None:
@@ -357,8 +357,8 @@ class Stick(Experiment):
             self.eos.plot(axis=ax1, style=eos_style)
             vel_cj, vol_cj, p_cj, rayl_line = self._get_cj_point(self.eos, 1.835**-1)
 
-            v_eos = np.logspace(np.log10(v_min), np.log10(v_max), 30)
-
+            # v_eos = np.logspace(np.log10(v_min), np.log10(v_max), 30)
+            v_eos = np.linspace(v_min, v_max, 30)
             ax1.plot(v_eos, rayl_line(vel_cj, v_eos, self.eos, v_0), ray_style)
             ax1.plot(vol_cj, p_cj, cj_style)
         elif level == 2:

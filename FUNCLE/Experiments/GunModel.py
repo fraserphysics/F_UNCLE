@@ -294,7 +294,7 @@ class Gun(Experiment):
         see :py:meth:`F_UNCLE.Utils.Experiment.Experiment.get_sigma`
         """
 
-        return np.diag(np.ones(self.shape())* self.get_option('sigma')**2)
+        return np.diag(np.ones(self.shape())* self.get_option('sigma'))
 
     def shape(self):
         """Returns the degrees of freedom of the model

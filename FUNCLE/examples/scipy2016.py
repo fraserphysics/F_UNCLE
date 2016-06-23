@@ -79,6 +79,7 @@ if __name__ == '__main__':
     # 2. Create the model and *true* EOS
     eos_model = EOSModel(init_prior)
     #eos_true = EOSBump(bumps=[], const_C=2.4e9)
+    #eos_true = EOSBump(bumps=[[0.4, 0.1, 0.05]], const_C=2.56e9)
     eos_true = EOSBump()
     
     # 3. Create the objects to generate simulations and pseudo experimental data
@@ -96,8 +97,10 @@ if __name__ == '__main__':
     analysis = Bayesian(simulations=[(gun_simulation, gun_experiment),
                                      (stick_simulation, stick_experiment)],
                         model=eos_model,
-                        prior_weight=1.0,
+                        prior_weight=0.0,
                         constrain=True,
+                        outer_atol = 1E-3,
+                        outer_reltol = 1E-6,
                         precondition=True,
                         debug = False,
                         maxiter=10)
@@ -121,9 +124,9 @@ if __name__ == '__main__':
     ####################
 
     from matplotlib import rcParams
-    rcParams['axes.labelsize'] = 10
-    rcParams['xtick.labelsize'] = 9
-    rcParams['ytick.labelsize'] = 9
+    rcParams['axes.labelsize'] = 7
+    rcParams['xtick.labelsize'] = 7
+    rcParams['ytick.labelsize'] = 7
     rcParams['legend.fontsize'] = 7
     rcParams['legend.handlelength'] = 3.0
 
