@@ -26,6 +26,10 @@ from the command line::
 Figures
 -------
 
+.. figure:: /_static/scipy2016_figure1eos.png
+   
+   Figure 0
+
 .. figure:: /_static/scipy2016_figure1.png
 
    Figure 1
