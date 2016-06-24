@@ -376,7 +376,7 @@ class Bayesian(Struc):
             dof_hist.append(model.get_dof())
             if verb: print('Iter {} of {}'.format(i, maxiter))
             self._get_sens(sims, model, initial_data)
-
+            #self.plot_sens_matrix()
             # Solve all simulations with the curent model
             if verb: print('prior log like', -self.model_log_like())
             if verb: print('sim log like', -self.sim_log_like(initial_data))
@@ -409,7 +409,7 @@ class Bayesian(Struc):
             costs = np.zeros(n_steps)
             iter_data = []
             initial_dof = model.get_dof()
-            max_step = 0.5
+            max_step = 1.0
             x_list = np.linspace(0, max_step, n_steps)
             for i, x_i in enumerate(x_list):
                 model.set_dof(initial_dof + x_i * d_hat)
@@ -498,7 +498,7 @@ class Bayesian(Struc):
             #end
             i += dim_k
         #end
-
+        
         sigma = inv(sim.get_sigma())
 
         return np.dot(sens_k.T, np.dot(sigma, sens_k))
@@ -534,34 +534,29 @@ class Bayesian(Struc):
         # Spectral decomposition of info matrix and sort by eigenvalues
         eig_vals, eig_vecs = np.linalg.eigh(fisher)
         eig_vals = np.maximum(eig_vals, 0)        # info is positive definite
+
         i = np.argsort(eig_vals)[-1::-1]
         vals = eig_vals[i]
         vecs = eig_vecs.T[i]
 
         n_vals = max(len(np.where(vals > vals[0]*1e-2)[0]), 3)
-        n_vecs = len(np.where(vals > vals[0]*1e-2)[0])
+        n_vecs = max(len(np.where(vals > vals[0]*1e-2)[0]), 3)
 
         # Find range of v that includes support of eigenfunctions
         knots = eos.get_t()
         v_min = knots[0]
         v_max = knots[-1]
         vol = np.logspace(np.log10(v_min), np.log10(v_max), len(knots)*10)
-        max_k = 0
-        min_k = len(vol)-1
         funcs = []
         for vec in vecs[:n_vecs]:
             eos.set_dof(vec)
             funcs.append(eos(vol))
-            if funcs[-1][np.argmax(np.fabs(funcs[-1]))]<0:
+            if funcs[-1][np.argmax(np.fabs(funcs[-1]))] < 0:
                 funcs[-1] *= -1
             #end
         funcs = np.array(funcs)
 
-#        vals = vals[np.where(vals > tol*vals[0])]
-
-
         return vals[:n_vals], vecs, funcs, vol
-
 
     def _local_opt(self, sims, model, initial_data):
         """Soves the quadratic problem for minimization of the log likelyhood
@@ -592,7 +587,6 @@ class Bayesian(Struc):
         p_mat *= 0.5
 
         if debug: print(q_mat)
-
 
         solvers.options['show_progress'] = False
         solvers.options['debug'] = False
@@ -850,7 +844,9 @@ class Bayesian(Struc):
         step_frac = 2E-2
 
         original_dofs = model.get_dof()
-        sens_matrix = np.empty(self.shape())
+
+        resp_mat = np.zeros(self.shape())
+        inp_mat = np.zeros((self.shape()[1],self.shape()[1]))
         new_dofs = copy.deepcopy(original_dofs)
 
         if initial_data is None:
@@ -862,9 +858,8 @@ class Bayesian(Struc):
             new_dofs[i] += step
 
             model.set_dof(new_dofs)
-
+            inp_mat[:, i] = (model.get_dof() - original_dofs) 
             j = 0 # counter for the starting column of this sim's data
-
             for (sim, exp), sim_data in zip(sims, initial_data):
                 sim.update(model=model)
                 new_data = sim()
@@ -872,16 +867,25 @@ class Bayesian(Struc):
                 delta = -sim.compare(sim_data[0],
                                      sim_data[1],
                                      new_data)
-                delta /= step
                 # If the sensitivity is less than the tolerance, make it
                 # zero
-                sens_matrix[j:j+dim, i] = np.where(np.fabs(delta) > sens_tol,\
-                                                  delta,\
-                                                  np.zeros(len(delta)))
+                # delta = np.where(np.fabs(delta) > sens_tol,\
+                #                                   delta,\
+                #                                   np.zeros(len(delta)))
+                resp_mat[j:j+dim, i] = delta
                 j += dim
             #end
             new_dofs[i] -= step
         #end
+
+        # Use a better algorithm!
+        # sens_matrix = np.dot(resp_mat, inv(inp_mat))
+        
+
+        sens_matrix = np.linalg.lstsq(inp_mat, resp_mat.T)[0].T
+        sens_matrix = np.where(np.fabs(sens_matrix) > 1E-20,\
+                                          sens_matrix,\
+                                          np.zeros(self.shape()))
 
         # Return all simulations to original state
         model.set_dof(original_dofs)
@@ -916,8 +920,8 @@ class Bayesian(Struc):
 #        ax1.bar(np.arange(eigs.shape[0]), eigs, width=0.9, color='black',
 #                edgecolor='none', orientation='vertical')
         ax1.semilogy(eigs, '-xk')
-        ax1.set_xlabel("Eigenvalue number /")
-        ax1.set_ylabel("Eigenvalue /")
+        ax1.set_xlabel("Eigenvalue number")
+        ax1.set_ylabel(r"Eigenvalue / Pa$^{-2}$")
         ax1.xaxis.set_major_locator(MultipleLocator(1))
         ax1.xaxis.set_major_formatter(FormatStrFormatter('%d'))
 
@@ -975,7 +979,7 @@ class Bayesian(Struc):
         # ax1.set_xlabel('Iteration number')
         # fig.savefig('EOS_convergence.pdf')
 
-    def plot_sens_matrix(self, initial_data):
+    def plot_sens_matrix(self):
         """Prints the sensitivity matrix
         """
         sens_matrix = self.sens_matrix

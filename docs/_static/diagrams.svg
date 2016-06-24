@@ -279,11 +279,11 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="4.5518519"
-     inkscape:cx="208.70448"
-     inkscape:cy="129.53135"
+     inkscape:zoom="5.7305556"
+     inkscape:cx="180"
+     inkscape:cy="164.55945"
      inkscape:document-units="px"
-     inkscape:current-layer="layer3"
+     inkscape:current-layer="layer1"
      showgrid="false"
      inkscape:window-width="2556"
      inkscape:window-height="1395"
@@ -299,7 +299,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title />
+        <dc:title></dc:title>
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -308,7 +308,7 @@
      inkscape:groupmode="layer"
      id="layer1"
      transform="translate(0,-782.36215)"
-     style="display:none">
+     style="display:inline">
     <rect
        style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:2.79999995;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="rect3355"
@@ -341,7 +341,8 @@
          sodipodi:role="line"
          id="tspan5603"
          x="90.951996"
-         y="969.75836">High Explosive</tspan></text>
+         y="969.75836"
+         style="font-size:8.75px">High explosive</tspan></text>
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:20px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
@@ -352,7 +353,8 @@
          sodipodi:role="line"
          id="tspan5607"
          x="126.10252"
-         y="949.98633">Projectile</tspan></text>
+         y="949.98633"
+         style="font-size:8.75px">Projectile</tspan></text>
     <path
        style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow2Lend)"
        d="m 125.66314,944.27427 -23.9463,0 -7.908867,-14.49959"
@@ -378,7 +380,8 @@
          sodipodi:role="line"
          id="tspan6061"
          x="280.54517"
-         y="957.89514">Gun</tspan></text>
+         y="957.89514"
+         style="font-size:8.75px">Gun</tspan></text>
     <path
        inkscape:connector-curvature="0"
        id="path6366"
@@ -395,8 +398,9 @@
          sodipodi:role="line"
          id="tspan4174"
          x="86.338486"
-         y="879.35559">x<tspan
-   style="font-size:64.99999762%;baseline-shift:sub"
+         y="879.35559"
+         style="font-size:8.75px">x<tspan
+   style="font-size:8.75px;baseline-shift:sub"
    id="tspan4176">i</tspan></tspan></text>
     <text
        xml:space="preserve"
@@ -408,8 +412,9 @@
          sodipodi:role="line"
          id="tspan4180"
          x="275.05289"
-         y="879.35559">x<tspan
-   style="font-size:64.99999762%;baseline-shift:sub"
+         y="879.35559"
+         style="font-size:8.75px">x<tspan
+   style="font-size:8.75px;baseline-shift:sub"
    id="tspan4182">f</tspan></tspan></text>
     <text
        xml:space="preserve"
@@ -432,27 +437,31 @@
          sodipodi:role="line"
          id="tspan4190"
          x="165.20747"
-         y="841.01965">m</tspan><tspan
+         y="841.01965"
+         style="font-size:8.75px">m</tspan><tspan
          sodipodi:role="line"
          x="165.20747"
          y="866.01965"
-         id="tspan4192">area</tspan></text>
+         id="tspan4192"
+         style="font-size:8.75px">area</tspan></text>
     <path
        style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#marker4462)"
-       d="m 99.959315,901.43457 41.082185,-53.16518 14.93897,0"
+       d="m 99.959315,901.43457 42.303705,-56.48074 12.14692,-0.1745"
        id="path4200"
-       inkscape:connector-curvature="0" />
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccc" />
     <text
        xml:space="preserve"
-       style="font-style:normal;font-weight:normal;font-size:40px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       x="144.99593"
-       y="860.13269"
+       style="font-style:normal;font-weight:normal;font-size:22.92526817px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="100.67525"
+       y="1247.7505"
        id="text4629"
-       sodipodi:linespacing="125%"><tspan
+       sodipodi:linespacing="125%"
+       transform="scale(1.4688878,0.6807872)"><tspan
          sodipodi:role="line"
          id="tspan4631"
-         x="144.99593"
-         y="860.13269">{</tspan></text>
+         x="100.67525"
+         y="1247.7505">{</tspan></text>
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:20px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
@@ -463,7 +472,8 @@
          sodipodi:role="line"
          id="tspan4635"
          x="121.9284"
-         y="823.664">mass HE</tspan></text>
+         y="823.664"
+         style="font-size:8.75px">mass HE</tspan></text>
     <path
        style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#marker4645)"
        d="m 56.680227,890.66972 39.544345,-70.52075 22.628148,0"
@@ -571,8 +581,9 @@
          sodipodi:role="line"
          id="tspan6483"
          x="33.612694"
-         y="64.589104">x<tspan
-   style="font-size:64.99999762%;baseline-shift:sub"
+         y="64.589104"
+         style="font-size:8.75px">x<tspan
+   style="font-size:8.75px;baseline-shift:sub"
    id="tspan6485">1</tspan></tspan></text>
     <text
        xml:space="preserve"
@@ -584,8 +595,9 @@
          sodipodi:role="line"
          id="tspan6489"
          x="299.21887"
-         y="64.149719">x<tspan
-   style="font-size:64.99999762%;baseline-shift:sub"
+         y="64.149719"
+         style="font-size:8.75px">x<tspan
+   style="font-size:8.75px;baseline-shift:sub"
    id="tspan6491">n</tspan></tspan></text>
     <text
        xml:space="preserve"
@@ -598,34 +610,34 @@
          id="tspan6575"
          x="164.7681"
          y="146.75346"
-         style="font-size:15px">High explosive at </tspan><tspan
+         style="font-size:8.75px">High explosive at </tspan><tspan
          sodipodi:role="line"
          x="164.7681"
-         y="165.50346"
+         y="157.69096"
          id="tspan6577"
-         style="font-size:15px">inital density and</tspan><tspan
+         style="font-size:8.75px">inital density and</tspan><tspan
          sodipodi:role="line"
          x="164.7681"
-         y="184.25346"
+         y="168.62846"
          id="tspan6579"
-         style="font-size:15px">pressure</tspan></text>
+         style="font-size:8.75px">pressure</tspan></text>
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:20px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       x="81.06591"
-       y="222.54677"
+       x="75.573639"
+       y="228.6981"
        id="text6581"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan6583"
-         x="81.06591"
-         y="222.54677"
-         style="font-size:15px">High explosive </tspan><tspan
+         x="75.573639"
+         y="228.6981"
+         style="font-size:8.75px">High explosive </tspan><tspan
          sodipodi:role="line"
-         x="81.06591"
-         y="241.29677"
+         x="75.573639"
+         y="239.6356"
          id="tspan6585"
-         style="font-size:15px">products-of-detonation</tspan></text>
+         style="font-size:8.75px">products-of-detonation</tspan></text>
     <path
        style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#marker6783)"
        d="m 138.6249,107.42881 13.40114,55.80146 11.20423,0"
@@ -653,19 +665,20 @@
          id="tspan6597"
          x="168.06346"
          y="23.50692"
-         style="font-size:15px">Detonation wave</tspan><tspan
+         style="font-size:8.75px">Detonation wave</tspan><tspan
          sodipodi:role="line"
          x="168.06346"
-         y="42.25692"
+         y="34.44442"
          id="tspan6599"
-         style="font-size:15px">traveling at V<tspan
-   style="font-size:15px;baseline-shift:sub"
+         style="font-size:8.75px">traveling at V<tspan
+   style="font-size:8.75px;baseline-shift:sub"
    id="tspan6601">CJ</tspan></tspan></text>
   </g>
   <g
      inkscape:groupmode="layer"
      id="layer3"
-     inkscape:label="eos">
+     inkscape:label="eos"
+     style="display:none">
     <path
        style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#marker7340)"
        d="m 56.899918,9.8860889 0,222.9861711"

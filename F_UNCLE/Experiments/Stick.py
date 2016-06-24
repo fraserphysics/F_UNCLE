@@ -50,6 +50,9 @@ from F_UNCLE.Models.Isentrope import EOSBump, EOSModel, Isentrope
 # =========================
 class Stick(Experiment):
     """A toy physics model representing a rate stick
+    **TO DO**    
+
+    - Update the __call__ method to not use hardcoded sensor positions
 
     **Units**
 
@@ -103,7 +106,7 @@ class Stick(Experiment):
                       'The position of the first sensor on the rate stick'],
             'x_max': [float, 17.7, 0.0, None, 'cm',
                       'The position of the last sensor on the rate stick'],
-            'n_x': [int, 10, 0, None, '',
+            'n_x': [int, 7, 0, None, '',
                     'Number of sensor positions']
         }
 
@@ -168,7 +171,7 @@ class Stick(Experiment):
         vol_0 = self.get_option('vol_0')
         eos = self.eos
 
-        vel_cj, vol_cj, p_cj, rayl_line = self._get_cj_point(eos, vol_0)
+        vel_cj = self._get_cj_point(eos, vol_0)[0]
 
         var = np.ones(self.get_option('n_x'))
         var *= (self.get_option('sigma_t')**2 + (self.get_option('sigma_x')/vel_cj)**2)
@@ -224,6 +227,8 @@ class Stick(Experiment):
         vol_0 = self.get_option('vol_0')
         eos = self.eos
 
+        #x_list = np.array(  # mm, page 8
+        #    [25.9, 50.74, 75.98, 101.8, 125.91, 152.04, 177.61])/10
         x_list = np.linspace(x_min, x_max, n_x)
 
         cj_vel, cj_vol, cj_p, ray_fun = self._get_cj_point(eos, vol_0)
@@ -242,8 +247,6 @@ class Stick(Experiment):
         """
 
         det_vel = data[2][0]
-
-
         return dep - indep/det_vel
 
     def _get_cj_point(self, eos, vol_0):
@@ -282,16 +285,27 @@ class Stick(Experiment):
         rayl_line = lambda vel, vol, eos, vol_0: (vel**2)*(vol_0 - vol)/(vol_0**2)
 
         # F is self - R
-        rayl_err = lambda vel, vol, eos, vol_0: eos(vol)  - rayl_line(vel, vol, eos, vol_0)
+        rayl_err = lambda vel, vol, eos, vol_0: eos(vol)\
+                   - rayl_line(vel, vol, eos, vol_0)
 
         # d_F is derivative of F wrt vol
-        derr_dvol = lambda vol, vel, eos, vol_0: eos.derivative(1)(vol) + (vel/vol_0)**2
+        derr_dvol = lambda vol, vel, eos, vol_0: eos.derivative(1)(vol) +\
+                    (vel/vol_0)**2
 
         # arg_min(vel, self) finds volume that minimizes self(v) - R(v)
         arg_min = lambda vel, eos, vol_0: brentq(derr_dvol, v_min, v_max,
                                                  args=(vel, eos, vol_0))
 
-        error = lambda vel, eos, vol_0: rayl_err(vel, arg_min(vel, eos, vol_0), eos, vol_0)
+        # dderr_dvol = lambda vol, vel, eos, vol_0: eos.derivative(2)(vol) + 2*vel/(vol_0**2)
+        # ddderr_dvol = lambda vol, vel, eos, vol_0: eos.derivative(3)(vol) + 2/(vol_0**2)
+        # from scipy.optimize import fixed_point
+        # arg_min = lambda vel, eos, vol_0: fixed_point(derr_dvol, 0.6, method = 'iteration',
+        #                                          #fprime = dderr_dvol,
+        #                                          #fprime2 = ddderr_dvol,
+        #                                          args=(vel, eos, vol_0))
+
+        error = lambda vel, eos, vol_0: rayl_err(vel, arg_min(vel, eos, vol_0),
+                                                 eos, vol_0)
 
         # print rayl_err(d_min, v_min, eos)
         # print rayl_err(d_min, v_max, eos)
@@ -353,6 +367,7 @@ class Stick(Experiment):
             ax1 = axis
         # end
 
+        
         if level == 1:
             self.eos.plot(axis=ax1, style=eos_style)
             vel_cj, vol_cj, p_cj, rayl_line = self._get_cj_point(self.eos, 1.835**-1)
@@ -361,11 +376,19 @@ class Stick(Experiment):
             v_eos = np.linspace(v_min, v_max, 30)
             ax1.plot(v_eos, rayl_line(vel_cj, v_eos, self.eos, v_0), ray_style)
             ax1.plot(vol_cj, p_cj, cj_style)
+
+            # Shows position error for V_cj
+            # fig2 = plt.figure()
+            # ax2 = fig2.gca()
+            # v_eos = np.linspace(v_min, v_max, 30)
+            # ax2.plot(vol_cj, p_cj, cj_style)            
+            # ax2.plot(v_eos, self.eos(v_eos) - rayl_line(vel_cj, v_eos, self.eos, v_0))
         elif level == 2:
             ax1.plot(data[0], 1E-3*data[1][0], data_style)
             ax1.set_xlabel("Sensor position / cm")
             ax1.set_ylabel("Shock arrival time / ms")
         #end
+
         
         return fig
 
