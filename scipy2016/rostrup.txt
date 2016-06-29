@@ -1,0 +1,183 @@
+Here we reply to Scott Rostrup's comments and and ask two questions
+about direction for the paper.  Rostrup writes "I find that I don't
+have a lot of clarity as to the precise aim of this paper".
+
+
+-------------Origin and Aim of the Paper------------------------------
+We derived our scipy2016 manuscript from a working document that we
+use to explain (to ourselves and our colleagues) the math, physics and
+code for the F_UNCLE project.  We hope that the manuscript serves to
+introduce the F_UNCLE code and project, and that it will be useful in
+the following ways:
+
+1. Demonstrate/suggest using the scipy ecosystem and a surrogate for
+   addressing difficult problems.  The paper might give confidence and
+   general direction to scientists and engineers who must develop
+   original solutions to their own problems.
+
+2. Visually illustrate the utility of Fisher information for
+   quantifying how tightly experimental data constrain models
+
+3. Introduce the F_UNCLE code to folks whose problems are similar
+   enough to ours that they can use it
+
+4. Suggest the utility of better software practices to LANL colleagues
+   who view software as a necessary and ugly evil
+
+
+------------Questions About Directions for the Paper------------------
+Both the code and the project are works in progress, and the paper may
+be too much like a lab notebook for a journal publication.  In the
+section "Conclusion, Caveats and Future Work", we even write, "we
+emphasize that it is a work in progress."
+
+We ask:
+
+1. Are works in progress appropriate for the Scipy2016 Proceedings?
+
+2. If so, do you recommend modifying the paper (primarily the
+   introduction) to include the tone (less formality and more
+   explanation of context) and some of the text of this note?
+
+
+------------Aim and Status of the F_UNCLE Project--------------------
+We need to quantitatively characterize the accuracy of models of
+physical material properties which are based on existing theory and
+experiments.  If the accuracy is inadequate, we must evaluate whether
+or not proposed experiments or theoretical work will provide the
+necessary information.  We have chosen to first work on the EOS of the
+gas produced by detonating PBX-9501 because it is relatively simple.
+In particular there is a model that defines its properties in terms of
+a one dimensional function and simple constraints.
+
+Characteristics of the work include:
+
+1. The uncertain object is a *function*.  In principal it has an
+   infinite number of degrees of freedom.  We don't know how to define
+   a probability measure on sets in function space, and we don't know
+   how to compare the utility of different families of parametric
+   approximations.
+
+2. Understanding the constraints on the unknown function and the
+   connection between it and experimental measurements requires
+   studying some detailed physics.
+
+3. Simulations of some of the experiments run for about an hour on
+   high performance computers.  The job control is unwieldy as are the
+   mechanisms for expressing trial instances of the unknown functions
+   and connecting them to the simulations.
+
+So far we have worked in two parallel modes as we develop ideas and
+algorithms.  We write code for a surrogate problem that runs in a
+fraction of a minute on a PC, and we write code for fitting a model to
+PBX-9501 in a high performance computing environment.  Our focus
+shifts back and forth as we find and resolve problems.  As we have
+progressed, we have found improving our software practices makes it
+easier to express ideas, test them on PCs and implement them on the
+HPCs.
+
+Results so far indicate optimization can find good approximations to
+the unknown functions and that analysis of Fisher information can
+quantify how various experiments constrain uncertainty about different
+aspects of them.  The results are encouraging but preliminary.
+
+We plan to resolve some questions about choices of coordinates in
+function space and add at least one more experiment to the analysis of
+the PBX-9501 EOS.  We will also modify the F_UNCLE code so that we can
+use it to analyze other physical models.  We hope to publish our new
+analysis of the PBX-9501 EOS in the Journal of Applied Physics (where
+previous work on that EOS appears), and we hope to publish our
+analysis techniques in the SIAM/ASA Journal on Uncertainty
+Quantification.
+
+
+--------------Scott Rostrup's Points with our Comments----------------
+
+1. Domain specific material could be challenging for many readers
+
+   While we agree, we propose no major changes to the "Rate Stick" and
+   "Gun" sections.  The graphical construction for CJ conditions that
+   we describe in the "Rate Stick" section follows from the
+   Rankine–Hugoniot conditions for shocks.  It would be a mistake to
+   go into that much detail in the paper.  The dynamics of the gun are
+   essentially F=ma.  We have a few equations on our poster that we
+   believe make that clearer and we will include them in the next
+   draft of the paper.
+
+2. Not a lot of discussion of the software or how python is important to
+   success
+
+   We mention the major packages that we use and give a link to our
+   software.  Going forward, we will work towards making the software
+   self explanatory.
+
+3. Reword the abstract and introduction:
+   * What are the contents of this paper
+   * What will the reader learn from reading it
+
+   OK
+
+4. Are we developing an inverse problem solver or are we solving
+   problems with Job schedulers?
+
+   Both.  We should probably mention that there is lots of work on
+   inverse problems whose targets are functions, eg, images.  Our
+   problem differs in the diversity of measurements and the nature of
+   the constraints.
+
+5. No clear explanation of how the algorithm enforces constraints.
+
+   That is true.  While explaining the actual constraints and their
+   implementation would require more text and detail than is
+   appropriate, we will comment on what we are skipping and why.
+
+6. No reference to standard approaches
+
+   We are unaware of standard approaches.  We will add text that
+   compares our problem to image estimation.
+
+7. We don't address convergence or stability
+
+   We have not studied them.  We will add comments about convergence
+   and stability to our caveats section.
+
+8. Fisher information to show stability?
+
+   No.  Fisher information tells you how informative an experiment is.
+
+9. Detailed detonation study experiments actually detract from clarity
+
+   It's the problem that we are really working on.  Estimating the
+   mean of a normally distributed scalar would be clear but
+   uninteresting.  We believe that our surrogate experiments are as
+   simple as they can be and still be instructive about the
+   challenges of the real models we want to estimate.
+
+10. Why are cubic splines not just another choice of parameters?
+
+    In short, we don't know.
+
+    It's question we are excited about.  In future work we will
+    examine cost-benefit trade offs of various choices for coordinates
+    in function space.  Our intuition is that cubic splines are good
+    because they are mostly local and with a large number of knots
+    they are very flexible.  We believe that the flexibility is
+    balanced by the convexity constraint.  We imagine that we can
+    study something like the relative efficiency of various coordinate
+    systems for function space in terms of statistical bias and
+    variance.
+
+11. Why don't cubic splines suffer the problems of GPM models?
+
+    GPM models allow non-convex solutions.  See Shirin Golchi's work
+    on monotone functions and GPM
+
+12. Why did we choose these particular problems to illustrate
+    techniques?
+
+    We developed these techniques to solve these problems
+
+13. Recommend leaving out the PBX plot
+
+    The PBX-9501 plot testifies to our interest in and progress on
+    real problems.
