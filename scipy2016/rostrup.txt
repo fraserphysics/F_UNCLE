@@ -84,9 +84,9 @@ aspects of them.  The results are encouraging but preliminary.
 We plan to resolve some questions about choices of coordinates in
 function space and add at least one more experiment to the analysis of
 the PBX-9501 EOS.  We will also modify the F_UNCLE code so that we can
-use it to analyze other physical models.  We hope to publish our new
-analysis of the PBX-9501 EOS in the Journal of Applied Physics (where
-previous work on that EOS appears), and we hope to publish our
+use it to analyze other physical models.  Then we plan to publish a
+new estimate of the PBX-9501 EOS in the Journal of Applied Physics
+(where previous work on that EOS appears), and we hope to publish our
 analysis techniques in the SIAM/ASA Journal on Uncertainty
 Quantification.
 
@@ -170,7 +170,8 @@ Quantification.
 11. Why don't cubic splines suffer the problems of GPM models?
 
     GPM models allow non-convex solutions.  See Shirin Golchi's work
-    on monotone functions and GPM
+    on monotone functions and GPM.  F_UNCLE can enforce constraints
+    that prohibit non-convex functions.
 
 12. Why did we choose these particular problems to illustrate
     techniques?
