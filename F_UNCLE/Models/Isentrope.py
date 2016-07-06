@@ -423,12 +423,13 @@ class EOSModel(Spline, Isentrope):
                             format(self.get_inform(0)))
         #end
 
-        # vol = np.logspace(np.log10(self.get_option('spline_min')),
-        #                   np.log10(self.get_option('spline_max')),
-        #                   self.get_option('spline_N'))
-        vol = np.linspace(self.get_option('spline_min'),
-                  self.get_option('spline_max'),
-                  self.get_option('spline_N'))
+        vol = np.logspace(np.log10(self.get_option('spline_min')),
+                          np.log10(self.get_option('spline_max')),
+                          self.get_option('spline_N'))
+        
+        # vol = np.linspace(self.get_option('spline_min'),
+        #           self.get_option('spline_max'),
+        #           self.get_option('spline_N'))
 
         Spline.__init__(self, vol, p_fun(vol))
 
