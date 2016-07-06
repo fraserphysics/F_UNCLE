@@ -999,7 +999,7 @@ class Bayesian(Struc):
             fig = fig
         #end
         gs = gridspec.GridSpec(3, 4,
-                               width_ratios=[2.5,1,2.5,1])
+                               width_ratios=[6,1,6,1])
 
         ax1 = fig.add_subplot(gs[0])
         ax2 = fig.add_subplot(gs[2])
@@ -1026,41 +1026,49 @@ class Bayesian(Struc):
         for i in xrange(10):
             ax1.plot(sens_matrix[start:end, i],
                      style[i], label="{:4.3f}".format(knot_post[i]))
-        ax1.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0., title = 'knot')
-        ax1.get_legend().set_title("knots", prop = {'size':rcParams['legend.fontsize']})
+        ax1.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+        # ax1.get_legend().set_title("knots", prop = {'size':rcParams['legend.fontsize']})
 
         for i in xrange(10, 20):
             ax2.plot(sens_matrix[start:end, i],
                      style[i-10], label="{:4.3f}".format(knot_post[i]))
-        ax2.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0., title = 'knot')
-        ax2.get_legend().set_title("knots", prop = {'size':rcParams['legend.fontsize']})
+        ax2.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+        #ax2.get_legend().set_title("knots", prop = {'size':rcParams['legend.fontsize']})
 
 
         for i in xrange(20, 30):
             ax3.plot(sens_matrix[start:end, i],
                      style[i-20], label="{:4.3f}".format(knot_post[i]))
-        ax3.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0., title = 'knot')
-        ax3.get_legend().set_title("knots", prop = {'size':rcParams['legend.fontsize']})
+        ax3.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+        # ax3.get_legend().set_title("knots", prop = {'size':rcParams['legend.fontsize']})
 
 
         for i in xrange(30, 40):
             ax4.plot(sens_matrix[start:end, i],
                      style[i-30], label="{:4.3f}".format(knot_post[i]))
-        ax4.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0., title = 'knot')
-        ax4.get_legend().set_title("knots", prop = {'size':rcParams['legend.fontsize']})
+        ax4.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+        # ax4.get_legend().set_title("knots", prop = {'size':rcParams['legend.fontsize']})
 
 
         for i in xrange(40, 50):
             ax5.plot(sens_matrix[start:end, i],
                      style[i-40], label="{:4.3f}".format(knot_post[i]))
-        ax5.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0., title = 'knot')
-        ax5.get_legend().set_title("knots", prop = {'size':rcParams['legend.fontsize']})
+        ax5.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+        # ax5.get_legend().set_title("knots", prop = {'size':rcParams['legend.fontsize']})
 
         ax1.set_ylabel('Sensitivity')
         ax3.set_ylabel('Sensitivity')
         ax5.set_ylabel('Sensitivity')
         ax5.set_xlabel('Model DOF index')
         ax4.set_xlabel('Model DOF index')
+
+        xlocator = (end-start)//3
+        ax1.xaxis.set_major_locator(MultipleLocator(xlocator))
+        ax2.xaxis.set_major_locator(MultipleLocator(xlocator))
+        ax3.xaxis.set_major_locator(MultipleLocator(xlocator))
+        ax4.xaxis.set_major_locator(MultipleLocator(xlocator))
+        ax5.xaxis.set_major_locator(MultipleLocator(xlocator))
+
 
         fig.tight_layout()
 
