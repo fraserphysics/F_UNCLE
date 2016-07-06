@@ -38,8 +38,13 @@ import os
 # =========================
 # Custom Packages
 # =========================
-sys.path.append(os.path.abspath('./../../'))
-from F_UNCLE.Utils.Struc import Struc
+if __name__ == '__main__':
+    sys.path.append(os.path.abspath('./../../'))
+    from F_UNCLE.Utils.Struc import Struc
+else:
+    from .Struc import Struc
+#end
+
 
 
 # =========================

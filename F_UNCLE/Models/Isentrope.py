@@ -47,8 +47,11 @@ from scipy.interpolate import InterpolatedUnivariateSpline as IU_Spline
 # =========================
 # Custom Packages
 # =========================
-sys.path.append(os.path.abspath('./../../'))
-from F_UNCLE.Utils.PhysicsModel import PhysicsModel
+if __name__ == '__main__':
+    sys.path.append(os.path.abspath('./../../'))
+    from F_UNCLE.Utils.PhysicsModel import PhysicsModel
+else:
+    from ..Utils.PhysicsModel import PhysicsModel
 
 
 # =========================
@@ -654,9 +657,9 @@ class TestBumpEOS(unittest.TestCase):
         bump_eos = EOSBump()
 
         self.assertEqual(bump_eos.get_option('const_C'), 2.56e9)
-        self.assertEqual(bump_eos.get_option('bumps')[0][0], 0.2)
+        self.assertEqual(bump_eos.get_option('bumps')[0][0], 0.4)
         self.assertEqual(bump_eos.get_option('bumps')[0][1], 0.1)
-        self.assertEqual(bump_eos.get_option('bumps')[0][2], 0.4)
+        self.assertEqual(bump_eos.get_option('bumps')[0][2], 0.25)
 
     def test_custom_instatntiation(self):
         """Test non default instantiation

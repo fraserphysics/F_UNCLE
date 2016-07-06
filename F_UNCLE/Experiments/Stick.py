@@ -40,10 +40,13 @@ from scipy.optimize import brentq
 # Custom Packages
 # =========================
 
-sys.path.append(os.path.abspath('./../../'))
-
-from F_UNCLE.Utils.Experiment import Experiment
-from F_UNCLE.Models.Isentrope import EOSBump, EOSModel, Isentrope
+if __name__ == '__main__':
+    sys.path.append(os.path.abspath('./../../'))
+    from F_UNCLE.Utils.Experiment import Experiment
+    from F_UNCLE.Models.Isentrope import EOSBump, EOSModel, Isentrope
+else:
+    from ..Utils.Experiment import Experiment
+    from ..Models.Isentrope import EOSBump, EOSModel, Isentrope
 
 # =========================
 # Main Code
@@ -376,7 +379,7 @@ class Stick(Experiment):
             v_eos = np.linspace(v_min, v_max, 30)
             ax1.plot(v_eos, rayl_line(vel_cj, v_eos, self.eos, v_0), ray_style)
             ax1.plot(vol_cj, p_cj, cj_style)
-
+            ax1.plot(v_0, 0.0, '+k')
             # Shows position error for V_cj
             # fig2 = plt.figure()
             # ax2 = fig2.gca()
@@ -438,7 +441,8 @@ class TestStick(unittest.TestCase):
         self.assertIsInstance(smry[1], float)
         self.assertIsInstance(smry[2], float)
         self.assertTrue(hasattr(smry[3], '__call__'))
-
+        
+    @unittest.skip('skipped plotting routine')
     def test_eos_step(self):
         """Tests that the stick model is sensitive to changes in EOS
         """

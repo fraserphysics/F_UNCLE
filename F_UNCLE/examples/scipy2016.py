@@ -66,11 +66,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # F_UNLCE packages
-sys.path.append(os.path.abspath('./../../'))
-from F_UNCLE.Experiments.GunModel import Gun
-from F_UNCLE.Experiments.Stick import Stick
-from F_UNCLE.Models.Isentrope import EOSModel, EOSBump
-from F_UNCLE.Opt.Bayesian import Bayesian
+if __name__ == '__main__':
+    sys.path.append(os.path.abspath('./../../'))
+    from F_UNCLE.Experiments.GunModel import Gun
+    from F_UNCLE.Experiments.Stick import Stick
+    from F_UNCLE.Models.Isentrope import EOSModel, EOSBump
+    from F_UNCLE.Opt.Bayesian import Bayesian
+else:
+    from ..Experiments.GunModel import Gun
+    from ..Experiments.Stick import Stick
+    from ..Models.Isentrope import EOSModel, EOSBump
+    from ..Opt.Bayesian import Bayesian
+#end
 
 if __name__ == '__main__':
     #################
@@ -152,6 +159,7 @@ if __name__ == '__main__':
     f1ax1.legend(['Fit EOS',
                   'Rayleigh line',
                   'CJ point',
+                  r'($v_o$, $p_o$)',
                   'Prior EOS',
                   'True EOS'],
                  loc='best')
@@ -230,6 +238,12 @@ if __name__ == '__main__':
 
     gun_simulation.plot(axis=f4ax2, style='--b',
                         data=[gun_prior_sim])
+    f4ax2.plot([None],[None], '-r')
+    f4ax2.legend(['Fit EOS',
+                  'Prior EOS',
+                  'True EOS',
+                  'Error'], loc='upper left', framealpha = 0.5)
+
     fig4.tight_layout()
     fig4.savefig('scipy2016_figure4'+figtype, dpi=1000)
 

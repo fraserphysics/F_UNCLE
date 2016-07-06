@@ -52,10 +52,16 @@ except:
 # Custom Packages
 # =========================
 
-sys.path.append(os.path.abspath('./../../'))
-from F_UNCLE.Utils.Experiment import Experiment
-from F_UNCLE.Utils.PhysicsModel import PhysicsModel
-from F_UNCLE.Utils.Struc import Struc
+if __name__ == '__main__':
+    sys.path.append(os.path.abspath('./../../'))
+    from F_UNCLE.Utils.Experiment import Experiment
+    from F_UNCLE.Utils.PhysicsModel import PhysicsModel
+    from F_UNCLE.Utils.Struc import Struc
+else:
+    from ..Utils.Experiment import Experiment
+    from ..Utils.PhysicsModel import PhysicsModel
+    from ..Utils.Struc import Struc
+# end
 
 # =========================
 # Main Code
@@ -919,7 +925,7 @@ class Bayesian(Struc):
 
 #        ax1.bar(np.arange(eigs.shape[0]), eigs, width=0.9, color='black',
 #                edgecolor='none', orientation='vertical')
-        ax1.semilogy(eigs, '-xk')
+        ax1.semilogy(eigs, 'sk')
         ax1.set_xlabel("Eigenvalue number")
         ax1.set_ylabel(r"Eigenvalue / Pa$^{-2}$")
         ax1.xaxis.set_major_locator(MultipleLocator(1))
@@ -934,6 +940,7 @@ class Bayesian(Struc):
         #end
         
         ax2.legend(loc = 'best')
+        ax2.get_legend().set_title("Eigen-\nfunctions", prop = {'size': 7})
         ax2.set_xlabel(r"Specific volume / cm$^3$ g$^{-1}$")
         ax2.set_ylabel("Eigenfunction response / Pa")
         
@@ -965,8 +972,8 @@ class Bayesian(Struc):
         ax1.xaxis.set_major_locator(MultipleLocator(1))
         ax1.xaxis.set_major_formatter(FormatStrFormatter('%d'))
         
-        ax1.set_xlabel('Iteration numer / ')
-        ax1.set_ylabel('Negative a posteori log likelyhood / ')
+        ax1.set_xlabel('Iteration number')
+        ax1.set_ylabel('Negative a posteori log likelihood')
         
         # fig = plt.figure()
         # ax1 = fig.add_subplot(121)
@@ -1036,11 +1043,16 @@ class TestBayesian(unittest.TestCase):
     def setUp(self):
         """Setup script for each test
         """
-
-        from FUNCLE.Experiments.GunModel import Gun
-        from FUNCLE.Experiments.Stick import Stick
-        from FUNCLE.Models.Isentrope import EOSModel, EOSBump
-
+        if __name__ == '__main__':
+            from FUNCLE.Experiments.GunModel import Gun
+            from FUNCLE.Experiments.Stick import Stick
+            from FUNCLE.Models.Isentrope import EOSModel, EOSBump
+        else:
+            from ..Experiments.GunModel import Gun
+            from ..Experiments.Stick import Stick
+            from ..Models.Isentrope import EOSModel, EOSBump
+        # end
+        
         # Initial estimate of prior functional form
         init_prior = np.vectorize(lambda v: 2.56e9 / v**3)
 
@@ -1083,14 +1095,14 @@ class TestBayesian(unittest.TestCase):
         bayes = Bayesian(simulations=[(self.sim1, self.exp1)],
                          model=self.eos_model)
 
-        print(bayes)
+        #print(bayes)
         shape = bayes.shape()
 
         exp_shape = self.exp1.shape()
         sim_shape = self.sim1.shape()
         mod_shape = self.eos_model.shape()[0]
 
-        initial_data = [self.sim1()]
+        initial_data = bayes.compare(bayes.simulations, bayes.model)
         P, q = bayes._get_sim_pq([(self.sim1, self.exp1)], self.eos_model, initial_data)
 
         self.assertEqual(P.shape, (mod_shape, mod_shape))
@@ -1110,7 +1122,8 @@ class TestBayesian(unittest.TestCase):
         sim_shape = self.sim1.shape() + self.sim2.shape()
         mod_shape = self.eos_model.shape()[0]
 
-        initial_data = [self.sim1(), self.sim2()]
+        initial_data = bayes.compare(bayes.simulations, bayes.model)
+        
         P, q = bayes._get_sim_pq([(self.sim1, self.exp1), (self.sim2, self.exp2)],
                                  self.eos_model, initial_data)
 
@@ -1130,7 +1143,7 @@ class TestBayesian(unittest.TestCase):
         sim_shape = self.sim1.shape()
         mod_shape = self.eos_model.shape()[0]
 
-        initial_data = [self.sim1()]
+        initial_data = bayes.compare(bayes.simulations, bayes.model)
 
         bayes._get_sens([(self.sim1, self.exp1)], self.eos_model, initial_data)
         self.assertEqual(bayes.sens_matrix.shape, (exp_shape, mod_shape))
@@ -1149,7 +1162,7 @@ class TestBayesian(unittest.TestCase):
         sim_shape = self.sim2.shape()
         mod_shape = self.eos_model.shape()[0]
 
-        initial_data = [self.sim2()]
+        initial_data = bayes.compare(bayes.simulations, bayes.model)
 
         bayes._get_sens([(self.sim2, self.exp2)],
                         self.eos_model, initial_data)
@@ -1169,7 +1182,7 @@ class TestBayesian(unittest.TestCase):
         sim_shape = self.sim1.shape() + self.sim1.shape()
         mod_shape = self.eos_model.shape()[0]
 
-        initial_data = [self.sim1(), self.sim2()]
+        initial_data = bayes.compare(bayes.simulations, bayes.model)
 
         bayes._get_sens([(self.sim1, self.exp1),
                          (self.sim2, self.exp2)],
@@ -1184,7 +1197,8 @@ class TestBayesian(unittest.TestCase):
         """
 
         pass
-
+    
+    @unittest.skip('skipped plotting routine')
     def test_fisher_matrix(self):
         """Tests if the fisher information matrix can be generated correctly
         """
