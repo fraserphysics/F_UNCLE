@@ -423,9 +423,13 @@ class EOSModel(Spline, Isentrope):
                             format(self.get_inform(0)))
         #end
 
-        vol = np.logspace(np.log10(self.get_option('spline_min')),
-                          np.log10(self.get_option('spline_max')),
-                          self.get_option('spline_N'))
+        # vol = np.logspace(np.log10(self.get_option('spline_min')),
+        #                   np.log10(self.get_option('spline_max')),
+        #                   self.get_option('spline_N'))
+        vol = np.linspace(self.get_option('spline_min'),
+                  self.get_option('spline_max'),
+                  self.get_option('spline_N'))
+
         Spline.__init__(self, vol, p_fun(vol))
 
         self.prior = copy.deepcopy(self)
@@ -511,6 +515,62 @@ class EOSModel(Spline, Isentrope):
 
         self.set_c(c_in)
 
+    def plot_basis(self, fig=None):
+        """Plots the basis function and their first and second derrivatives
+
+        Args:
+            fig(plt.Figure): A valid figure object on which to plot
+
+        Return:
+            (plt.Figure): The figure
+        
+        """
+
+        if fig is None:
+            fig = plt.figure()
+        else:
+            fig = fig
+        #end
+        
+        tmp_spline = copy.deepcopy(self)
+        dof_init = copy.deepcopy(tmp_spline.get_dof())
+
+        basis = []
+        dbasis = []
+        ddbasis = []
+
+        v_list = np.linspace(self.get_option('spline_min'),
+                             self.get_option('spline_max'),
+                             300)
+        
+        for i, coeff in enumerate(dof_init):
+            new_dof = np.zeros(dof_init.shape[0])
+            new_dof[i] = 1.0#coeff
+            tmp_spline.set_dof(new_dof)
+            basis.append(tmp_spline(v_list))
+            dbasis.append(tmp_spline.derivative(n=1)(v_list))
+            ddbasis.append(tmp_spline.derivative(n=2)(v_list))        
+        #end
+
+        basis = np.array(basis)
+        dbasis = np.array(dbasis)
+        ddbasis = np.array(ddbasis)
+        
+        ax1 = fig.add_subplot(311)
+        ax2 = fig.add_subplot(312)
+        ax3 = fig.add_subplot(313)
+        
+        knots = tmp_spline.get_t()
+        
+        for i in xrange(basis.shape[0]):
+            ax1.plot(v_list, basis[i,:])
+            ax1.plot(knots, np.zeros(knots.shape), 'xk')
+            ax2.plot(v_list, dbasis[i,:])
+            ax2.plot(knots, np.zeros(knots.shape), 'xk')            
+            ax3.plot(v_list, ddbasis[i,:])
+            ax3.plot(knots, np.zeros(knots.shape), 'xk')            
+        
+        return fig
 class TestIsentrope(unittest.TestCase):
     """Test of the isentrope object
     """

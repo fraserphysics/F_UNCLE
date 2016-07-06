@@ -1,60 +1,5 @@
-"""Script for re-generating the figures used in scipy2016
+"""Script for re-generating the notes figures
 
-This script generates the figures used in ref 1
-
-**Dependencies**
-
-- python 2.7
-- numpy
-- matplotlib
-- scipy
-- cvxopt
-
-**Useage**
-
-from the command line::
-
-   $ python scipy2016.py
-
-**References**
-
-1. Fraser, A. M. and Andrews, S. A. 2016 "Functional Uncertanty Constrained by
-   Law and Experiment." Proceedings of the 15th Python in Science Conference
-   LA-UR-23717
-
-
-Figures
--------
-
-.. figure:: /_static/scipy2016_figure1eos.png
-
-   Figure 0
-
-.. figure:: /_static/scipy2016_figure1.png
-
-   Figure 1
-
-.. figure:: /_static/scipy2016_figure2.png
-
-   Figure 2
-
-.. figure:: /_static/scipy2016_figure3.png
-
-   Figure 3
-
-.. figure:: /_static/scipy2016_figure4.png
-
-   Figure 4
-
-.. figure:: /_static/scipy2016_figure5.png
-
-   Figure 5
-
-.. figure:: /_static/scipy2016_figure6.png
-
-   Figure 6
-
-A trivial change to test git hub
 """
 
 # Standard python packages
@@ -133,13 +78,13 @@ if __name__ == '__main__':
     ####################
 
     from matplotlib import rcParams
-    rcParams['axes.labelsize'] = 7
-    rcParams['xtick.labelsize'] = 7
-    rcParams['ytick.labelsize'] = 7
+    rcParams['axes.labelsize'] = 8
+    rcParams['xtick.labelsize'] = 8
+    rcParams['ytick.labelsize'] = 8
     rcParams['legend.fontsize'] = 7
     rcParams['legend.handlelength'] = 3.0
 
-    pagewidth = 253 # pts
+    pagewidth = 360 # pts
     au_ratio = (np.sqrt(5) - 1.0) / 2.0
     figwidth = 1.0 # fraction of \pagewidth for figure
     figwidth *= pagewidth/72.27
@@ -150,7 +95,7 @@ if __name__ == '__main__':
     square = (figwidth, figwidth)
     tall = (figwidth, 1.25*figwidth)
 
-    # Figure 1
+    # Rayleigh line
     fig1 = plt.figure(figsize=square)
     f1ax1 = fig1.gca()
     stick_simulation.plot(axis=f1ax1,
@@ -168,9 +113,9 @@ if __name__ == '__main__':
                  loc='best')
 
     fig1.tight_layout()
-    fig1.savefig(out_dir+'scipy2016_figure1'+figtype, dpi=1000)
+    fig1.savefig(out_dir+'rayl_line'+figtype, dpi=1000)
 
-    # Figure 1
+    # Nominal and true EOS
     fig1 = plt.figure(figsize=square)
     f1ax1 = fig1.gca()
     eos_model.prior.plot(axis=f1ax1, style='--b')
@@ -178,29 +123,27 @@ if __name__ == '__main__':
     f1ax1.legend(['Prior EOS',
                   'True EOS'])
     fig1.tight_layout()
-    fig1.savefig(out_dir+'scipy2016_figure1eos'+figtype, dpi=1000)
-
-    # Figure 5
-
+    fig1.savefig(out_dir+'nom_true_eos'+figtype, dpi=1000)
+    
+    # Fisher information about the gun experiment
     fisher = analysis.get_fisher_matrix(simid=0, sens_calc=True)
     spec_data = analysis.fisher_decomposition(fisher)
 
     fig5 = analysis.plot_fisher_data(spec_data)
     fig5.set_size_inches(tall)
     fig5.tight_layout()
-    fig5.savefig(out_dir+'scipy2016_figure5'+figtype, dpi=1000)
+    fig5.savefig(out_dir+'info_gun'+figtype, dpi=1000)
 
-    # Figure 2
-
+    # Fisher information about the stick
     fisher = analysis.get_fisher_matrix(simid=1, sens_calc=True)
     spec_data = analysis.fisher_decomposition(fisher)
 
     fig2 = analysis.plot_fisher_data(spec_data)
     fig2.set_size_inches(tall)
     fig2.tight_layout()
-    fig2.savefig(out_dir+'scipy2016_figure2'+figtype, dpi=1000)
+    fig2.savefig(out_dir+'info_stick'+figtype, dpi=1000)
 
-    # Figure 3
+    # Results of the optimized stick simulation
 
     fig3 = plt.figure(figsize=square)
     f3ax1 = fig3.gca()
@@ -217,9 +160,9 @@ if __name__ == '__main__':
 
     f3ax1.legend(['Fit EOS', 'True EOS', 'Prior EOS'], loc='best')
     fig3.tight_layout()
-    fig3.savefig(out_dir+'scipy2016_figure3'+figtype, dpi=1000)
+    fig3.savefig(out_dir+'stick_results'+figtype, dpi=1000)
 
-    # Figure 4
+    # Results of the optimized gun simulation
 
     fig4 = plt.figure(figsize=tall)
     f4ax1 = fig4.add_subplot(211)
@@ -248,14 +191,31 @@ if __name__ == '__main__':
                   'Error'], loc='upper left', framealpha = 0.5)
 
     fig4.tight_layout()
-    fig4.savefig(out_dir+'scipy2016_figure4'+figtype, dpi=1000)
+    fig4.savefig(out_dir+'gun_results'+figtype, dpi=1000)
 
-    # Figure 6
-
+    # Convergence history
     fig6 = plt.figure(figsize=square)
     f6a1 = fig6.gca()
     analysis.plot_convergence(history, axis=f6a1)
     fig6.tight_layout()
-    fig6.savefig(out_dir+'scipy2016_figure6'+figtype, dpi=1000)
+    fig6.savefig(out_dir+'conv'+figtype, dpi=1000)
+
+    # Gun sensitivity plot
+    fig7 = plt.figure(figsize=square)
+    analysis.plot_sens_matrix(fig = fig7, simid = 0)
+    fig7.savefig(out_dir+'gun_sens'+figtype, dpi=1000)
+
+    # Stick sensitivity plot
+    fig8 = plt.figure(figsize=square)
+    analysis.plot_sens_matrix(fig = fig8, simid = 1)
+    fig8.savefig(out_dir+'stick_sens'+figtype, dpi=1000)    
+
+
+    # EOS basis functions
+    fig9 = plt.figure(figsize=square)
+    fig9 = eos_model.plot_basis(fig = fig9)
+    fig9.savefig(out_dir+'eos_basis'+figtype, dpi=1000)    
+    
+    # Knots 
 
 #    plt.show()
