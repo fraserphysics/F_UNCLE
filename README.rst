@@ -2,10 +2,13 @@
 Functional Uncertainty Constrained by Law and Experiment
 =======================================================
 
-.. figure:: https://travis-ci.org/steve855/F_UNCLE.svg
+.. image:: https://travis-ci.org/steve855/F_UNCLE.svg
    :alt: travis CI build status
-.. figure:: https://readthedocs.org/projects/f-uncle/badge/?version=latest
+   :target: https://travis-ci.org/steve855/F_UNCLE/
+
+.. image:: https://readthedocs.org/projects/f-uncle/badge/?version=latest
    :alt: readthedocs status
+   :target: http://f-uncle.readthedocs.io/en/latest/
 
 Authors
 -------
