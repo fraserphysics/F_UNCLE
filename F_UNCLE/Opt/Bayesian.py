@@ -930,6 +930,7 @@ class Bayesian(Struc):
         ax1.semilogy(eigs, 'sk')
         ax1.set_xlabel("Eigenvalue number")
         ax1.set_ylabel(r"Eigenvalue / Pa$^{-2}$")
+        ax1.set_xlim(-0.5, len(eigs)-0.5)
         ax1.xaxis.set_major_locator(MultipleLocator(1))
         ax1.xaxis.set_major_formatter(FormatStrFormatter('%d'))
 

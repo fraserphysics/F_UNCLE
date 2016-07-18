@@ -144,8 +144,9 @@ if __name__ == '__main__':
     figwidth = 1.0 # fraction of \pagewidth for figure
     figwidth *= pagewidth/72.27
     figtype = '.pdf'
-    out_dir = os.path.join('.', '..', '..',
-                           'reports', 'notes', 'figures')+os.sep
+    out_dir = os.path.join('.', '..', '..','..',
+                           'scipy_proceedings', 'papers', 'andrew_fraser')\
+                           + os.sep
 
     square = (figwidth, figwidth)
     tall = (figwidth, 1.25*figwidth)
