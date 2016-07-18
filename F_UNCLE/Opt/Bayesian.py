@@ -498,13 +498,14 @@ class Bayesian(Struc):
         if sens_calc:
             self._get_sens(self.simulations, self.model)
         #end
-        
+
+        j = 0
         for i in xrange(len(self.simulations)):
             dim_k = self.simulations[i][1].shape()
             if i == simid:
-                sens_k = self.sens_matrix[i:i+dim_k, :]
+                sens_k = self.sens_matrix[j:j+dim_k, :]
             #end
-            i += dim_k
+            j += dim_k
         #end
         
         sigma = inv(sim.get_sigma())
@@ -548,7 +549,7 @@ class Bayesian(Struc):
         vecs = eig_vecs.T[i]
 
         n_vals = max(len(np.where(vals > vals[0]*1e-2)[0]), 3)
-        n_vecs = max(len(np.where(vals > vals[0]*1e-2)[0]), 3)
+        n_vecs = max(len(np.where(vals > vals[0]*1e-2)[0]), 1)
 
         # Find range of v that includes support of eigenfunctions
         knots = eos.get_t()
@@ -931,6 +932,7 @@ class Bayesian(Struc):
         ax1.set_xlabel("Eigenvalue number")
         ax1.set_ylabel(r"Eigenvalue / Pa$^{-2}$")
         ax1.set_xlim(-0.5, len(eigs)-0.5)
+        ax1.set_ylim([0.1*min(eigs), 10*max(eigs)])        
         ax1.xaxis.set_major_locator(MultipleLocator(1))
         ax1.xaxis.set_major_formatter(FormatStrFormatter('%d'))
 
