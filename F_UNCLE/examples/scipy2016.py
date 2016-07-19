@@ -197,6 +197,14 @@ if __name__ == '__main__':
     spec_data = analysis.fisher_decomposition(fisher)
 
     fig2 = analysis.plot_fisher_data(spec_data)
+    fig2.axes[1].axvline(s_data_s[1])
+    fig2.axes[1].annotate(r'$v_{CJ}$',
+                          xy=(s_data_s[1],0),
+                          xytext=(30,30),
+                          xycoords='data',
+                          textcoords='offset points',
+                          arrowprops=dict(facecolor='black',
+                                          arrowstyle='->'))
     fig2.set_size_inches(tall)
     fig2.tight_layout()
     fig2.savefig(out_dir+'scipy2016_figure2'+figtype, dpi=1000)

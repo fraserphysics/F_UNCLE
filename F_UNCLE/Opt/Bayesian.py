@@ -932,7 +932,7 @@ class Bayesian(Struc):
         ax1.set_xlabel("Eigenvalue number")
         ax1.set_ylabel(r"Eigenvalue / Pa$^{-2}$")
         ax1.set_xlim(-0.5, len(eigs)-0.5)
-        ax1.set_ylim([0.1*min(eigs), 10*max(eigs)])        
+        ax1.set_ylim([0.1*min(eigs[np.nonzero(eigs)]), 10*max(eigs)])        
         ax1.xaxis.set_major_locator(MultipleLocator(1))
         ax1.xaxis.set_major_formatter(FormatStrFormatter('%d'))
 
