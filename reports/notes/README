@@ -1,0 +1,5 @@
+Build instructions
+
+0) create a figures directory
+1) run F_UNCLE/examples/make_notes.py, this will populate the figures directory
+2) compile notes.tex

@@ -1,6 +1,12 @@
-*.pdf
 *.pyc
-*.aux
+*~
+*.pdf
+.DS_Store
+doc/_build
+build
+TAGS
+
+*aux
 *.bbl
-*.log
 *.blg
+*.log
