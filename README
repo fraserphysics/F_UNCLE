@@ -1,7 +1,8 @@
 New name, F_UNCLE: Functional UNcertainty Constrained by Law and Experiment
 
-LA-CC-16-034
+Los Alamos Computer Code index: LA-CC-16-034
 
+==========Description of work provided to codes.lanl.gov=========
 The F_UNCLE project is for quantitatively characterizing uncertainty
 about functions and how physical laws and experiments constrain that
 uncertainty.  The project is an evolving platform consisting of
@@ -10,6 +11,7 @@ quantitative characterizations of uncertainty about functions and how
 either historical or proposed experiments have or could constrain that
 uncertainty.  No actual physical measurements are distributed as part
 of the software.
+=================================================================
 
 To make notes.pdf:
 
