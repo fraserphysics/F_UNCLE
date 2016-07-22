@@ -47,8 +47,8 @@ if __name__ == '__main__':
     from F_UNCLE.Utils.Experiment import Experiment
     from F_UNCLE.Models.Isentrope import EOSBump, EOSModel, Isentrope, Spline
 else:
-    from ..Utils.Experiment import Experiment
-    from ..Models.Isentrope import EOSBump, EOSModel, Isentrope, Spline
+    from Utils.Experiment import Experiment
+    from Models.Isentrope import EOSBump, EOSModel, Isentrope, Spline
 # end    
 
 # =========================

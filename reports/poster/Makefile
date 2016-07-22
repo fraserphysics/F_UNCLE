@@ -1,26 +1,36 @@
+# poster.pdf is the default target
 poster.pdf:
 
-eos_nom_true.pdf:
-	ln -s ../papers/andrew_fraser/scipy2016_figure1eos.pdf $@
-real.pdf:
-	ln -s ../papers/andrew_fraser/fit_v.pdf $@
-stick_CJ.pdf:
-	ln -s ../papers/andrew_fraser/scipy2016_figure1.pdf $@
-stick_fisher.pdf:
-	ln -s ../papers/andrew_fraser/scipy2016_figure2.pdf $@
-stick_xt.pdf:
-	ln -s ../papers/andrew_fraser/scipy2016_figure3.pdf $@
-gun_tv.pdf:
-	ln -s ../papers/andrew_fraser/scipy2016_figure4.pdf $@
-gun_fisher.pdf:
-	ln -s ../papers/andrew_fraser/scipy2016_figure5.pdf $@
+# Block to fetch old Man From U.N.C.L.E picture
+ILLYA=Robert_Vaughn_David_McCallum_Man_from_UNCLE_1966.JPG
+figs/authors.jpg:
+	wget https://upload.wikimedia.org/wikipedia/commons/8/8b/${ILLYA}
+	mv ${ILLYA} $@
 
-FIGS =  eos_nom_true stick_xt stick_CJ stick_fisher gun_tv gun_fisher\
-real
-FIGURES = $(patsubst %, %.pdf, $(FIGS)) 
+# Block to copy drawings we don't know how to make
+OLD_DIR = /home/andy/tmp/scipy_proceedings/poster
+figs/stick_poster.pdf: ${OLD_DIR}/stick_poster.pdf
+	cp $< $@
+figs/gun_poster.pdf: ${OLD_DIR}/gun_poster.pdf
+	cp $< $@
 
-poster.pdf: poster.tex ${FIGURES}
+# Copy old fig.  FixMe: Should make that here
+figs/basis.pdf: /home/andy/projects/metfie/like_gun/basis.pdf
+	ln -s $< $@
+
+# Block to make figures from simulations
+PYTHON = export PYTHONPATH=/home/andy/projects/F_UNCLE/F_UNCLE/; python
+SIM_FIGS = stick_xt stick_fisher stick_CJ eos_nom_true gun_tv gun_fisher
+sim_figs: plot.py
+	${PYTHON} plot.py $(patsubst %, --% figs, $(SIM_FIGS))
+	touch $@
+
+SPECIAL =  real basis stick_poster gun_poster
+FIGURES_MADE = $(patsubst %, figs/%.pdf, $(SPECIAL)) figs/authors.jpg sim_figs
+
+poster.pdf: poster.tex ${FIGURES_MADE}
 	pdflatex poster
+
 ###---------------
 ### Local Variables:
 ### mode: makefile

@@ -51,7 +51,7 @@ if __name__ == '__main__':
     sys.path.append(os.path.abspath('./../../'))
     from F_UNCLE.Utils.PhysicsModel import PhysicsModel
 else:
-    from ..Utils.PhysicsModel import PhysicsModel
+    from Utils.PhysicsModel import PhysicsModel
 
 
 # =========================

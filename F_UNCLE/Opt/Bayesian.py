@@ -60,9 +60,9 @@ if __name__ == '__main__':
     from F_UNCLE.Utils.PhysicsModel import PhysicsModel
     from F_UNCLE.Utils.Struc import Struc
 else:
-    from ..Utils.Experiment import Experiment
-    from ..Utils.PhysicsModel import PhysicsModel
-    from ..Utils.Struc import Struc
+    from Utils.Experiment import Experiment
+    from Utils.PhysicsModel import PhysicsModel
+    from Utils.Struc import Struc
 # end
 
 # =========================
