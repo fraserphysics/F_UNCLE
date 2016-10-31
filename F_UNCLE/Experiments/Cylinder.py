@@ -48,12 +48,14 @@ if __name__ == '__main__':
 else:
     from ..Utils.Experiment import Experiment
     from ..Models.Isentrope import EOSBump, EOSModel, Isentrope, Spline
-#end
-    
+# end
+
 
 # =========================
 # Main Code
 # =========================
+
+
 class Stick(Experiment):
     """A toy physics model representing a gun type experiment
 
@@ -65,7 +67,8 @@ class Stick(Experiment):
         """Instantiate the Experiment object
 
         Args:
-            eos(Isentrope): The equation of state model used in the toy computational experiment
+            eos(Isentrope): The equation of state model used in the toy computational
+                            experiment
 
         Keyword Args:
             name(str): A name. (Default = 'Gun Toy Computational Experiment')
@@ -75,7 +78,7 @@ class Stick(Experiment):
         if isinstance(eos, Isentrope):
             self.eos = eos
         else:
-            raise TypeError('{:} Equation of state model must be an Isentrope object'\
+            raise TypeError('{:} Equation of state model must be an Isentrope object'
                             .format(self.get_inform(2)))
         # end
 
@@ -101,8 +104,8 @@ class Stick(Experiment):
                     'Number of times for t2v spline']
         }
 
-        self.const = {'newton2dyne':1e5,
-                      'cm2km':1.0e5}
+        self.const = {'newton2dyne': 1e5,
+                      'cm2km': 1.0e5}
 
         Experiment.__init__(self, name=name, def_opts=def_opts, *args, **kwargs)
 
@@ -114,10 +117,10 @@ class Stick(Experiment):
         elif isinstance(model, Isentrope):
             self.eos = copy.deepcopy(model)
         else:
-            raise TypeError('{}: Model must be an isentrope for update'\
+            raise TypeError('{}: Model must be an isentrope for update'
                             .format(self.get_inform(1)))
-        #end
-        
+        # end
+
     def _on_str(self, *args, **kwargs):
         """Print method of the gun model
 

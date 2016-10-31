@@ -45,7 +45,7 @@
 \newcommand\Lbb{\mathbb{L}}
 \newcommand\epv{\epsilon_v}
 \newcommand\epf{\epsilon_f}
-\newcommand{\fig}[1]{figures/#1.pdf}
+\newcommand{\fig}[1]{figs/#1.pdf}
 
 \title{Notes on EOS Estimation Code}
 
@@ -480,9 +480,7 @@ following methods:
   
 \item[fit\_C] Use finite differences to calculate dv/df in terms of
   spline coefficients, ie,
-  $C[k,i] = \frac{\Delta c_v[k]}{\Delta c_f[i]}$.  See
-  Fig.~\ref{fig:C_gun} and note that $k$ and $i$ range over components
-  of $\cv$ and $\cf$ respectively.
+  $C[k,i] = \frac{\Delta c_v[k]}{\Delta c_f[i]}$.
 \item[fit\_B\_ep] Map experimental velocities v and times t to the
   following:
   \begin{align*}        
@@ -494,7 +492,7 @@ following methods:
   $B$ is the derivative of the simulated velocity function at the
   experimental sample times wrt the coefficients of the spline fit
   that implements that function, and $BC_{j,i}$ is the derivative of
-  $v(t[j])$ wrt $\cf[i]$.  See Fig.~\ref{fig:BC_gun}.
+  $v(t[j])$ wrt $\cf[i]$.
 \end{description}
 
 \begin{figure}

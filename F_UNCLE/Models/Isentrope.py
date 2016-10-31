@@ -9,7 +9,7 @@ Authors
 -------
 
 - Stephen Andrews (SA)
-- Andrew M. Fraiser (AMF)
+- Andrew M. Fraser (AMF)
 
 Revisions
 ---------
@@ -23,12 +23,15 @@ None
 
 
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
 # =========================
 # Python Standard Libraries
 # =========================
 import copy
-import unittest
 import math
 import sys
 import os
@@ -37,7 +40,6 @@ import os
 # Python Packages
 # =========================
 import numpy as np
-import numpy.testing as npt
 import matplotlib.pyplot as plt
 from scipy.interpolate import InterpolatedUnivariateSpline as IU_Spline
 # For scipy.interpolate.InterpolatedUnivariateSpline. See:
@@ -49,17 +51,16 @@ from scipy.interpolate import InterpolatedUnivariateSpline as IU_Spline
 # =========================
 if __name__ == '__main__':
     sys.path.append(os.path.abspath('./../../'))
-    from F_UNCLE.Utils.PhysicsModel import PhysicsModel
+    from F_UNCLE.Utils.PhysicsModel import GausianModel
 else:
-    from ..Utils.PhysicsModel import PhysicsModel
+    from ..Utils.PhysicsModel import GausianModel
 
 
 # =========================
 # Main Code
 # =========================
 
-
-class Isentrope(PhysicsModel):
+class Isentrope(GausianModel):
     """Abstract class for an isentrope
 
     The equation of state for an isentropic expansion of high explosive is
@@ -79,25 +80,25 @@ class Isentrope(PhysicsModel):
 
     **Options**
 
-    +------------+-------+-----+-----+-----+---------+--------------------------+
-    |    Name    |Type   |Def  |Min  |Max  |Units    |Description               |
-    +============+=======+=====+=====+=====+=========+==========================+
-    |`spline_N`  |(int)  |50   |7    |None |''       |Number of knots in the EOS|
-    |            |       |     |     |     |         |spline                    |
-    +------------+-------+-----+-----+-----+---------+--------------------------+
-    |`spline_min`|(float)|0.1  |0.0  |None |'cm**3/g'|Minimum value of volume   |
-    |            |       |     |     |     |         |modeled by EOS            |
-    +------------+-------+-----+-----+-----+---------+--------------------------+
-    |`spline_max`|(float)|1.0  |0.0  |None |'cm**3/g'|Maximum value of volume   |
-    |            |       |     |     |     |         |modeled by EOS            |
-    +------------+-------+-----+-----+-----+---------+--------------------------+
-    |`spline_end`|(float)|4    |0    |None |''       |Number of zero nodes at   |
-    |            |       |     |     |     |         |end of spline             |
-    +------------+-------+-----+-----+-----+---------+--------------------------+
+   +------------+-------+-----+-----+-----+---------+--------------------------+
+   |    Name    |Type   |Def  |Min  |Max  |Units    |Description               |
+   +============+=======+=====+=====+=====+=========+==========================+
+   |`spline_N`  |(int)  |50   |7    |None |''       |Number of knots in the EOS|
+   |            |       |     |     |     |         |spline                    |
+   +------------+-------+-----+-----+-----+---------+--------------------------+
+   |`spline_min`|(float)|0.1  |0.0  |None |'cm**3/g'|Minimum value of volume   |
+   |            |       |     |     |     |         |modeled by EOS            |
+   +------------+-------+-----+-----+-----+---------+--------------------------+
+   |`spline_max`|(float)|1.0  |0.0  |None |'cm**3/g'|Maximum value of volume   |
+   |            |       |     |     |     |         |modeled by EOS            |
+   +------------+-------+-----+-----+-----+---------+--------------------------+
+   |`spline_end`|(float)|4    |0    |None |''       |Number of zero nodes at   |
+   |            |       |     |     |     |         |end of spline             |
+   +------------+-------+-----+-----+-----+---------+--------------------------+
 
     """
 
-    def __init__(self, name='Isentrope', *args, **kwargs):
+    def __init__(self, name=u'Isentrope', *args, **kwargs):
         """
 
         Args:
@@ -112,21 +113,22 @@ class Isentrope(PhysicsModel):
         """
 
         def_opts = {
-            'spline_N' : [int, 50, 7, None, '',
-                          "Number of knots in the EOS spline"],
+            'spline_N': [int, 50, 7, None, '',
+                         "Number of knots in the EOS spline"],
             'spline_min': [float, 0.1, 0.0, None, 'cm**3/g',
                            "Minimum value of volume modeled by EOS"],
             'spline_max': [float, 1.0, 0.0, None, 'cm**3/g',
                            "Maximum value of volume modeled by EOS"],
-            'spline_end' : [float, 4, 0, None, '',
-                            "Number of zero nodes at end of spline"]
+            'spline_end': [float, 4, 0, None, '',
+                           "Number of zero nodes at end of spline"]
         }
 
         if 'def_opts' in kwargs:
             def_opts.update(kwargs.pop('def_opts'))
         # end
 
-        PhysicsModel.__init__(self, None, name=name, def_opts=def_opts, *args, **kwargs)
+        GausianModel.__init__(self, None, name=name, def_opts=def_opts,
+                              *args, **kwargs)
 
     def shape(self):
         """Overloaded class to get isentrope DOF's
@@ -137,46 +139,139 @@ class Isentrope(PhysicsModel):
             (tuple): (n,1) where n is the number of dofs
         """
 
-        return (self.get_option('spline_N'), 1)
+        return self.get_option('spline_N')
 
-    def plot(self, axis=None, hardcopy=None, style = '-k', *args, **kwargs):
+    def plot(self, axes=None, figure=None, linestyles=['-k'],
+             labels=['Isentrope'], *args, **kwargs):
         """Plots the EOS
 
         Overloads the :py:meth:`F_UNCLE.Utils.Struc.Struc.plot` method to plot
         the eos over the range of volumes.
 
         Args:
-            axis(plt.Axes): The axis on which to plot the figure, if None,
+            axes(plt.Axes): The axes on which to plot the figure, if None,
                 creates a new figure object on which to plot.
-            hard-copy(str): If a string, write the figure to the file specified
-            style(str): A :py:meth:`plt.Axis.plot` format string for the eos
+            figure(plt.Figure): The figure on which to plot *ignored*
+            linstyles(list): Strings for the linestyles
+                0. '-k', The Isentrope
+            labels(list): Strings for the plot labels
+                0. 'Isentrope'
+
         Return:
             (plt.Figure): A reference to the figure containing the plot
 
         """
 
-        if axis is None:
+        if axes is None:
             fig = plt.figure()
             ax1 = fig.gca()
-        elif isinstance(axis, plt.Axes):
+        elif isinstance(axes, plt.Axes):
             fig = None
-            ax1 = axis
+            ax1 = axes
         else:
-            raise TypeError("{} axis must be a matplotlib Axis object".\
-                            format(self.get_inform(1)))
-        #end
+            raise TypeError("{} axis must be a matplotlib Axis object"
+                            .format(self.get_inform(1)))
+        # end
 
         # v_spec = np.logspace(np.log10(self.get_option('spline_min')),\
         #                 np.log10(self.get_option('spline_max')),\
         #                 50)
-        v_spec = np.linspace(0.2,
-                             0.6,
-                             200)        
-        ax1.plot(v_spec, self(v_spec), style, *args, **kwargs)
-        ax1.set_xlabel(r'Specific volume / cm$^3$ g$^{-1}$')
-        ax1.set_ylabel('Pressure / Pa')
+        v_spec = np.linspace(self.get_option('spline_min'),
+                             self.get_option('spline_max'),
+                             200)
+        ax1.plot(v_spec, self(v_spec), linestyles[0], label=labels[0])
+        ax1.set_xlabel(r'Specific volume / cm$^3$g^{-1}')
+        ax1.set_ylabel(r'Pressure / Pa')
+        # ax1.set_xlabel(r'Specific volume / $\si{\cubic\centi\meter\per\gram}$')
+        # ax1.set_ylabel(r'Pressure / $\si{\pascall}$')
 
         return fig
+
+    def get_constraints(self, scale=False):
+        """Returns the G and h matricies corresponding to the model
+
+        Args:
+           model(GausianModel): The physics model subject to
+                                physical constraints
+        Return:
+           ():
+           ():
+
+        Method
+
+        Calculate constraint matrix G and vector h.  The
+        constraint enforced by :py:class:`cvxopt.solvers.qp` is
+
+        .. math::
+
+           G*x \leq  h
+
+        Equivalent to :math:`max(G*x - h) \leq 0`
+
+        Since
+
+        .. math::
+
+           c_{f_{new}} = c_f+x,
+
+        .. math::
+
+           G(c_f+x) \leq 0
+
+        is the same as
+
+        .. math::
+
+           G*x \leq -G*c_f,
+
+        and :math:`h = -G*c_f`
+
+        Here are the constraints for :math:`p(v)`:
+
+        p'' positive for all v
+        p' negative for v_max
+        p positive for v_max
+
+        For cubic splines between knots, f'' is constant and f' is
+        affine.  Consequently, :math:`f''rho + 2f'` is affine between knots
+        and it is sufficient to check eq:star at the knots.
+
+        """
+
+        c_model = copy.deepcopy(self)
+        spline_end = c_model.get_option('spline_end')
+        dim = c_model.shape()
+
+        v_unique = c_model.get_t()[spline_end - 1:1 - spline_end]
+        n_constraints = len(v_unique) + 2
+
+        G_mat = np.zeros((n_constraints, dim))
+        c_tmp = np.zeros(dim)
+        c_init = c_model.get_dof()
+        scaling = c_model.get_scaling()
+        for i in range(dim):
+            c_tmp[i] = 1.0
+            mod_tmp = c_model.update_dof(c_tmp)
+            G_mat[:-2, i] = -mod_tmp.derivative(2)(v_unique)
+            G_mat[-2, i] = mod_tmp.derivative(1)(v_unique[-1])
+            G_mat[-1, i] = -mod_tmp(v_unique[-1])
+            c_tmp[i] = 0.0
+        # end
+
+        h_vec = -np.dot(G_mat, c_init)
+
+        hscale = np.abs(h_vec)
+        hscale = np.maximum(hscale, hscale.max() * 1e-15)
+        # Scale to make |h[i]| = 1 for all i
+        HI = np.diag(1.0 / hscale)
+        h_vec = np.dot(HI, h_vec)
+        G_mat = np.dot(HI, G_mat)
+
+        if scale:
+            G_mat = np.dot(G_mat, scaling)
+        # end
+
+        return G_mat, h_vec
 
 
 class Spline(IU_Spline):
@@ -213,7 +308,7 @@ class Spline(IU_Spline):
             raise TypeError("Error in Spline: spline_end must be an integer")
         else:
             pass
-        #end
+        # end
 
         return copy.deepcopy(self._eval_args[1][:-spline_end])
 
@@ -229,7 +324,7 @@ class Spline(IU_Spline):
            spline_end(int): The number of fixed nodes at the end of the spline
 
         Returns:
-            None
+            (Spline): A copy of `self` with the new coefficients
 
         """
 
@@ -239,13 +334,15 @@ class Spline(IU_Spline):
             raise TypeError("Error in Spline: spline_end must be an integer")
         else:
             pass
-        #end
+        # end
 
         c_new = np.zeros(self._eval_args[1].shape)
         c_new[:-spline_end] = c_in
-        self._eval_args = (self._eval_args[0], c_new, self._eval_args[2])
-
-        return None
+        new_spline = copy.deepcopy(self)
+        new_spline._eval_args = (new_spline._eval_args[0],
+                                 c_new,
+                                 new_spline._eval_args[2])
+        return new_spline
 
     def get_basis(self, indep_vect, spline_end=None):
         """Returns the matrix of basis functions of the spline
@@ -269,42 +366,41 @@ class Spline(IU_Spline):
         basis = np.zeros((len(initial_c), len(indep_vect)))
         for j in range(len(tmp_c)):
             tmp_c[j] = 1.0
-            self.set_c(tmp_c, spline_end=spline_end)
-            basis[j, :] = self.__call__(indep_vect)
+            tmp_spline = self.set_c(tmp_c, spline_end=spline_end)
+            basis[j, :] = tmp_spline.__call__(indep_vect)
             tmp_c[j] = 0.0
-        #end
-
-        self.set_c(initial_c, spline_end=spline_end)
+        # end
 
         return basis
+
 
 class EOSBump(Isentrope):
     """Model of an ideal isentrope with Gaussian bumps
 
     This is treated as the *true* EOS
-    
+
     **Options**
 
-    +---------+-------+----------------+-----+-----+-----+----------------------+
-    |Name     |Type   |Def             |Min  |Max  |Units|Description           |
-    +---------+-------+----------------+-----+-----+-----+----------------------+
-    |`const_C`|(float)|2.56e9          |0.0  |None |'Pa' |'Constant p = C/v**3' |
-    |         |       |                |     |     |     |                      |
-    +---------+-------+----------------+-----+-----+-----+----------------------+
-    |`bumps`  |(list) |[(0.4 0.1 0.25) |None |None |''   |'Gaussian bumps to the|
-    |         |       |                |     |     |     |EOS'                  |
-    |         |       |(0.5 0.1 -0.3)] |     |     |     |                      |
-    +---------+-------+----------------+-----+-----+-----+----------------------+
-    
+   +---------+-------+----------------+-----+-----+-----+----------------------+
+   |Name     |Type   |Def             |Min  |Max  |Units|Description           |
+   +---------+-------+----------------+-----+-----+-----+----------------------+
+   |`const_C`|(float)|2.56e9          |0.0  |None |'Pa' |'Constant p = C/v**3' |
+   |         |       |                |     |     |     |                      |
+   +---------+-------+----------------+-----+-----+-----+----------------------+
+   |`bumps`  |(list) |[(0.4 0.1 0.25) |None |None |''   |'Gaussian bumps to the|
+   |         |       |                |     |     |     |EOS'                  |
+   |         |       |(0.5 0.1 -0.3)] |     |     |     |                      |
+   +---------+-------+----------------+-----+-----+-----+----------------------+
+
     """
 
-    def __init__(self, name='Bump EOS', *args, **kwargs):
+    def __init__(self, name=u'Bump EOS', *args, **kwargs):
         """Instantiate the bump EOS
 
         Args:
             *args: Variable length argument list.
             **kwargs: Arbitrary keyword arguments.
-        
+
         Keyword Args:
             name(str): Name if the isentrope *Def 'Bump EOS'*
 
@@ -313,10 +409,10 @@ class EOSBump(Isentrope):
         def_opts = {
             'const_C': [float, 2.56e9, 0.0, None, 'Pa',
                         "Constant p = C/v**3"],
-            'bumps' : [list, [(0.4, 0.1, 0.25),
-                              (0.5, 0.1, -0.3)], None, None, '',
-                       "Gaussian bumps to the EOS"]
-            }
+            'bumps': [list, [(0.4, 0.1, 0.25),
+                             (0.5, 0.1, -0.3)], None, None, '',
+                      "Gaussian bumps to the EOS"]
+        }
 
         Isentrope.__init__(self, name, def_opts=def_opts, *args, **kwargs)
 
@@ -335,10 +431,11 @@ class EOSBump(Isentrope):
         """
         const_c = self.get_option('const_C')
         bumps = self.get_option('bumps')
-        pressure = const_c/vol**(3.0)
+        pressure = const_c / vol**(3.0)
         for v_0, width, scale in bumps:
-            center = (vol-v_0)/width
-            pressure += np.exp(-center*center/2)*scale*const_c/(v_0**3)
+            center = (vol - v_0) / width
+            pressure += np.exp(-center * center / 2) * scale * const_c /\
+                (v_0**3)
         return pressure
     # end
 
@@ -350,7 +447,8 @@ class EOSBump(Isentrope):
 
         Return:
             d1_fun(function):
-                Function object yielded first derivative of pressure w.r.t volume
+                Function object yielded first derivative of pressure w.r.t
+                volume
         """
 
         const_c = self.get_option('const_C')
@@ -359,10 +457,11 @@ class EOSBump(Isentrope):
         def d1_fun(vol):
             """Derivative function
             """
-            derr1 = -3*const_c/vol**4
+            derr1 = -3 * const_c / vol**4
             for v_0, width, scale in bumps:
-                center = (vol-v_0)/width
-                derr1 -= (center/width)*np.exp(-center*center/2)*scale*const_c/(v_0**3)
+                center = (vol - v_0) / width
+                derr1 -= (center / width) * np.exp(-center * center / 2)\
+                    * scale * const_c / (v_0**3)
             return derr1
         # end
 
@@ -370,8 +469,8 @@ class EOSBump(Isentrope):
             return d1_fun
         else:
             raise IOError(
-                '{:} bump EOS can only return fist derivative function'.\
-                format(self.get_inform(2)))
+                '{:} bump EOS can only return fist derivative function'
+                .format(self.get_inform(2)))
         # end
 
 
@@ -382,19 +481,19 @@ class EOSModel(Spline, Isentrope):
 
     **Options**
 
-    +--------------+---------+------+-----+-----+-----+-------------------------+
-    |Name          |Type     |Def   |Min  |Max  |Units|Description              |
-    +==============+=========+======+=====+=====+=====+=========================+
-    |`Spline_sigma`|float    |5e-3  |0.0  |None |'??' |'Multiplicative          |
-    |              |         |      |     |     |     |uncertainty of the prior |
-    |              |         |      |     |     |     |(1/2%)                   |
-    +--------------+---------+------+-----+-----+-----+-------------------------+
-    |`precondition`|bool     |False |None |None |''   |Precondition flag        |
-    +--------------+---------+------+-----+-----+-----+-------------------------+
-
+   +--------------+---------+------+-----+-----+-----+-------------------------+
+   |Name          |Type     |Def   |Min  |Max  |Units|Description              |
+   +==============+=========+======+=====+=====+=====+=========================+
+   |`Spline_sigma`|float    |5e-3  |0.0  |None |'??' |'Multiplicative          |
+   |              |         |      |     |     |     |uncertainty of the prior |
+   |              |         |      |     |     |     |(1/2%)                   |
+   +--------------+---------+------+-----+-----+-----+-------------------------+
+   |`precondition`|bool     |False |None |None |''   |Precondition flag        |
+   +--------------+---------+------+-----+-----+-----+-------------------------+
     """
 
-    def __init__(self, p_fun, name='Equation of State Spline', *args, **kwargs):
+    def __init__(self, p_fun, name=u'Equation of State Spline',
+                 *args, **kwargs):
         """Instantiates the object
 
         Args:
@@ -410,23 +509,23 @@ class EOSModel(Spline, Isentrope):
         def_opts = {
             'spline_sigma': [float, 5e-3, 0.0, None, '??',
                              "Multiplicative uncertainty of the prior (1/2%)"],
-            'precondition' : [bool, False, None, None, '',
-                              "Precondition flag"]
-            }
+            'precondition': [bool, False, None, None, '',
+                             "Precondition flag"]
+        }
 
         Isentrope.__init__(self, name, def_opts=def_opts, *args, **kwargs)
 
-        # Update the prior of this PhysicsModel with the spline generated from
+        # Update the prior of this GausianModel with the spline generated from
         # the nominal EOS given in __init__
         if not hasattr(p_fun, '__call__'):
-            raise TypeError("{:} the initial EOS estimate must be a function".\
-                            format(self.get_inform(0)))
-        #end
+            raise TypeError("{:} the initial EOS estimate must be a function"
+                            .format(self.get_inform(0)))
+        # end
 
         vol = np.logspace(np.log10(self.get_option('spline_min')),
                           np.log10(self.get_option('spline_max')),
                           self.get_option('spline_N'))
-        
+
         # vol = np.linspace(self.get_option('spline_min'),
         #           self.get_option('spline_max'),
         #           self.get_option('spline_N'))
@@ -446,7 +545,7 @@ class EOSModel(Spline, Isentrope):
             (np.ndarray): A nxn matrix where n is the number of model DOFs.
 
         """
-        dev = self.prior.get_dof() * self.get_option('spline_sigma')
+        dev = self.prior.get_dof()  # * self.get_option('spline_sigma')
         return np.diag(dev)
 
     def _on_str(self):
@@ -454,19 +553,18 @@ class EOSModel(Spline, Isentrope):
         """
 
         dof = self.get_dof()
-        out_str="\n\n"
-        out_str+="Degrees of Freedom\n"
-        out_str+="==================\n\n"
+        out_str = "\n\n"
+        out_str += "Degrees of Freedom\n"
+        out_str += "==================\n\n"
         k = 8
-        for i in xrange(int(math.ceil(len(dof)*1.0/k))):
-            for j in xrange(min(8, len(dof)-k*i)):
-                out_str += "{: 3.2e} ".format(dof[k*i+j])
-            #end
+        for i in range(int(math.ceil(len(dof) * 1.0 / k))):
+            for j in range(min(8, len(dof) - k * i)):
+                out_str += "{: 3.2e} ".format(dof[k * i + j])
+            # end
             out_str += '\n'
-        #end
+        # end
 
         return out_str
-            
 
     def get_sigma(self):
         """Returns the co-variance matrix of the spline
@@ -481,24 +579,6 @@ class EOSModel(Spline, Isentrope):
 
         return np.diag((sigma * self.get_c())**2)
 
-    def update_prior(self, prior, *args, **kwargs):
-        """
-
-        Updated the prior
-
-        Args:
-            prior(EOSModel): A function which defines the prior EOS shape
-        """
-
-        if prior is None:
-            pass
-        elif isinstance(prior, EOSModel):
-            self.prior = prior
-        else:
-            raise TypeError("{:} Model required an EOSModel type prior"\
-                           .format(self.get_inform(1)))
-        #end
-
     def get_dof(self, *args, **kwargs):
         """Returns the spline coefficients as the model degrees of freedom
 
@@ -507,34 +587,95 @@ class EOSModel(Spline, Isentrope):
         """
         return self.get_c()
 
-    def set_dof(self, c_in, *args, **kwargs):
+    def update_dof(self, c_in, *args, **kwargs):
         """Sets the spline coefficients
 
         Args:
            c_in(Iterable): The knot positions of the spline
+
+        Return:
+           (EOSModel): A copy of `self` with the new dofs
+
         """
 
-        self.set_c(c_in)
+        return self.set_c(c_in)
 
-    def plot_basis(self, fig=None):
-        """Plots the basis function and their first and second derrivatives
+    def plot_diff(self, isentropes,
+                  axes=None,
+                  figure=None,
+                  linestyles=['-k', '--k', '-.k'],
+                  labels=None):
+        """Plots the difference between the current EOS and ither isentropes
+
+        Plots the difference vs the prior
+
+        Args:
+            isentropes(list): A list of isentrope objects to compare
+            axes(plt.Axes): The Axes on which to plot
+            figure(plt.Figure): The figure object *Ignored*
+            linestyles(list): A list of styles to plot
+            labels(list): A list of labels for the isentropes
+
+        Return:
+            (plt.Axes)
+        """
+
+        if axes is None:
+            fig = plt.figure()
+            axes = fig.gca()
+        elif isinstance(axes, plt.Axes):
+            pass
+        else:
+            raise TypeError("{:} axis muse be a valid matplotlib Axes object"
+                            .format(self.get_inform(1)))
+        # end
+
+        v_list = np.linspace(0.2,  # self.get_option('spline_min'),
+                             0.6,  # self.get_option('spline_max'),
+                             200)
+
+        axes.plot(v_list, self(v_list) - self.prior(v_list), label="Model")
+
+        if labels is None:
+            labels = [None] * len(isentropes)
+        elif not len(labels) == len(isentropes):
+            raise IndexError("{:} must provide either no labels or one for each"
+                             "isentrope".format(self.get_inform(1)))
+        # end
+
+        if not isinstance(isentropes, (list, tuple)):
+            raise TypeError("{:} isentropes must be a list or tuple of"
+                            "isentropes".format(self.get_inform(1)))
+        # end
+        for isen, lbl in zip(isentropes, labels):
+            axes.plot(v_list, isen(v_list) - self.prior(v_list), label=lbl)
+        # end
+
+        axes.legend(loc='best')
+        axes.set_xlabel(r'Specific Volume / ${cm}^3{g}^{-1}$')
+        axes.set_ylabel(r'Pressure difference / Pa')
+        return axes
+
+    def plot_basis(self, axes=None, fig=None, labels=[], linstyles=[]):
+        """Plots the basis function and their first and second derivatives
 
         Args:
             fig(plt.Figure): A valid figure object on which to plot
-
+            axes(plt.Axes): A valid axes, *Ignored*
+            labels(list): The labels, *Ignored*
+            linestyles(list): The linestyles, *Ignored*
         Return:
             (plt.Figure): The figure
-        
+
         """
 
         if fig is None:
             fig = plt.figure()
         else:
             fig = fig
-        #end
-        
-        tmp_spline = copy.deepcopy(self)
-        dof_init = copy.deepcopy(tmp_spline.get_dof())
+        # end
+
+        dof_init = copy.deepcopy(self.get_dof())
 
         basis = []
         dbasis = []
@@ -543,242 +684,32 @@ class EOSModel(Spline, Isentrope):
         v_list = np.linspace(self.get_option('spline_min'),
                              self.get_option('spline_max'),
                              300)
-        
+
         for i, coeff in enumerate(dof_init):
             new_dof = np.zeros(dof_init.shape[0])
-            new_dof[i] = 1.0#coeff
-            tmp_spline.set_dof(new_dof)
+            new_dof[i] = 1.0  # coeff
+            tmp_spline = self.update_dof(new_dof)
             basis.append(tmp_spline(v_list))
             dbasis.append(tmp_spline.derivative(n=1)(v_list))
-            ddbasis.append(tmp_spline.derivative(n=2)(v_list))        
-        #end
+            ddbasis.append(tmp_spline.derivative(n=2)(v_list))
+        # end
 
         basis = np.array(basis)
         dbasis = np.array(dbasis)
         ddbasis = np.array(ddbasis)
-        
+
         ax1 = fig.add_subplot(311)
         ax2 = fig.add_subplot(312)
         ax3 = fig.add_subplot(313)
-        
+
         knots = tmp_spline.get_t()
-        
-        for i in xrange(basis.shape[0]):
-            ax1.plot(v_list, basis[i,:])
+
+        for i in range(basis.shape[0]):
+            ax1.plot(v_list, basis[i, :])
             ax1.plot(knots, np.zeros(knots.shape), 'xk')
-            ax2.plot(v_list, dbasis[i,:])
-            ax2.plot(knots, np.zeros(knots.shape), 'xk')            
-            ax3.plot(v_list, ddbasis[i,:])
-            ax3.plot(knots, np.zeros(knots.shape), 'xk')            
-        
+            ax2.plot(v_list, dbasis[i, :])
+            ax2.plot(knots, np.zeros(knots.shape), 'xk')
+            ax3.plot(v_list, ddbasis[i, :])
+            ax3.plot(knots, np.zeros(knots.shape), 'xk')
+
         return fig
-class TestIsentrope(unittest.TestCase):
-    """Test of the isentrope object
-    """
-    def test_standard_instantiation(self):
-        """Test basic use of isentrope
-        """
-        model = Isentrope()
-
-        self.assertEqual(model.get_option('spline_N'), 50)
-        self.assertEqual(model.get_option('spline_min'), 0.1)
-        self.assertEqual(model.get_option('spline_max'), 1.0)
-        self.assertEqual(model.get_option('spline_end'), 4)
-    # end
-
-    def test_custom_instantiation(self):
-        """Test instantiated with non default values
-        """
-        model = Isentrope(name="Francis",  spline_N=55,
-                          spline_sigma=0.0)
-
-        self.assertEqual(model.name, "Francis")
-        self.assertEqual(model.get_option('spline_N'), 55)
-
-
-# end
-
-class TestEosModel(unittest.TestCase):
-    """Test the spline EOS functions
-    """
-    def setUp(self):
-        """Create test EOS function
-        """
-
-        p_fun = lambda v: 2.56e9 / v**3
-
-        self.p_fun = p_fun
-
-    def test_standard_instantiation(self):
-        """Test normal instantiation of the EOS
-        """
-
-        eos = EOSModel(self.p_fun)
-
-        print eos
-
-        self.assertEqual(eos.get_option('spline_sigma'), 5e-3)
-        self.assertEqual(eos.get_option('precondition'), False)
-    # end
-
-    def test_bad_instantiation(self):
-        """Test improper instantiation
-        """
-
-        with self.assertRaises(TypeError):
-            EOSModel(2.5)
-        # end
-
-    # end
-    def test_custom_instantiation(self):
-        """Tests instantiation with non default values
-        """
-        eos = EOSModel(self.p_fun, name="Ajax", spline_N=65,
-                       spline_sigma=2.5e-3)
-
-        self.assertEqual(eos.name, "Ajax")
-        self.assertEqual(eos.get_option('spline_N'), 65)
-        self.assertEqual(eos.get_option('spline_sigma'), 2.5e-3)
-
-    def test_spline_get_t(self):
-        """Test spline interaction method, get knots
-        """
-
-        # generate an EOS spline
-        eos = EOSModel(self.p_fun)
-
-        # get t
-        t_list = eos.get_t()
-
-        # check it is a numpy array
-
-        self.assertIsInstance(t_list, np.ndarray)
-
-
-        # check it is long enough
-        self.assertEqual(
-            eos.get_option('spline_N')+eos.get_option('spline_end'),
-            len(t_list)
-        )
-
-        # check is spans the v min and v max limits
-        self.assertEqual(eos.get_option('spline_min'), t_list.min())
-        self.assertEqual(eos.get_option('spline_max'), t_list.max())
-
-    def test_spline_get_c(self):
-        """Test spline interaction method, get coefficients
-        """
-        # generate an EOS spline
-        eos = EOSModel(self.p_fun)
-
-        # get c
-        c_list = eos.get_c()
-
-        self.assertEqual(eos.get_option('spline_N'), len(c_list))
-
-    def test_spline_new_c(self):
-        """Test spline interaction method, set new coefficients
-        """
-
-        eos = EOSModel(self.p_fun)
-
-        # get c
-        c_list = eos.get_dof()
-
-        # add 0.1 to all c
-        # get a new spline with updated c
-        eos.set_dof(c_list + 0.1)
-
-        # get its c
-        c_update = eos.get_dof()
-
-        # check it matches
-        npt.assert_array_equal(c_update, c_list + 0.1)
-
-    def test_eos_get_sigma(self):
-        """ Tests that the co-variance matrix is generated correctly
-        """
-
-        eos = EOSModel(self.p_fun)
-
-        sigma_eos = eos.get_sigma()
-
-        n_spline = eos.get_option('spline_N')
-        spline_var = eos.get_option('spline_sigma')
-
-        self.assertEqual(sigma_eos.shape, (n_spline, n_spline))
-        npt.assert_array_equal(np.diag(sigma_eos), (eos.get_c() * spline_var)**2)
-
-class TestBumpEOS(unittest.TestCase):
-    """Test of the bump EOS
-    """
-    def test_instantiation(self):
-        """Tests that the object is properly instantiated
-        """
-        bump_eos = EOSBump()
-
-        self.assertEqual(bump_eos.get_option('const_C'), 2.56e9)
-        self.assertEqual(bump_eos.get_option('bumps')[0][0], 0.4)
-        self.assertEqual(bump_eos.get_option('bumps')[0][1], 0.1)
-        self.assertEqual(bump_eos.get_option('bumps')[0][2], 0.25)
-
-    def test_custom_instatntiation(self):
-        """Test non default instantiation
-        """
-        bump_eos = EOSBump(const_C=6e-3,
-                           bumps=[(0.25, 0.07, 0.3),
-                                  (0.35, 0.08, 0.4),
-                                 ])
-
-        bump_eos(0.25)
-
-        self.assertEqual(bump_eos.get_option('const_C'), 6e-3)
-        self.assertEqual(bump_eos.get_option('bumps')[0][0], 0.25)
-        self.assertEqual(bump_eos.get_option('bumps')[0][1], 0.07)
-        self.assertEqual(bump_eos.get_option('bumps')[0][2], 0.3)
-        self.assertEqual(bump_eos.get_option('bumps')[1][0], 0.35)
-        self.assertEqual(bump_eos.get_option('bumps')[1][1], 0.08)
-        self.assertEqual(bump_eos.get_option('bumps')[1][2], 0.4)
-
-    def test_bad_instatntiation(self):
-        """Test improper instantiation
-        """
-        pass
-
-    def test_call(self):
-        """Test that the bump EOS can be called
-        """
-        bump_eos = EOSBump()
-
-        vol = np.logspace(np.log10(001), np.log10(100), 50)
-
-        pressure = bump_eos(vol)
-
-        self.assertIsInstance(pressure, np.ndarray)
-        self.assertEqual(50, len(pressure))
-
-    def test_derivative(self):
-        """Test the derivative function
-        """
-        bump_eos = EOSBump()
-
-        vol = np.logspace(np.log10(001), np.log10(100), 50)
-
-        pressure = bump_eos.derivative()(vol)
-
-        self.assertIsInstance(pressure, np.ndarray)
-        self.assertEqual(50, len(pressure))
-
-    def test_bad_derivative(self):
-        """Tests that derivative errors are caught
-        """
-        bump_eos = EOSBump()
-
-        vol = np.logspace(np.log10(001), np.log10(100), 50)
-
-        with self.assertRaises(IOError):
-            pressure = bump_eos.derivative(order=2)(vol)
-        # end
-
-if __name__ == '__main__':
-    unittest.main(verbosity=4)

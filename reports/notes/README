@@ -1,5 +1,10 @@
 Build instructions
 
-0) create a figures directory
-1) run F_UNCLE/examples/make_notes.py, this will populate the figures directory
-2) compile notes.tex
+   
+1) create a conda environment called p3dev
+   $ conda create -n p3dev python=3.4 --file ./../../pip_req.txt
+
+2) edit the makefile to set the FUNCLE_ROOT variable correctly
+
+3) run the makefile
+   $ make notes
