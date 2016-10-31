@@ -1,4 +1,4 @@
-#/usr/bin/pyton
+# /usr/bin/pyton
 """
 
 pyPhysicsModel
@@ -23,17 +23,22 @@ None
 
 
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
 # =========================
 # Python Standard Libraries
 # =========================
-import unittest
 import sys
 import os
+import copy
 # =========================
 # Python Packages
 # =========================
-
+import numpy as np
+from numpy.linalg import inv
 # =========================
 # Custom Packages
 # =========================
@@ -42,11 +47,12 @@ if __name__ == '__main__':
     from F_UNCLE.Utils.Struc import Struc
 else:
     from .Struc import Struc
-#end
+# end
 
 # =========================
 # Main Code
 # =========================
+
 
 class PhysicsModel(Struc):
     """
@@ -79,7 +85,7 @@ class PhysicsModel(Struc):
     **Methods**
     """
 
-    def __init__(self, prior, name='Abstract Physics Model', *args, **kwargs):
+    def __init__(self, prior, name=u'Abstract Physics Model', *args, **kwargs):
         """
 
         Args:
@@ -93,27 +99,29 @@ class PhysicsModel(Struc):
 
         Struc.__init__(self, name, *args, **kwargs)
 
-        self.prior = None
-        self.update_prior(prior)
+        self.prior = prior
 
-        return
     # end
 
     def update_prior(self, prior):
-        """Updates the prior for the physics model
+        """Creates a new PhyscisModel with a new prior
 
         Args:
            prior(PhysicsModel): The prior
+
+        Return:
+           (PhysicsModel): A copy of `self` with the new prior
 
         """
 
         if self.prior is None:
             pass
         elif not isinstance(prior, type(self.prior)):
-            raise TypeError("{} New prior must be the same type as the old".\
+            raise TypeError("{} New prior must be the same type as the old".
                             format(self.get_inform(1)))
-        #end
-        self._on_update_prior(prior)
+        # end
+        return self._on_update_prior(prior)
+
     def get_scaling(self):
         """Returns a matrix to scale the model degrees of freedom
 
@@ -130,8 +138,8 @@ class PhysicsModel(Struc):
                  order of magnitude.
         """
 
-        raise NotImplementedError('{} has not defined a co-variance matrix'\
-                          .format(self.get_inform(1)))
+        raise NotImplementedError('{} has not defined a co-variance matrix'
+                                  .format(self.get_inform(1)))
 
     def get_sigma(self, *args, **kwargs):
         """Gets the co-variance matrix of the model
@@ -150,7 +158,7 @@ class PhysicsModel(Struc):
                 where n is the model degrees of freedom
         """
 
-        raise NotImplementedError('{} has not defined a co-variance matrix'\
+        raise NotImplementedError('{} has not defined a co-variance matrix'
                                   .format(self.get_inform(1)))
 
     def shape(self):
@@ -165,11 +173,9 @@ class PhysicsModel(Struc):
 
         """
 
-        raise NotImplementedError("{} does not have a shape"\
-                                  .format(self.get_inform(1)))
+        return NotImplemented
 
-
-    def set_dof(self, dof_in):
+    def update_dof(self, dof_in):
         """Sets the model degrees of freedom
 
         .. note::
@@ -180,12 +186,11 @@ class PhysicsModel(Struc):
            dof_in(Iterable): The new values for *all* model degrees of freedom
 
         Return:
-            None
+           (PhysicsModel):A copy of `self` with the new DOF values
 
         """
 
-        raise NotImplementedError("{} does not set the model dof"\
-                                  .format(self.get_inform(1)))
+        return NotImplemented
 
     def get_dof(self):
         """Returns the model degrees of freedom
@@ -201,9 +206,7 @@ class PhysicsModel(Struc):
            (np.ndarray): The model degrees of freedom
         """
 
-        raise NotImplementedError("{} does not provide model dofs"\
-                                  .format(self.get_inform(1)))
-
+        return NotImplemented
 
     def _on_update_prior(self, prior):
         """Instance specific prior update
@@ -212,46 +215,60 @@ class PhysicsModel(Struc):
             prior(PhysicsModel): The prior
 
         Return:
-            None
+            (PhysicsModel): A copy of `self` with the new prior
+        """
+        new_model = copy.deepcopy(self)
+        new_model.prior = copy.deepcopy(prior)
+        return new_model
+
+    def get_log_like(self):
+        """Returns the log likelyhood of the model
         """
 
-        self.prior = prior
-# end
+        return NotImplemented
 
-class TestPhysModel(unittest.TestCase):
-    """Test of PhysicsModel object
+    def get_constraints(self):
+        """Generates the constraints on the physics model
+        """
+
+        return NotImplemented
+
+    def get_pq(self, scale=False):
+        """Returns the p and q matricies for the model
+        """
+
+        return NotImplemented
+
+
+class GausianModel(PhysicsModel):
+    """Generates model statistics assuming a gausian error
     """
-    def test_standard_instantiation(self):
-        """Tests that teh model can be instantiated
+
+    def get_log_like(self):
+        """Returns the log liklyhood of the model, given the prior
         """
-        model = PhysicsModel(prior=3.5)
+        return -0.5 * np.dot(np.dot(self.get_dof() - self.prior.get_dof(),
+                                    inv(self.get_sigma())),
+                             self.get_dof() - self.prior.get_dof())
 
-        self.assertIsInstance(model, PhysicsModel)
-    # end
+    def get_pq(self, scale=False):
+        """Returns the P and q matrix components for the model
 
-    def test_update_prior(self):
-        """Tests setting and updating the prior
+        Keyword Args:
+            scale(bool): Flag to scale the model values
         """
-        model = PhysicsModel(prior=3.5)
 
-        self.assertEqual(model.prior, 3.5)
+        prior_scale = self.get_scaling()
+        prior_var = inv(self.get_sigma())
 
-        model.update_prior(2.5)
+        prior_delta = self.get_dof() - self.prior.get_dof()
 
-        self.assertEqual(model.prior, 2.5)
-    # end
-
-    def test_bad_update_prior(self):
-        """Tests bad use of prior setting
-        """
-        model = PhysicsModel(prior=3.5)
-
-        with self.assertRaises(TypeError):
-            model.update_prior('two point five')
+        if scale:
+            return np.dot(prior_scale, np.dot(prior_var, prior_scale)),\
+                -np.dot(prior_scale, np.dot(prior_delta, prior_var))
+        else:
+            return prior_var, -np.dot(prior_delta, prior_var)
         # end
-    # end
- # end
 
-if __name__ == '__main__':
 
-    unittest.main(verbosity=4)
+

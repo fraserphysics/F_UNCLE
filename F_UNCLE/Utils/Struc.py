@@ -1,4 +1,4 @@
-#/usr/bin/pyton
+# /usr/bin/pyton
 """
 
 pyStruc.py
@@ -24,6 +24,17 @@ To Do
 
 
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
+# Allows the unicode type when running in python3
+try:
+    unicode
+except NameError:
+    unicode = str
+
 
 # =========================
 # Python Standard Libraries
@@ -80,35 +91,35 @@ class Struc(object):
 
         """
 
-        if isinstance(name, str):
+        if isinstance(name, (str, unicode)):
             self.name = name
         else:
             raise TypeError("Structure name must be a string")
-        #end
+        # end
 
         self.informs = {
-            0 : "{:} completed successfully:".format(name),
-            1 : "{:} failed:".format(name),
-            2 : "{:} error:".format(name)
-            }
+            0: "{:} completed successfully:".format(name),
+            1: "{:} failed:".format(name),
+            2: "{:} error:".format(name)
+        }
 
-        if not informs is None:
+        if informs is not None:
             self.informs.update(informs)
-        #end
+        # end
 
         self.warns = {
-            0 : "{:} warning:".format(name)
-            }
-        if not warns is None:
+            0: "{:} warning:".format(name)
+        }
+        if warns is not None:
             self.warns.update(warns)
-        #end
+        # end
 
         # ..note:: No checks on default options formatting, see header
-        if not def_opts is None:
+        if def_opts is not None:
             self.def_opts = def_opts
         else:
             self.def_opts = {}
-        #end
+        # end
 
         self.options = {}
 
@@ -119,8 +130,8 @@ class Struc(object):
                 self.set_option(arg, kwargs[arg])
             else:
                 self.options[arg] = copy.deepcopy(self.def_opts[arg][1])
-            #end
-        #end
+            # end
+        # end
 
     def get_option(self, name):
         """Returns the option corresponding the the given name
@@ -138,9 +149,9 @@ class Struc(object):
         if name in options:
             opt = options[name]
         else:
-            raise KeyError("{:} Unknown option {:}".\
-                           format(self.get_inform(1), name))
-        #end
+            raise KeyError("{:} Unknown option {:}"
+                           . format(self.get_inform(1), name))
+        # end
 
         return opt
 
@@ -163,48 +174,50 @@ class Struc(object):
         """
         def_opts = self.def_opts
 
-        if not name in def_opts:
-            raise KeyError("{:} Unknown option {:}".\
-                           format(self.get_inform(1), name))
-        #end
+        if name not in def_opts:
+            raise KeyError("{:} Unknown option {:}"
+                           .format(self.get_inform(1), name))
+        # end
 
+        if not len(def_opts[name]) == 6:
+            raise IndexError("{:}, option {:} has not been defined with 5"
+                             "elements".format(self.get_inform(1), name))
         # Type testing
         # If a float is needed and an int is given, change to a float
-        if not isinstance(value, def_opts[name][0]):
+        req_type = def_opts[name][0]
+        if req_type == str:
+            req_type = (str, unicode)
+        # end
+
+        if not isinstance(value, req_type):
             if isinstance(value, int) and def_opts[name][0] == float:
                 value *= 1.0
             else:
-                raise TypeError("{:} Wrong type for option {:}".\
-                                format(self.get_inform(1), name))
-            #end
-        #end
+                raise TypeError("{:} Wrong type for option {:}"
+                                .format(self.get_inform(1), name))
+            # end
+        # end
 
         # Bounds testing, bounds can be (float, None) (None float)
         # or (None None)
-        if isinstance(value, (float, int)):
-            if not def_opts[name][2] is None  and value < def_opts[name][2]:
-                raise ValueError("{:} option {:} out of bounds".\
-                                 format(self.get_inform(1), name))
-            elif not def_opts[name][3] is None and value > def_opts[name][3]:
-                raise ValueError("{:} option {:} out of bounds".\
-                                 format(self.get_inform(1), name))
+        def bounds_test(name, value):
+            if def_opts[name][2] is not None and value < def_opts[name][2]:
+                raise ValueError("{:} option {:} out of bounds"
+                                 .format(self.get_inform(1), name))
+            elif def_opts[name][3] is not None and value > def_opts[name][3]:
+                raise ValueError("{:} option {:} out of bounds"
+                                 .format(self.get_inform(1), name))
             else:
                 pass
-            #end
-        if isinstance(value, (list, tuple)):
-            for i in xrange(len(value)):
-                if not isinstance(value[i], (float, int)):
-                    continue
-                elif not def_opts[name][2] is None and value[i] < def_opts[name][2]:
-                    raise ValueError("{:} option {:} out of bounds".\
-                                     format(self.get_inform(1), name))
-                elif not def_opts[name][3] is None and value[i] > def_opts[name][3]:
-                    raise ValueError("{:} option {:} out of bounds".\
-                                     format(self.get_inform(1), name))
-                else:
-                    pass
-                #end
-        #end
+            # end
+
+        if isinstance(value, (float, int)):
+            bounds_test(name, value)
+        elif isinstance(value, (list, tuple)):
+            for val in value:
+                bounds_test(name, val)
+            # end
+        # end
 
         # NotImplementedError -> units test
 
@@ -222,14 +235,14 @@ class Struc(object):
         """
         informs = self.informs
         if not isinstance(err_id, int):
-            raise TypeError('{}: error index must be an integer'.\
-                            format(self.name))
-        elif not err_id in informs:
-            raise KeyError('{}: unknown error code {:d}'.\
-                           format(self.name, err_id))
+            raise TypeError('{}: error index must be an integer'
+                            .format(self.name))
+        elif err_id not in informs:
+            raise KeyError('{}: unknown error code {:d}'
+                           .format(self.name, err_id))
         else:
             return informs[err_id]
-        #end
+        # end
 
     def get_warn(self, warn_id):
         """Returns an inform corresponding to the warning code
@@ -244,14 +257,14 @@ class Struc(object):
 
         warns = self.warns
         if not isinstance(warn_id, int):
-            raise TypeError('{}: warning index must be an integer'.\
-                            format(self.name))
-        elif not warn_id in warns:
-            raise KeyError('{}: unknown warning code {:d}'.\
-                           format(self.name, warn_id))
+            raise TypeError('{}: warning index must be an integer'
+                            .format(self.name))
+        elif warn_id not in warns:
+            raise KeyError('{}: unknown warning code {:d}'
+                           .format(self.name, warn_id))
         else:
             return warns[warn_id]
-        #end
+        # end
 
     def __str__(self, inner=False, *args, **kwargs):
         """Returns a string representation of the object
@@ -270,99 +283,102 @@ class Struc(object):
         out_str = '\n'
         # if not inner: out_str += "="*80 + "\n"
         out_str += "{:^80s}\n".format(self.name)
-        out_str += "{:^80s}\n".format("^"*len(self.name))
+        out_str += "{:^80s}\n".format("^" * len(self.name))
         out_str += "Options\n"
         out_str += "-------\n"
-        out_str += "{:<15s}{:<10s}{:12s}{:<10s}{:<10s}{:<23s}\n".\
-                    format("Name", "Value", "Units", " Min", " Max", "Description")
-        out_str += "{:<15s}{:<10s}{:12s}{:<10s}{:<10s}{:<23s}\n".\
-                    format("....", ".....", ".....", " ...", " ...", "...........")
+        out_str += "{:<15s}{:<10s}{:12s}{:<10s}{:<10s}{:<23s}\n"\
+                   .format("Name", "Value", "Units", " Min",
+                           " Max", "Description")
+        out_str += "{:<15s}{:<10s}{:12s}{:<10s}{:<10s}{:<23s}\n"\
+                   .format("....", ".....", ".....", " ...",
+                           " ...", "...........")
         for key in def_opts:
-            
             if def_opts[key][2] is None:
                 lower_bound = float('nan')
             else:
                 lower_bound = def_opts[key][2]
-            #end
+            # end
 
             if def_opts[key][3] is None:
                 upper_bound = float('nan')
             else:
                 upper_bound = def_opts[key][3]
-            #end
+            # end
 
-            ## Divide long descriptions to span many lines
+            # Divide long descriptions to span many lines
             try:
                 descr = []
-                for i in xrange(int(ceil(len(def_opts[key][5])/23.0))):
-                    descr.append(def_opts[key][5][(i)*23:(i+1)*23])
-                #end
-            except:
-                import pdb
-                pdb.set_trace()
-                
+                for i in range(int(ceil(len(def_opts[key][5]) / 23.0))):
+                    descr.append(def_opts[key][5][(i) * 23:(i + 1) * 23])
+                # end
+            except Exception as inst:
+                raise inst
+            # end
+
             if isinstance(opts[key], (float, int)):
                 out_str += "{:<15s}{:< 10g}{:12s}{:< 10g}{:< 10g}{:<23s}\n".\
                            format(key, opts[key], def_opts[key][4], lower_bound,
                                   upper_bound, descr[0])
                 if len(descr) > 1:
                     for line in descr[1:]:
-                        out_str += " "*57 + line + "\n"
-                    #end
-                #end
+                        out_str += " " * 57 + line + "\n"
+                    # end
+                # end
             elif isinstance(opts[key], str):
                 out_str += "{:<15s}{:<10s}{:12s}{:< 10g}{:< 10g}{:<23s}\n".\
                            format(key, opts[key], def_opts[key][4], lower_bound,
                                   upper_bound, descr[0])
                 if len(descr) > 1:
                     for line in descr[1:]:
-                        out_str += " "*57 + line + "\n"
-                    #end
-                #end
-            elif isinstance(opts[key], (tuple, list)) and len(opts[key])>0:
+                        out_str += " " * 57 + line + "\n"
+                    # end
+                # end
+            elif isinstance(opts[key], (tuple, list)) and len(opts[key]) > 0:
                 # Print out lists
 
                 # Print first row
 
                 if isinstance(opts[key][0], (float, int)):
-                    out_str += "{:<15s}{:< 10g}{:12s}{:< 10g}{:< 10g}{:<23s}\n".\
-                                format(key, opts[key][0],
+                    out_str += "{:<15s}{:< 10g}{:12s}{:< 10g}{:< 10g}{:<23s}\n"\
+                               .format(key, opts[key][0],
                                        def_opts[key][4], lower_bound,
                                        upper_bound, descr[0])
                 else:
-                    out_str += "{:<15s}{:<10s}{:12s}{:< 10g}{:< 10g}{:<23s}\n".\
-                                format(key, opts[key][0],
+                    out_str += "{:<15s}{:<10s}{:12s}{:< 10g}{:< 10g}{:<23s}\n"\
+                               .format(key, opts[key][0],
                                        def_opts[key][4], lower_bound,
                                        upper_bound, descr[0])
-                #end
+                # end
 
                 # Print following rows
                 if len(opts[key]) > 1:
-                    for i in xrange(len(opts[key])-1):
+                    for i in range(len(opts[key]) - 1):
                         # Accounts for multi-line descriptions
-                        if (i+1) < len(descr):
-                            descr_line = descr[i+1]
+                        if (i + 1) < len(descr):
+                            descr_line = descr[i + 1]
                         else:
                             descr_line = ""
-                        #end
-                        if isinstance(opts[key][i+1], (int, float)):
-                            out_str += "{:<15s}{:< 10g}{:32s}{:<23s}\n".\
-                                       format('', opts[key][i+1], '', descr_line)
+                        # end
+                        if isinstance(opts[key][i + 1], (int, float)):
+                            out_str += "{:<15s}{:< 10g}{:32s}{:<23s}\n"\
+                                       .format('', opts[key][i + 1], '',
+                                               descr_line)
                         else:
-                            out_str += "{:<15s}{:<10s}{:32s}{:<23s}\n".\
-                                       format('', opts[key][i+1], '', descr_line)
-                        #end
-                    #end
-                #end
+                            out_str += "{:<15s}{:<10s}{:32s}{:<23s}\n"\
+                                       .format('', opts[key][i + 1], '',
+                                               descr_line)
+                        # end
+                    # end
+                # end
                 # Print extra lines if the description takes more lines
                 # than the option
                 if len(opts[key]) < len(descr):
-                    for i in xrange(len(descr)-len(opts[key])):
-                        out_str += " "*57 + descr[len(opts[key])+i] + "\n"
-                    #end
-                #end
-            #end
-        #end
+                    for i in range(len(descr) - len(opts[key])):
+                        out_str += " " * 57 + descr[len(opts[key]) + i] + "\n"
+                    # end
+                # end
+            # end
+        # end
         out_str += self._on_str(*args, **kwargs)
         # if not inner: out_str += "="*80 + "\n"
         return out_str
@@ -380,13 +396,16 @@ class Struc(object):
 
         return ''
 
-    def plot(self, axis=None, hardcopy=None):
-        """Returns creates
+    def plot(self, axes=None, fig=None, linestyles=[], labels=[]):
+        """Plots the object
 
         Args:
-            axis(plt.Axes): The axis on which to plot the figure, if None,
+            axes(plt.Axes): The Axes on which to plot the figure, if None,
                 creates a new figure object on which to plot.
-            hard-copy(bool): If a string, write the figure to the file specified
+            fig(plt.Figure): The Figure on which to plot, cannot specify
+                figure and axes
+            linstyles(list): Strings for the linestlyes
+            labels(list): Strings for the plot labels
 
         Return:
             (plt.Figure): A reference to the figure containing the plot
@@ -410,236 +429,8 @@ class Struc(object):
         try:
             with open(filename, 'r') as fid:
                 fid.write(out_str)
-            #end
+            # end
         except IOError:
-            raise IOError("{:} Could not write to file {:}".\
-                          format(self.get_inform(1), filename))
-        #end
-
-class TestObject(unittest.TestCase):
-    """
-    Test of the Struc object
-    """
-    def setUp(self):
-        self.def_opts = {
-            'apples':[int, 1, 0, 10, '-', 'The number of apples'],
-            'bears':[int, 2, 0, None, '-', 'The number of bears'],
-            'canaries':[float, 0.1, -0.3, 0.25, 'ft/s',
-                        'The number of canaries. This is also a test of very'+\
-                        ' long titles'],
-            'ducks':[float, 0.0, None, None, '-', 'Ducks are unlimited'],
-            'list_test':[list, [1, 2, 3, 4, 5], 0, 6, '-', 'Short title list'],
-            'list_test3':[list, ['string', 'string2'], None, None, '-',
-                          'Test of list with a title which wraps more lines'+\
-                          ' than the list is long, add some more text to be safe'],
-            'list_test2':[list, [1, 2, 3, 4, 5], None, None, '-',
-                          'Short title list with a very very long title which'+\
-                          ' will wrap several lines']
-            }
-        self.name = "Test Structure Object"
-
-
-    def test_standard_instantiation(self):
-        """
-
-        Test normal usage
-
-        """
-
-        my_struc = Struc(self.name, def_opts=self.def_opts)
-        print ''
-        print my_struc
-        self.assertIsInstance(my_struc, Struc)
-
-    def test_inst_bad_option(self):
-        """
-
-        Structure should ignore the unknown option "potatoes"
-
-        """
-
-        my_struc = Struc(self.name, def_opts=self.def_opts, potatoes=5)
-        self.assertIsInstance(my_struc, Struc)
-
-    def test_bad_set_option(self):
-        """
-
-        Structure should raise a KeyError when given an unknown option
-
-        """
-        my_struc = Struc(self.name, def_opts=self.def_opts)
-
-        with self.assertRaises(KeyError):
-            my_struc.set_option("potatoes", 5)
-        #end
-
-    def test_inst_bad_type(self):
-        """
-
-        Structure should raise a type error when int apples is set to a float
-
-        """
-
-        with self.assertRaises(TypeError):
-            Struc(self.name, def_opts=self.def_opts, apples=1.0)
-        #end
-
-    def test_list_set_option(self):
-        """Structure should raise a value error if list item set above bound
-        """
-
-        my_struc = Struc(self.name, def_opts=self.def_opts)
-
-        my_struc.set_option('list_test', [0, 1, 2])
-
-        with self.assertRaises(ValueError):
-            my_struc.set_option('list_test', [-1, 1, 2])
-        #end
-
-        my_struc.set_option('list_test', [1, 2, 6])
-        with self.assertRaises(ValueError):
-            my_struc.set_option('list_test', [1, 2, 7])
-        #end
-
-    def test_inst_over_bound(self):
-        """
-
-        Structure should raise a value error if apples is set above its bounds
-
-        """
-
-        with self.assertRaises(ValueError):
-            Struc(self.name, def_opts=self.def_opts, apples=11)
-        #end
-
-        my_struc = Struc(self.name, def_opts=self.def_opts)
-
-        with self.assertRaises(ValueError):
-            my_struc.set_option('apples', 11)
-        #end
-
-    def test_inst_at_bounds(self):
-        """
-
-        Structure should accept a value *at* the upper and lower bound for ints
-        and floats
-
-        """
-
-        Struc(self.name, def_opts=self.def_opts, apples=10)
-        Struc(self.name, def_opts=self.def_opts, apples=0)
-        Struc(self.name, def_opts=self.def_opts, canaries=-0.3)
-        Struc(self.name, def_opts=self.def_opts, canaries=0.25)
-
-
-    def test_inst_under_bound(self):
-        """
-
-        Structure should raise value error if apples is below its bounds
-
-        """
-
-        with self.assertRaises(ValueError):
-            Struc(self.name, def_opts=self.def_opts, apples=-1)
-        #end
-
-    def test_no_bounds(self):
-        """
-
-        Tests the bounds of options which are unbounded. Should be able to be
-        set to very large or small values
-
-        """
-        my_struc = Struc(self.name, def_opts=self.def_opts, ducks=-1E21)
-        my_struc = Struc(self.name, def_opts=self.def_opts, ducks=1E21)
-
-
-    def test_get_option(self):
-        """
-
-        get_option should return the default value if in a vanilla instantiation
-
-        """
-        my_struc = Struc(self.name, def_opts=self.def_opts)
-
-        self.assertEqual(my_struc.get_option('apples'),
-                         self.def_opts['apples'][1])
-
-
-    def test_bad_get_option(self):
-        """
-
-        get_option should raise a KeyError if an invalid name is given
-
-        """
-
-        my_struc = Struc(self.name, def_opts=self.def_opts)
-
-        with self.assertRaises(KeyError):
-            my_struc.get_option('potato')
-
-
-    def test_get_inform(self):
-        """
-
-        get_inform should return a given string for error code 0
-
-        """
-
-        my_struc = Struc(self.name, def_opts=self.def_opts)
-
-        self.assertEqual(my_struc.get_inform(0),
-                         "Test Structure Object completed successfully:")
-
-
-    def test_bad_get_inform(self):
-        """
-
-        get_inform  should raise an error if the index is not an int or is out
-        of bounds
-
-        """
-        my_struc = Struc(self.name, def_opts=self.def_opts)
-
-        with self.assertRaises(TypeError):
-            my_struc.get_inform('one')
-        #end
-
-        with self.assertRaises(KeyError):
-            my_struc.get_inform(3)
-        #end
-
-    def test_get_warn(self):
-        """
-
-        get_warn should return a given string for error code 0
-
-        """
-
-        my_struc = Struc(self.name, def_opts=self.def_opts)
-
-        self.assertEqual(my_struc.get_warn(0), "Test Structure Object warning:")
-
-
-    def test_bad_get_warn(self):
-        """
-
-        get_warn  should raise an error if the index is not an int or is out
-        of bounds
-
-        """
-        my_struc = Struc(self.name, def_opts=self.def_opts)
-
-        with self.assertRaises(TypeError):
-            my_struc.get_warn('one')
-        #end
-
-        with self.assertRaises(KeyError):
-            my_struc.get_warn(2)
-        #end
-
-
-    #end
-
-if __name__ == '__main__':
-    unittest.main(verbosity=4)
+            raise IOError("{:} Could not write to file {:}"
+                          .format(self.get_inform(1), filename))
+        # end

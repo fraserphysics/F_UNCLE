@@ -13,8 +13,24 @@ Functional Uncertainty Constrained by Law and Experiment
 Authors
 -------
 
-- Andrew Fraser
 - Stephen Andrews
+- Andrew Fraser
+
+Los Alamos National Laboratory (LANL) Release Information
+---------------------------------------------------------
+
+The initial version of this code was written at LANL.  It was released
+in 2016 with Los Alamos Computer Code index LA-CC-16-034 and the
+following description:
+
+The F_UNCLE project is for quantitatively characterizing uncertainty
+about functions and how physical laws and experiments constrain that
+uncertainty.  The project is an evolving platform consisting of
+program and text files that numerically demonstrate and explore
+quantitative characterizations of uncertainty about functions and how
+either historical or proposed experiments have or could constrain that
+uncertainty.  No actual physical measurements are distributed as part
+of the software.
 
 Documentation
 -------------

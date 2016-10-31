@@ -22,11 +22,14 @@ None
 
 
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
 # =========================
 # Python Standard Libraries
 # =========================
-
 import copy
 import unittest
 import sys
@@ -44,17 +47,19 @@ from scipy.integrate import odeint
 
 if __name__ == '__main__':
     sys.path.append(os.path.abspath('./../../'))
-    from F_UNCLE.Utils.Experiment import Experiment
+    from F_UNCLE.Utils.Experiment import GausianExperiment
     from F_UNCLE.Models.Isentrope import EOSBump, EOSModel, Isentrope, Spline
 else:
-    from ..Utils.Experiment import Experiment
+    from ..Utils.Experiment import GausianExperiment
     from ..Models.Isentrope import EOSBump, EOSModel, Isentrope, Spline
-# end    
+# end
 
 # =========================
 # Main Code
 # =========================
-class Gun(Experiment):
+
+
+class Gun(GausianExperiment):
     """A toy physics model representing a gun type experiment
 
     The problem integrates the differential equation for a mass being
@@ -71,64 +76,53 @@ class Gun(Experiment):
     .. figure:: /_static/gun.png
 
        variables defining the gun experiment
-    
+
     **Options**
 
-    +---------+-------+------+-----+-----+-----+--------------------------------+
-    |Name     |Type   |Def   |Min  |Max  |Units|Description                     |
-    +=========+=======+======+=====+=====+=====+================================+
-    |`X_i`    |(float)|0.4   |0.0  |None |cm   |Initial position of projectile  |
-    +---------+-------+------+-----+-----+-----+--------------------------------+
-    |`x_f`    |(float)|3.0   |0.0  |None |cm   |Final/muzzle position of        |
-    |         |       |      |     |     |     |projectile                      |
-    +---------+-------+------+-----+-----+-----+--------------------------------+
-    |`m`      |(float)|500.0 |0.0  |None |g    |Mass of projectile              |
-    +---------+-------+------+-----+-----+-----+--------------------------------+
-    |`mass_he`|(float)|4     |0.0  |None |g    |The initial mass of high        |
-    |         |       |      |     |     |     |explosives used to drive the    |
-    |         |       |      |     |     |     |projectile                      |
-    +---------+-------+------+-----+-----+-----+--------------------------------+
-    |`area`   |(float)|1.0   |0.0  |None |cm**2|Projectile cross section        |
-    +---------+-------+------+-----+-----+-----+--------------------------------+
-    |`sigma`  |(float)|1.0e0 |0.0  |None |??   |Variance attributed to v        |
-    |         |       |      |     |     |     |measurements                    |
-    +---------+-------+------+-----+-----+-----+--------------------------------+
-    |`t_min`  |(float)|1.0e-6|0.0  |None |sec  |Range of times for t2v spline   |
-    +---------+-------+------+-----+-----+-----+--------------------------------+
-    |`t_max`  |(float)|1.0e-2|0.0  |None |sec  |Range of times for t2v spline   |
-    +---------+-------+------+-----+-----+-----+--------------------------------+
-    |`n_t`    |(int)  |250   |0    |None |''   |Number of times for t2v spline  |
-    +---------+-------+------+-----+-----+-----+--------------------------------+
-
+   +---------+-------+------+-----+-----+-----+--------------------------------+
+   |Name     |Type   |Def   |Min  |Max  |Units|Description                     |
+   +=========+=======+======+=====+=====+=====+================================+
+   |`X_i`    |(float)|0.4   |0.0  |None |cm   |Initial position of projectile  |
+   +---------+-------+------+-----+-----+-----+--------------------------------+
+   |`x_f`    |(float)|3.0   |0.0  |None |cm   |Final/muzzle position of        |
+   |         |       |      |     |     |     |projectile                      |
+   +---------+-------+------+-----+-----+-----+--------------------------------+
+   |`m`      |(float)|500.0 |0.0  |None |g    |Mass of projectile              |
+   +---------+-------+------+-----+-----+-----+--------------------------------+
+   |`mass_he`|(float)|4     |0.0  |None |g    |The initial mass of high        |
+   |         |       |      |     |     |     |explosives used to drive the    |
+   |         |       |      |     |     |     |projectile                      |
+   +---------+-------+------+-----+-----+-----+--------------------------------+
+   |`area`   |(float)|1.0   |0.0  |None |cm**2|Projectile cross section        |
+   +---------+-------+------+-----+-----+-----+--------------------------------+
+   |`sigma`  |(float)|1.0e0 |0.0  |None |??   |Variance attributed to v        |
+   |         |       |      |     |     |     |measurements                    |
+   +---------+-------+------+-----+-----+-----+--------------------------------+
+   |`t_min`  |(float)|1.0e-6|0.0  |None |sec  |Range of times for t2v spline   |
+   +---------+-------+------+-----+-----+-----+--------------------------------+
+   |`t_max`  |(float)|1.0e-2|0.0  |None |sec  |Range of times for t2v spline   |
+   +---------+-------+------+-----+-----+-----+--------------------------------+
+   |`n_t`    |(int)  |250   |0    |None |''   |Number of times for t2v spline  |
+   +---------+-------+------+-----+-----+-----+--------------------------------+
 
     **Attributes**
-
-    Attributes:
-         eos(Isentrope): A model of the products-of-detonation equation of
-             state
+       Inherited from ::pyclass::`pyStruc`
 
     **Methods**
     """
-    def __init__(self, eos, name='Gun Toy Computational Experiment',
+    def __init__(self, name='Gun Toy Computational Experiment',
                  *args, **kwargs):
         """Instantiate the Experiment object
 
         Args:
-            eos(Isentrope): The equation of state model used in the toy 
-                computational experiment
+            None
 
         Keyword Args:
             name(str): A name. (Default = 'Gun Toy Computational Experiment')
 
         """
 
-        if isinstance(eos, Isentrope):
-            self.eos = eos
-        else:
-            raise TypeError('{:} Equation of state model must be an Isentrope object'\
-                            .format(self.get_inform(2)))
-        # end
-
+        # 'Name': [Type, Default, Min, Max, Units, Description]
         def_opts = {
             'x_i': [float, 0.4, 0.0, None, 'cm',
                     'Initial position of projectile'],
@@ -137,8 +131,8 @@ class Gun(Experiment):
             'm': [float, 500.0, 0.0, None, 'g',
                   'Mass of projectile'],
             'mass_he': [float, 4, 0.0, None, 'g',
-                        'The initial mass of high explosives used to drive\
-                        the projectile'],
+                        'The initial mass of high explosives used to drive'
+                        'the projectile'],
             'area': [float, 1.0, 0.0, None, 'cm**2',
                      'Projectile cross section'],
             'sigma': [float, 1.0e0, 0.0, None, '??',
@@ -151,25 +145,19 @@ class Gun(Experiment):
                     'Number of times for t2v spline']
         }
 
-        Experiment.__init__(self, name=name, def_opts=def_opts, *args, **kwargs)
+        GausianExperiment.__init__(self, {'eos': Isentrope}, name=name,
+                                   def_opts=def_opts, *args, **kwargs)
 
-    def update(self, model=None):
-        """Update the analysis with a new EOS model
+    def _on_check_models(self, models):
+        """Checks that the model is valid
 
         Args:
             model(Isentrope): A new EOS model
 
         Return:
-            None
+            (GunModel): A copy of self with the new eos model
         """
-        if model is None:
-            pass
-        elif isinstance(model, Isentrope):
-            self.eos = copy.deepcopy(model)
-        else:
-            raise TypeError('{}: Model must be an isentrope for update'\
-                            .format(self.get_inform(1)))
-        #end
+        return (models['eos'],)
 
     def _on_str(self, *args, **kwargs):
         """Print method of the gun model
@@ -182,20 +170,18 @@ class Gun(Experiment):
             (str): A string representing the object
         """
 
-        out_str = '\n'
-        out_str += 'Equation of State Model\n'
-        out_str += '-----------------------\n'
-        out_str += str(self.eos)
+        out_str = ''
 
         return out_str
 
-    def _get_force(self, posn):
+    def _get_force(self, eos, posn):
         """Calculates the force on the projectile
 
         The force is the pressure of the HE gas acting on the projectile.
         The pressure is given by the EOS model
 
         Args:
+            eos(Isentrope): The equation of state model
             posn(float): The scalar position
 
         Return:
@@ -205,9 +191,10 @@ class Gun(Experiment):
         area = self.get_option('area')
         mass_he = self.get_option('mass_he')
 
-        return self.eos(posn * area / mass_he) * area  * 1E-4
+        # 1E-4 converts from area in cm**2 to m**2 so result is N
+        return eos(posn * area / mass_he) * area * 1E-4
 
-    def _shoot(self):
+    def _shoot(self, eos):
         """ Run a simulation and return the results: t, [x,v]
 
         Solves the ODE
@@ -217,7 +204,7 @@ class Gun(Experiment):
            F(x,v,t) = \\frac{d}{dt} (x, v)
 
         Args:
-           None
+           eos(Isentrope): The equation of state model
 
         Return:
             (tuple): Length 2 elements are:
@@ -254,24 +241,24 @@ class Gun(Experiment):
 
             if time < 0:
                 return np.zeros(2)
-            if state[0] > x_f: # beyond end of gun barrel, muzzle
+            if state[0] > x_f:  # beyond end of gun barrel, muzzle
                 accel = 0.0
             else:
-                accel = self._get_force(state[0])/proj_mass # F = MA
+                accel = self._get_force(eos, state[0]) / proj_mass  # F = MA
             return np.array([state[1], accel])
 
         time_list = np.linspace(t_min, t_max, n_t)
         xv_states = odeint(
-            diffeq,            #
+            diffeq,
             [x_i, 0],
             time_list,
-            atol=1e-11, # Default 1.49012e-8
-            rtol=1e-11, # Default 1.49012e-8
-            )
-        if not  xv_states.shape == (len(time_list), 2):
-            raise ValueError('{} did not solve the differential equation correctly'\
-                             .format(self.get_inform(1)))
-        #end
+            atol=1e-11,  # Default 1.49012e-8
+            rtol=1e-11,  # Default 1.49012e-8
+        )
+        if not xv_states.shape == (len(time_list), 2):
+            raise ValueError('{} did not solve the differential equation'
+                             'correctly'.format(self.get_inform(1)))
+        # end
 
         # xv is array of calculated positions and velocities at times in t
         return time_list, xv_states
@@ -293,13 +280,13 @@ class Gun(Experiment):
 
         return Spline(time, vel)
 
-    def get_sigma(self):
+    def get_sigma(self, models):
         """Returns the co-variance matrix
 
         see :py:meth:`F_UNCLE.Utils.Experiment.Experiment.get_sigma`
         """
 
-        return np.diag(np.ones(self.shape())* self.get_option('sigma'))
+        return np.diag(np.ones(self.shape()) * self.get_option('sigma'))
 
     def shape(self):
         """Returns the degrees of freedom of the model
@@ -307,7 +294,7 @@ class Gun(Experiment):
         see :py:meth:`F_UNCLE.Utils.Experiment.Experiment.shape`
         """
 
-        return  self.get_option('n_t')
+        return self.get_option('n_t')
 
     def compare(self, indep, dep, model_data):
         """Compares a set of experimental data to the model
@@ -319,13 +306,11 @@ class Gun(Experiment):
 
         return dep - model_data[2](indep)
 
-
-
-    def __call__(self, *args, **kwargs):
+    def _on_call(self, eos, **kwargs):
         """Performs the simulation / experiment using the internal EOS
 
         Args:
-            *args: Variable length argument list.
+            eos(Isentrope): The equation of state model
             **kwargs: Arbitrary keyword arguments.
 
         Return:
@@ -341,14 +326,15 @@ class Gun(Experiment):
 
         """
 
-        time, states = self._shoot()
+        time, states = self._shoot(eos)
 
         vt_spline = self._fit_t2v(states[:, 1], time)
 
         return time, (states[:, 1], states[:, 0]), vt_spline
 
-    def plot(self, axis=None, hardcopy=None, level=0, data=None,
-             style = '-k', err_style = '-r',  *args, **kwargs):
+    def plot(self, axes=None, fig=None, level=0, data=None,
+             linestyles=['-k', '-r'], labels=['Model', 'Error'],
+             *args, **kwargs):
         """Plots the gun experiment
 
         Overloads :py:meth:`F_UNCLE.Utils.Struc.Struc.plot`
@@ -361,9 +347,16 @@ class Gun(Experiment):
         3. A 4 subplot figure with levels 1-3 as well as the EOS plotted
 
         Args:
-            axis(plt.Axis): Axis object on which to plot, if None, creates
+            axes(plt.Axes): Axes object on which to plot, if None, creates
                 new figure
-            hardcopy(str): A writable location to save the file
+            fig(str): A Figure object on which to plot, used for level3 plot
+            linestyles(list): A list of strings for linestyles
+                0. Data '-k'
+                1. Error '-r'
+            labels(list): A list of strings for labels
+                0. 'Model'
+                1. 'Error'
+
             level(int): A tag for which kind of plot should be generated
             data(dict): A list of other data to be plotted for comparison
 
@@ -372,51 +365,50 @@ class Gun(Experiment):
 
         """
 
-        if axis is None:
+        if axes is None:
             fig = plt.figure()
-
-        elif isinstance(axis, plt.Axes):
-            fig = None
-            ax1 = axis
+        elif isinstance(axes, plt.Axes):
+            ax1 = axes
         else:
-            raise TypeError("{} axis must be a matplotlib Axis object".\
-                            format(self.get_inform(1)))
-        #end
+            raise TypeError("{} axis must be a matplotlib Axis object"
+                            .format(self.get_inform(1)))
+        # end
 
         if level == 0:
-            #Plot the velocity time history
-            ax1.plot(data[0][0], data[0][1][0], style)
+            # Plot the velocity time history
+            ax1.plot(data[0][0], data[0][1][0], linestyles[0],
+                     label=labels[0])
             ax1.set_xlabel('Time / s')
             ax1.set_ylabel(r'Velocity / cm s$^{-1}$')
 
             if len(data) == 2:
                 ax2 = ax1.twinx()
-                ax2.plot(data[0][0], data[0][1][0] - data[1][1][0], err_style)
+                ax2.plot(data[0][0], data[0][1][0] - data[1][1][0],
+                         linestyles[1], label=labels[1])
                 ax2.set_ylabel('Error / cm s$^{-1}$')
             # end
 
         elif level == 1:
-            #Plot the position time history
+            # Plot the position time history
             pass
         elif level == 3:
-            #Plot everything
+            # Plot everything
             ax1 = fig.add_subplot(221)
             ax2 = fig.add_subplot(222)
             ax3 = fig.add_subplot(223)
             ax4 = fig.add_subplot(224)
 
-            v_spec = data[0][1][0] * self.get_option('area')/self.get_option('mass_he')
+            v_spec = data[0][1][0] * self.get_option('area')\
+                / self.get_option('mass_he')
             ax1.plot(data[0][0], data[0][1][0], 'k')
             ax2.plot(data[0][0], data[0][1][1], 'k')
             ax3.plot(v_spec, data[0][1][1], 'k')
             ax3.axhline(self.get_option('x_f'))
-            self.eos.plot(axis=ax4)
 
             if len(data) == 2:
-                ax1.plot(data[0][0], 10+(data[0][1][1] - data[1][1][1]), 'r')
-                ax2.plot(data[0][0], 1 +(data[0][1][0] - data[1][1][0]), 'r')
-#                ax3.plot(v_spec, 10+(data[0][1][1] - data[1][1][1]), 'r')
-            #end
+                ax1.plot(data[0][0], 10 + (data[0][1][1] - data[1][1][1]), 'r')
+                ax2.plot(data[0][0], 1 + (data[0][1][0] - data[1][1][0]), 'r')
+            # end
 
             ax1.set_xlabel("Simulation time / s")
             ax1.set_ylabel("Projectile velocity / cm s**-1")
@@ -424,79 +416,3 @@ class Gun(Experiment):
             ax2.set_ylabel("Projectile position / cm")
             ax3.set_xlabel("HE Specific volume / cm**3 g**-1")
             ax3.set_ylabel("Projectile position / cm s**-1")
-
-
-class TestGun(unittest.TestCase):
-    """Test of the Gun experiment
-    """
-
-    def test_instantiation(self):
-        """Tests that the model is properly instantiated
-        """
-        eos = EOSBump()
-        gun = Gun(eos)
-
-        self.assertIsInstance(gun, Gun)
-        print gun
-    # end
-
-    def test_shoot_exp_eos(self):
-        """Performs a test shot using default settings
-        """
-
-        eos = EOSBump()
-        gun = Gun(eos)
-
-        time, (vel, pos), spline = gun()
-
-        n_time = gun.get_option('n_t')
-
-        self.assertEqual(len(time), n_time)
-        self.assertEqual(len(pos), n_time)
-        self.assertEqual(len(vel), n_time)
-
-    def test_shoot_model_eos(self):
-        """Performs a test shot using default settings a model EOS
-        """
-        p_fun = lambda v: 2.56e9 / v**3
-
-        eos = EOSModel(p_fun)
-        gun = Gun(eos)
-
-        print gun
-
-        time, (vel, pos), spline = gun()
-
-        n_time = gun.get_option('n_t')
-
-        self.assertEqual(len(time), n_time)
-        self.assertEqual(len(pos), n_time)
-        self.assertEqual(len(vel), n_time)
-
-
-    @unittest.skip('skipped plotting routine')
-    def test_shot_plot(self):
-        """tests the plotting function
-        """
-
-        init_prior = np.vectorize(lambda v: 2.56e9 / v**3)
-
-        # Create the model and *true* EOS
-        eos = EOSModel(init_prior)
-
-
-        gun = Gun(eos)
-
-        data0 = gun()
-        old_dof = eos.get_c()
-        old_dof[0] *= 1.02
-        eos.set_dof(old_dof)
-        gun.update(model=eos)
-        data1 = gun()
-
-        gun.plot(level=3, data=[data0, data1])
-        plt.show()
-# end
-
-if __name__ == '__main__':
-    unittest.main(verbosity=4)
