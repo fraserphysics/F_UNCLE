@@ -160,7 +160,7 @@ class Stick(GausianExperiment):
 
         vol_0 = self.get_option('vol_0')
 
-        vel_cj = self._get_cj_point(eos, vol_0)[0]
+        vel_cj = eos._get_cj_point(vol_0)[0]
 
         var = np.ones(self.get_option('n_x'))
         var *= (self.get_option('sigma_t')**2 + (self.get_option('sigma_x') /
@@ -223,7 +223,7 @@ class Stick(GausianExperiment):
         #    [25.9, 50.74, 75.98, 101.8, 125.91, 152.04, 177.61])/10
         x_list = np.linspace(x_min, x_max, n_x)
 
-        cj_vel, cj_vol, cj_p, ray_fun = self._get_cj_point(eos, vol_0)
+        cj_vel, cj_vol, cj_p, ray_fun = eos._get_cj_point(vol_0)
 
         t_list = x_list / cj_vel
 
@@ -244,63 +244,6 @@ class Stick(GausianExperiment):
         return np.where(np.fabs(err) > np.finfo(float).eps,
                         err,
                         np.zeros(err.shape))
-
-    def _get_cj_point(self, eos, vol_0):
-        """Find CJ conditions using two nested line searches.
-
-        The CJ point is the location on the EOS where a Rayleigh line
-        originating at the pre-detonation volume and pressure is tangent to
-        the equation of state isentrope.
-
-        This method uses two nested line searches implemented by the
-        :py:meth:`scipy.optimize.brentq` algorithm to locate the velocity
-        corresponding to this tangent Rayleigh line
-
-        Args:
-            eos(Isentrope): The products of detonation equation of state
-            vol_0(float): The specific volume of the equation of state before
-                the shock arrives
-
-        Return:
-            (tuple): Length 3 elements are:
-
-                0.  (float): The detonation velocity
-                1.  (float): The specific volume at the CJ point
-                2.  (float): The pressure at the CJ point
-                3.  (function): A function defining the Rayleigh line which
-                    passes through the CJ point
-
-        """
-        # Search for det velocity between 1 and 10 km/sec
-        d_min = 2.0e5  # cm s**-1
-        d_max = 7.0e5  # cm s**-1
-        v_min = eos.get_option('spline_min')
-        v_max = eos.get_option('spline_max')
-
-        # R is Rayleigh line
-        rayl_line = lambda vel, vol, eos, vol_0: (vel**2) * (vol_0 - vol)\
-            / (vol_0**2)
-
-        # F is self - R
-        rayl_err = lambda vel, vol, eos, vol_0: eos(vol)\
-            - rayl_line(vel, vol, eos, vol_0)
-
-        # d_F is derivative of F wrt vol
-        derr_dvol = lambda vol, vel, eos, vol_0: eos.derivative(1)(vol)\
-            + (vel / vol_0)**2
-
-        # arg_min(vel, self) finds volume that minimizes self(v) - R(v)
-        arg_min = lambda vel, eos, vol_0: brentq(derr_dvol, v_min, v_max,
-                                                 args=(vel, eos, vol_0))
-
-        error = lambda vel, eos, vol_0: rayl_err(vel, arg_min(vel, eos, vol_0),
-                                                 eos, vol_0)
-
-        vel_cj = brentq(error, d_min, d_max, args=(eos, vol_0))
-        vol_cj = arg_min(vel_cj, eos, vol_0)
-        p_cj = eos(vol_cj)
-
-        return vel_cj, vol_cj, p_cj, rayl_line
 
     def plot(self, models, axes=None, fig=None, data=None, level=1,
              linestyles=['-k', ':k', 'ok', '+k'],
@@ -351,7 +294,7 @@ class Stick(GausianExperiment):
         if level == 1:
             eos.plot(axes=ax1, linestlyes=[linestyles[0]], labels=[labels[0]])
             vel_cj, vol_cj, p_cj, rayl_line =\
-                self._get_cj_point(eos, 1.835**-1)
+                eos._get_cj_point(1.835**-1)
 
             # v_eos = np.logspace(np.log10(v_min), np.log10(v_max), 30)
             v_eos = np.linspace(v_min, v_max, 30)

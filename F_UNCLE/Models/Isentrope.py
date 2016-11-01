@@ -42,6 +42,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import InterpolatedUnivariateSpline as IU_Spline
+from scipy.optimize import brentq
 # For scipy.interpolate.InterpolatedUnivariateSpline. See:
 # https://github.com/scipy/scipy/blob/v0.14.0/scipy/interpolate/fitpack2.py
 
@@ -120,7 +121,13 @@ class Isentrope(GausianModel):
             'spline_max': [float, 1.0, 0.0, None, 'cm**3/g',
                            "Maximum value of volume modeled by EOS"],
             'spline_end': [float, 4, 0, None, '',
-                           "Number of zero nodes at end of spline"]
+                           "Number of zero nodes at end of spline"],
+            'vcj_lower': [float, 2.0E5, 0.0, None, 'cm s-1',
+                          "Lower bound on the CJ velocity used in"
+                          "bracketing search"],
+            'vcj_upper':[float, 5.0E5, 0.0, None, 'cm s-1',
+                         "Upper bound on the CJ velocity used in"
+                         "bracketing search"] 
         }
 
         if 'def_opts' in kwargs:
@@ -140,6 +147,63 @@ class Isentrope(GausianModel):
         """
 
         return self.get_option('spline_N')
+
+    def _get_cj_point(self, vol_0):
+        """Find CJ conditions using two nested line searches.
+
+        The CJ point is the location on the EOS where a Rayleigh line
+        originating at the pre-detonation volume and pressure is tangent to
+        the equation of state isentrope.
+
+        This method uses two nested line searches implemented by the
+        :py:meth:`scipy.optimize.brentq` algorithm to locate the velocity
+        corresponding to this tangent Rayleigh line
+
+        Args:
+            vol_0(float): The specific volume of the equation of state before
+                the shock arrives
+
+        Return:
+            (tuple): Length 3 elements are:
+
+                0.  (float): The detonation velocity
+                1.  (float): The specific volume at the CJ point
+                2.  (float): The pressure at the CJ point
+                3.  (function): A function defining the Rayleigh line which
+                    passes through the CJ point
+
+        """
+        eos = self
+        # Search for det velocity between 1 and 10 km/sec
+        d_min = eos.get_option('vcj_lower')  # cm s**-1
+        d_max = eos.get_option('vcj_upper')  # cm s**-1
+        v_min = eos.get_option('spline_min')
+        v_max = eos.get_option('spline_max')
+
+        # R is Rayleigh line
+        rayl_line = lambda vel, vol, eos, vol_0: (vel**2) * (vol_0 - vol)\
+            / (vol_0**2)
+
+        # F is self - R
+        rayl_err = lambda vel, vol, eos, vol_0: eos(vol)\
+            - rayl_line(vel, vol, eos, vol_0)
+
+        # d_F is derivative of F wrt vol
+        derr_dvol = lambda vol, vel, eos, vol_0: eos.derivative(1)(vol)\
+            + (vel / vol_0)**2
+
+        # arg_min(vel, self) finds volume that minimizes self(v) - R(v)
+        arg_min = lambda vel, eos, vol_0: brentq(derr_dvol, v_min, v_max,
+                                                 args=(vel, eos, vol_0))
+
+        error = lambda vel, eos, vol_0: rayl_err(vel, arg_min(vel, eos, vol_0),
+                                                 eos, vol_0)
+
+        vel_cj = brentq(error, d_min, d_max, args=(eos, vol_0))
+        vol_cj = arg_min(vel_cj, eos, vol_0)
+        p_cj = eos(vol_cj)
+
+        return vel_cj, vol_cj, p_cj, rayl_line
 
     def plot(self, axes=None, figure=None, linestyles=['-k'],
              labels=['Isentrope'], *args, **kwargs):
