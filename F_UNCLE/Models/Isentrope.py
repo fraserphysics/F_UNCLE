@@ -122,10 +122,10 @@ class Isentrope(GausianModel):
                            "Maximum value of volume modeled by EOS"],
             'spline_end': [float, 4, 0, None, '',
                            "Number of zero nodes at end of spline"],
-            'vcj_lower': [float, 2.0E5, 0.0, None, 'cm s-1',
+            'vcj_lower': [float, 1.0E5, 0.0, None, 'cm s-1',
                           "Lower bound on the CJ velocity used in"
                           "bracketing search"],
-            'vcj_upper':[float, 5.0E5, 0.0, None, 'cm s-1',
+            'vcj_upper':[float, 10.0E5, 0.0, None, 'cm s-1',
                          "Upper bound on the CJ velocity used in"
                          "bracketing search"] 
         }
@@ -148,7 +148,7 @@ class Isentrope(GausianModel):
 
         return self.get_option('spline_N')
 
-    def _get_cj_point(self, vol_0):
+    def _get_cj_point(self, vol_0, pres_0=0.0):
         """Find CJ conditions using two nested line searches.
 
         The CJ point is the location on the EOS where a Rayleigh line
@@ -162,6 +162,9 @@ class Isentrope(GausianModel):
         Args:
             vol_0(float): The specific volume of the equation of state before
                 the shock arrives
+        
+        Keyword Args:
+            pres_0(float): The pressure of the reactants
 
         Return:
             (tuple): Length 3 elements are:
@@ -181,8 +184,8 @@ class Isentrope(GausianModel):
         v_max = eos.get_option('spline_max')
 
         # R is Rayleigh line
-        rayl_line = lambda vel, vol, eos, vol_0: (vel**2) * (vol_0 - vol)\
-            / (vol_0**2)
+        rayl_line = lambda vel, vol, eos, vol_0: pres_0\
+            + (vel**2) * (vol_0 - vol) / (vol_0**2)
 
         # F is self - R
         rayl_err = lambda vel, vol, eos, vol_0: eos(vol)\
@@ -478,6 +481,10 @@ class EOSBump(Isentrope):
                       "Gaussian bumps to the EOS"]
         }
 
+        if 'def_opts' in kwargs:
+            def_opts.update(kwargs.pop('def_opts'))
+        # end
+        
         Isentrope.__init__(self, name, def_opts=def_opts, *args, **kwargs)
 
     def __call__(self, vol):
@@ -548,7 +555,7 @@ class EOSModel(Spline, Isentrope):
    +--------------+---------+------+-----+-----+-----+-------------------------+
    |Name          |Type     |Def   |Min  |Max  |Units|Description              |
    +==============+=========+======+=====+=====+=====+=========================+
-   |`Spline_sigma`|float    |5e-3  |0.0  |None |'??' |'Multiplicative          |
+   |`spline_sigma`|float    |5e-3  |0.0  |None |'??' |'Multiplicative          |
    |              |         |      |     |     |     |uncertainty of the prior |
    |              |         |      |     |     |     |(1/2%)                   |
    +--------------+---------+------+-----+-----+-----+-------------------------+
@@ -577,6 +584,10 @@ class EOSModel(Spline, Isentrope):
                              "Precondition flag"]
         }
 
+        if 'def_opts' in kwargs:
+            def_opts.update(kwargs.pop('def_opts'))
+        # end
+        
         Isentrope.__init__(self, name, def_opts=def_opts, *args, **kwargs)
 
         # Update the prior of this GausianModel with the spline generated from
@@ -595,8 +606,9 @@ class EOSModel(Spline, Isentrope):
         #           self.get_option('spline_N'))
 
         Spline.__init__(self, vol, p_fun(vol))
-
         self.prior = copy.deepcopy(self)
+        self = self._on_update_dof(self)
+
 
     def get_scaling(self):
         """Returns a scaling matrix to make the dofs of the same scale
@@ -662,7 +674,20 @@ class EOSModel(Spline, Isentrope):
 
         """
 
-        return self.set_c(c_in)
+        return self._on_update_dof(self.set_c(c_in))
+
+    def _on_update_dof(self, model):
+        """An extra method to perform special post-pocessing tasks when the DOF 
+        has been updated
+        
+        Args:
+            model(EOSModel): The new physics model
+        
+        Return:
+            (EOSModel): The post-processed model
+        """
+
+        return model
 
     def plot_diff(self, isentropes,
                   axes=None,

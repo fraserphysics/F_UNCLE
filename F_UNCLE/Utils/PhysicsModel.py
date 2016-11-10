@@ -192,6 +192,19 @@ class PhysicsModel(Struc):
 
         return NotImplemented
 
+    def _on_update_dof(self, model):
+        """An extra method to perform special post-pocessing tasks when the DOF has
+        been updated
+        
+        Args:
+            model(PhysicsModel): The new physics model
+        
+        Return:
+            (PhyscisModel): The post-processed model
+        """
+
+        return NotImplemented
+        
     def get_dof(self):
         """Returns the model degrees of freedom
 
