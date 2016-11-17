@@ -197,6 +197,50 @@ class TestEosModel(unittest.TestCase):
         npt.assert_array_equal(np.diag(sigma_eos),
                                (eos.get_c() * spline_var)**2)
 
+    def test_vol_cj(self):
+        """Test the CJ state when using volume
+        """
+
+        eos = EOSModel(
+            lambda v: 2.56E9 / v**3,
+            spline_min=0.1,
+            spline_max=1.0,
+            basis='volume')
+
+        vel_cj, vol_cj, p_cj, r_line = eos._get_cj_point(1.84**-1)
+
+        self.assertIsInstance(vel_cj, float)
+        self.assertGreater(vel_cj, 0.0)
+
+        self.assertIsInstance(vol_cj, float)
+        self.assertGreater(vol_cj, 0.0)
+
+        self.assertIsInstance(p_cj, float)
+        self.assertGreater(p_cj, 0.0)
+
+    def test_density_cj(self):
+        """Test the CJ state when using density
+        """
+
+        eos = EOSModel(
+            lambda r: 2.56E9 * r**3,
+            spline_min=1.0,
+            spline_max=10.0,
+            basis='density')
+        # import pdb
+        # pdb.set_trace()
+        vel_cj, vol_cj, p_cj, r_line = eos._get_cj_point(1.84**-1)
+
+        self.assertIsInstance(vel_cj, float)
+        self.assertGreater(vel_cj, 0.0)
+
+        self.assertIsInstance(vol_cj, float)
+        self.assertGreater(vol_cj, 0.0)
+
+        self.assertIsInstance(p_cj, float)
+        self.assertGreater(p_cj, 0.0)
+
+
 
 class TestBumpEOS(unittest.TestCase):
     """Test of the bump EOS

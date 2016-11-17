@@ -122,12 +122,15 @@ class Isentrope(GausianModel):
                            "Maximum value of volume modeled by EOS"],
             'spline_end': [float, 4, 0, None, '',
                            "Number of zero nodes at end of spline"],
+            'basis': [str, 'volume', None, None, '',
+                      "The basis of the isentrope, can be `volume` or"
+                      " `density`"],
             'vcj_lower': [float, 1.0E5, 0.0, None, 'cm s-1',
                           "Lower bound on the CJ velocity used in"
                           "bracketing search"],
             'vcj_upper':[float, 10.0E5, 0.0, None, 'cm s-1',
                          "Upper bound on the CJ velocity used in"
-                         "bracketing search"] 
+                         " bracketing search"]
         }
 
         if 'def_opts' in kwargs:
@@ -162,7 +165,7 @@ class Isentrope(GausianModel):
         Args:
             vol_0(float): The specific volume of the equation of state before
                 the shock arrives
-        
+
         Keyword Args:
             pres_0(float): The pressure of the reactants
 
@@ -180,33 +183,64 @@ class Isentrope(GausianModel):
         # Search for det velocity between 1 and 10 km/sec
         d_min = eos.get_option('vcj_lower')  # cm s**-1
         d_max = eos.get_option('vcj_upper')  # cm s**-1
-        v_min = eos.get_option('spline_min')
-        v_max = eos.get_option('spline_max')
+        if eos.get_option('basis').lower()[:3] == 'vol':
+            v_min = eos.get_option('spline_min')
+            v_max = eos.get_option('spline_max')
+        elif eos.get_option('basis').lower()[:3] == 'den':
+            v_min = eos.get_option('spline_max')**-1
+            v_max = eos.get_option('spline_min')**-1
+        else:
+            raise IOError('Unknown Isentrope basis, must be `vol` or `den`'
+                          .format(self.get_inform(1)))
 
         # R is Rayleigh line
-        rayl_line = lambda vel, vol, eos, vol_0: pres_0\
-            + (vel**2) * (vol_0 - vol) / (vol_0**2)
+        def rayl_line(vel, vol, eos, vol_0):
+            return pres_0 + (vel**2) * (vol_0 - vol) / (vol_0**2)
 
-        # F is self - R
-        rayl_err = lambda vel, vol, eos, vol_0: eos(vol)\
-            - rayl_line(vel, vol, eos, vol_0)
+        if eos.get_option('basis').lower()[:3] == 'vol':
+            # F is self - R
+            def rayl_err(vel, vol, eos, vol_0):
+                return eos(vol) - rayl_line(vel, vol, eos, vol_0)
 
-        # d_F is derivative of F wrt vol
-        derr_dvol = lambda vol, vel, eos, vol_0: eos.derivative(1)(vol)\
-            + (vel / vol_0)**2
+            # d_F is derivative of F wrt vol
+            def derr_dvol(vol, vel, eos, vol_0):
+                return eos.derivative(1)(vol) + (vel / vol_0)**2
 
+        else:
+            # Density based EOS
+            def rayl_err(vel, vol, eos, vol_0):
+                return eos(vol**-1) - rayl_line(vel, vol, eos, vol_0)
+
+            # d_F is derivative of F wrt vol
+            def derr_dvol(vol, vel, eos, vol_0):
+                return -eos.derivative(1)(vol**-1) + (vol * vel / vol_0)**2
+        # end
         # arg_min(vel, self) finds volume that minimizes self(v) - R(v)
-        arg_min = lambda vel, eos, vol_0: brentq(derr_dvol, v_min, v_max,
-                                                 args=(vel, eos, vol_0))
 
-        error = lambda vel, eos, vol_0: rayl_err(vel, arg_min(vel, eos, vol_0),
-                                                 eos, vol_0)
+        def arg_min(vel, eos, vol_0):
+            return brentq(derr_dvol, v_min, v_max,
+                          args=(vel, eos, vol_0))
 
-        vel_cj = brentq(error, d_min, d_max, args=(eos, vol_0))
-        vol_cj = arg_min(vel_cj, eos, vol_0)
-        p_cj = eos(vol_cj)
+        def error(vel, eos, vol_0):
+            return rayl_err(vel, arg_min(vel, eos, vol_0),
+                            eos, vol_0)
 
-        return vel_cj, vol_cj, p_cj, rayl_line
+        try:
+            vel_cj = brentq(error, d_min, d_max, args=(eos, vol_0))
+            vol_cj = arg_min(vel_cj, eos, vol_0)
+
+            if self.get_option('basis').lower()[:3] == 'vol':
+                p_cj = eos(vol_cj)
+            else:
+                p_cj = eos(vol_cj**-1)
+            #end
+
+        except:
+            import pdb
+            pdb.set_trace()
+
+
+        return vel_cj, vol_cj, float(p_cj), rayl_line
 
     def plot(self, axes=None, figure=None, linestyles=['-k'],
              labels=['Isentrope'], *args, **kwargs):
@@ -484,7 +518,7 @@ class EOSBump(Isentrope):
         if 'def_opts' in kwargs:
             def_opts.update(kwargs.pop('def_opts'))
         # end
-        
+
         Isentrope.__init__(self, name, def_opts=def_opts, *args, **kwargs)
 
     def __call__(self, vol):
@@ -587,7 +621,7 @@ class EOSModel(Spline, Isentrope):
         if 'def_opts' in kwargs:
             def_opts.update(kwargs.pop('def_opts'))
         # end
-        
+
         Isentrope.__init__(self, name, def_opts=def_opts, *args, **kwargs)
 
         # Update the prior of this GausianModel with the spline generated from
@@ -677,12 +711,12 @@ class EOSModel(Spline, Isentrope):
         return self._on_update_dof(self.set_c(c_in))
 
     def _on_update_dof(self, model):
-        """An extra method to perform special post-pocessing tasks when the DOF 
+        """An extra method to perform special post-pocessing tasks when the DOF
         has been updated
-        
+
         Args:
             model(EOSModel): The new physics model
-        
+
         Return:
             (EOSModel): The post-processed model
         """
