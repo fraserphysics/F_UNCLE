@@ -37,6 +37,7 @@ import sys
 import os
 import copy
 import warnings
+import time
 # =========================
 # Python Packages
 # =========================
@@ -255,6 +256,52 @@ class TestSimpleExperiment(unittest.TestCase):
         self.assertIsInstance(res, np.ndarray)
         self.assertEqual(len(res), 10)
         npt.assert_equal(-xx, res)
+
+    def test_sens(self):
+        """Test sensitivity calculation
+        """
+        models = {'simp': SimpleModel([2, 1])}
+
+        t0 = time.time()
+        sens = self.expSimp.get_sens(models, 'simp')
+        t0 = time.time() - t0
+        print('Serial sense took {:f}'.format(t0))
+
+        self.assertIsInstance(sens, np.ndarray)
+        self.assertEqual(sens.shape, (10, 2))
+
+        indep = np.arange(10)
+        resp_mat = np.array([(1.02 * 2 * indep)**2 + 1 * indep -
+                             (2 * indep)**2 - indep,
+                             (2 * indep)**2 + 1.02 * indep -
+                             (2 * indep)**2 - 1 * indep])
+        inp_mat = np.array([[0.02 * 2, 0], [0, 0.02]])
+
+        true_sens = np.linalg.lstsq(inp_mat, resp_mat)[0].T
+        npt.assert_array_almost_equal(sens, true_sens, decimal=8)
+
+    def test_pll_sens(self):
+        """Test sensitivity calculation
+        """
+        models = {'simp': SimpleModel([2, 1])}
+
+        t0 = time.time()
+        sens = self.expSimp.get_sens_pll(models, 'simp')
+        t0 = time.time() - t0
+        print('Parallel sense took {:f}'.format(t0))
+
+        self.assertIsInstance(sens, np.ndarray)
+        self.assertEqual(sens.shape, (10, 2))
+
+        indep = np.arange(10)
+        resp_mat = np.array([(1.02 * 2 * indep)**2 + 1 * indep -
+                             (2 * indep)**2 - indep,
+                             (2 * indep)**2 + 1.02 * indep -
+                             (2 * indep)**2 - 1 * indep])
+        inp_mat = np.array([[0.02 * 2, 0], [0, 0.02]])
+        true_sens = np.linalg.lstsq(inp_mat, resp_mat)[0].T
+
+        npt.assert_array_almost_equal(sens, true_sens, decimal=8)
 
 if __name__ == '__main__':
     unittest.main(verbosity=4)

@@ -101,6 +101,7 @@ if __name__ == '__main__':
         precondition=True,
         debug=False,
         verb=True,
+        sens_mode='pll',
         maxiter=6)
 
     # 5. Generate data from the simulations using the prior

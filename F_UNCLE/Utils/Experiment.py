@@ -285,6 +285,79 @@ class Experiment(Struc):
 
         return NotImplemented
 
+    def get_sens_pll(self, models, model_key, initial_data=None):
+        """Parallel evaluation of each model's sensitivities
+
+        Args:
+            models(dict): The dictionary of models
+            model_key(str): The key of the model for which the sensitivity is
+                            desired
+        Keyword Args:
+            initial_data(np.ndarray): The response for the nominal model DOF, if
+                it is `None`, it is calculated when this method is called
+        """
+
+        import concurrent.futures
+        
+        models = copy.deepcopy(models)
+        model = models[model_key]
+
+        step_frac = 2E-2
+
+        if initial_data is None:
+            initial_data = self(models)
+        # end
+
+        resp_mat = np.zeros((initial_data[0].shape[0],
+                             model.shape()))
+        inp_mat = np.zeros((model.shape(),
+                            model.shape()))
+        new_dofs = np.array(copy.deepcopy(model.get_dof()),
+                            dtype=np.float64)
+
+        def get_resp(new_dofs):
+            """
+            """
+            models[model_key] = model.update_dof(new_dofs)                
+            return -self.compare(initial_data[0], initial_data[1][0],
+                                 self(models))
+        # end
+            
+        # end 
+        with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
+            futures = {}
+            for i, coeff in enumerate(model.get_dof()):
+                print(i)
+                new_dofs[i] += float(coeff * step_frac)
+                inp_mat[:, i] = (new_dofs - model.get_dof())
+                futures[executor.submit(
+                    get_resp,
+                    new_dofs)] = i
+
+                new_dofs[i] -= float(coeff * step_frac)
+            # end
+
+            for ftr in concurrent.futures.as_completed(futures):
+                i = futures[ftr]
+
+                try:
+                    resp = ftr.result()
+                except Exception as exc:
+                    raise RuntimeError('{:} sensitivities generated an'
+                                       ' exception {:}'.
+                                       format(self.get_inform(1), exc))
+                else:
+                    resp_mat[:, i] = resp
+                # end
+            # end                
+        # end
+        
+        sens_matrix = np.linalg.lstsq(inp_mat, resp_mat.T)[0].T
+        return np.where(np.fabs(sens_matrix) > 1E-21,
+                        sens_matrix,
+                        np.zeros(sens_matrix.shape))
+
+        
     def get_sens(self, models, model_key, initial_data=None):
         """Gets the sensitivity of the experiment response to the model DOF
 
@@ -324,7 +397,7 @@ class Experiment(Struc):
                 self(models))
             new_dofs[i] -= float(coeff * step_frac)
         # end
-
+   
         sens_matrix = np.linalg.lstsq(inp_mat, resp_mat.T)[0].T
         return np.where(np.fabs(sens_matrix) > 1E-21,
                         sens_matrix,

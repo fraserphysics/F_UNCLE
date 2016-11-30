@@ -169,7 +169,10 @@ class Bayesian(Struc):
                      'Flag to print stats during optimization'],
             'prior_weight': [float, 1.0, 0.0, 1.0, '-',
                              'Weighting of the prior when calculating log'
-                             'likelihood']
+                             'likelihood'],
+            'sens_mode': [str, 'ser', None, None, '-',
+                          'Flag for how to evaluate sensitivities, `ser`'
+                          'serial, `pll` parallel']
         }
 
         Struc.__init__(self, name=name, def_opts=def_opts, *args, **kwargs)
@@ -737,15 +740,20 @@ class Bayesian(Struc):
         sims = self.simulations
         models = self.models
         opt_key = self.opt_key
-
+        
         if initial_data is None:
             initial_data = self.get_data()
         # end
 
         sens_matrix = {}
         for key in self.simulations:
-            sens_matrix[key] = sims[key]['sim'].\
-                get_sens(models, opt_key, initial_data[key])
+            print('Getting sens for {:}'.format(key))
+            if self.get_option('sens_mode') == 'pll':
+                sens_matrix[key] = sims[key]['sim'].\
+                    get_sens_pll(models, opt_key, initial_data[key])
+            else:
+                sens_matrix[key] = sims[key]['sim'].\
+                    get_sens(models, opt_key, initial_data[key])
         # end
 
         return sens_matrix

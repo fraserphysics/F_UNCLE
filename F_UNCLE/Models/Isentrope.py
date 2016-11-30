@@ -213,7 +213,7 @@ class Isentrope(GausianModel):
 
             # d_F is derivative of F wrt vol
             def derr_dvol(vol, vel, eos, vol_0):
-                return -eos.derivative(1)(vol**-1) + (vol * vel / vol_0)**2
+                return -eos.derivative(1)(vol**-1) / vol**2 + (vel / vol_0)**2
         # end
         # arg_min(vel, self) finds volume that minimizes self(v) - R(v)
 
