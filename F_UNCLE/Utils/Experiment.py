@@ -324,7 +324,7 @@ class Experiment(Struc):
         # end
             
         # end 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=6) as executor:
             futures = {}
             for i, coeff in enumerate(model.get_dof()):
                 print(i)
@@ -343,8 +343,8 @@ class Experiment(Struc):
                 try:
                     resp = ftr.result()
                 except Exception as exc:
-                    raise RuntimeError('{:} sensitivities generated an'
-                                       ' exception {:}'.
+                    raise RuntimeError('{:s} sensitivities generated an'
+                                       ' exception {:s}'.
                                        format(self.get_inform(1), exc))
                 else:
                     resp_mat[:, i] = resp
