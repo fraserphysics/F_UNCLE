@@ -202,13 +202,15 @@ class TestEosModel(unittest.TestCase):
         """
 
         eos = EOSModel(
-            lambda v: 2.56E9 / v**3,
+            lambda v: 2.56E9 / v**5.5,
             spline_min=0.1,
             spline_max=1.0,
             basis='volume')
 
         vel_cj, vol_cj, p_cj, r_line = eos._get_cj_point(1.84**-1)
 
+        print(vel_cj/1E5)
+        
         self.assertIsInstance(vel_cj, float)
         self.assertGreater(vel_cj, 0.0)
 
@@ -231,6 +233,7 @@ class TestEosModel(unittest.TestCase):
         # pdb.set_trace()
         vel_cj, vol_cj, p_cj, r_line = eos._get_cj_point(1.84**-1)
 
+        print(vel_cj)
         self.assertIsInstance(vel_cj, float)
         self.assertGreater(vel_cj, 0.0)
 

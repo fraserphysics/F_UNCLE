@@ -298,7 +298,7 @@ class Stick(GausianExperiment):
 
             # v_eos = np.logspace(np.log10(v_min), np.log10(v_max), 30)
             v_eos = np.linspace(v_min, v_max, 30)
-            ax1.plot(v_eos, rayl_line(vel_cj, v_eos, eos, v_0), linestyles[1],
+            ax1.plot(v_eos, rayl_line(vel_cj, v_eos, eos, v_0, 0.0), linestyles[1],
                      label=labels[1])
             ax1.plot(vol_cj, p_cj, linestyles[2], label=labels[2])
             ax1.plot(v_0, 0.0, linestyles[3], label=labels[3])

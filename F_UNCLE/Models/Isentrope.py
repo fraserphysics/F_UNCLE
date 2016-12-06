@@ -125,7 +125,7 @@ class Isentrope(GausianModel):
             'basis': [str, 'volume', None, None, '',
                       "The basis of the isentrope, can be `volume` or"
                       " `density`"],
-            'vcj_lower': [float, 1.0E5, 0.0, None, 'cm s-1',
+            'vcj_lower': [float, 5.0E5, 0.0, None, 'cm s-1',
                           "Lower bound on the CJ velocity used in"
                           "bracketing search"],
             'vcj_upper':[float, 10.0E5, 0.0, None, 'cm s-1',
@@ -194,26 +194,30 @@ class Isentrope(GausianModel):
                           .format(self.get_inform(1)))
 
         # R is Rayleigh line
-        def rayl_line(vel, vol, eos, vol_0):
-            return pres_0 + (vel**2) * (vol_0 - vol) / (vol_0**2)
+        def rayl_line(vel, vol, vol_0, p_0):
+            # Pressure in Pa, vel in cm s-1 vol in cm3 g-1
+            # Convert so output is in kg m-1 s-2
+            return p_0 + (vel**2) * (vol_0 - vol) / (vol_0**2) * 0.1
 
         if eos.get_option('basis').lower()[:3] == 'vol':
             # F is self - R
-            def rayl_err(vel, vol, eos, vol_0):
-                return eos(vol) - rayl_line(vel, vol, eos, vol_0)
+            def rayl_err(vel, vol, eos, vol_0, p_0):
+                return eos(vol) - rayl_line(vel, vol, vol_0, p_0)
 
             # d_F is derivative of F wrt vol
             def derr_dvol(vol, vel, eos, vol_0):
-                return eos.derivative(1)(vol) + (vel / vol_0)**2
+                return eos.derivative(1)(vol) * 1E3\
+                    + (vel / vol_0)**2 * 1E2
 
         else:
             # Density based EOS
-            def rayl_err(vel, vol, eos, vol_0):
-                return eos(vol**-1) - rayl_line(vel, vol, eos, vol_0)
+            def rayl_err(vel, vol, eos, vol_0, p_0):
+                return eos(vol**-1) - rayl_line(vel, vol, vol_0, p_0)
 
             # d_F is derivative of F wrt vol
             def derr_dvol(vol, vel, eos, vol_0):
-                return -eos.derivative(1)(vol**-1) / vol**2 + (vel / vol_0)**2
+                return -1E3 * eos.derivative(1)(vol**-1) / vol**2\
+                    + 1E2 * (vel / vol_0)**2
         # end
         # arg_min(vel, self) finds volume that minimizes self(v) - R(v)
 
@@ -221,12 +225,15 @@ class Isentrope(GausianModel):
             return brentq(derr_dvol, v_min, v_max,
                           args=(vel, eos, vol_0))
 
-        def error(vel, eos, vol_0):
+        def error(vel, eos, vol_0, p_0):
             return rayl_err(vel, arg_min(vel, eos, vol_0),
-                            eos, vol_0)
+                            eos, vol_0, p_0)
 
         try:
-            vel_cj = brentq(error, d_min, d_max, args=(eos, vol_0))
+            vel_cj = brentq(error,
+                            d_min,
+                            d_max,
+                            args=(eos, vol_0, pres_0))
             vol_cj = arg_min(vel_cj, eos, vol_0)
 
             if self.get_option('basis').lower()[:3] == 'vol':
@@ -235,7 +242,8 @@ class Isentrope(GausianModel):
                 p_cj = eos(vol_cj**-1)
             #end
 
-        except:
+        except Exception as inst:
+            print(inst)
             import pdb
             pdb.set_trace()
 

@@ -10,7 +10,7 @@ import sys
 import os
 import pdb
 import argparse
-
+import time
 # External python packages
 import numpy as np
 import matplotlib.pyplot as plt
@@ -88,11 +88,13 @@ if __name__ == '__main__':
     sphere_simulation = Sphere()
 
     # 4. Create the analysis object
+
     analysis = Bayesian(
         simulations={
-            'Gun': [gun_simulation, gun_experiment],
-            'Stick': [stick_simulation, stick_experiment],
-            'Sphere': [sphere_simulation, sphere_experiment]},
+#            'Gun': [gun_simulation, gun_experiment],
+#            'Stick': [stick_simulation, stick_experiment],
+            'Sphere': [sphere_simulation, sphere_experiment]
+        },
         models={'eos': eos_model,
                 'strength': Ptw()},
         opt_key='eos',
@@ -110,8 +112,9 @@ if __name__ == '__main__':
     sphere_prior_sim = sphere_simulation(analysis.models)
 
     # 6. Run the analysis
+    to = time.time()
     opt_model, history, sens_matrix = analysis()
-
+    print('time taken ', to - time.time() )
     # 7. Update the simulations and get new data
     g_time_s, (g_vel_s, g_pos_s), g_spline_s =\
         opt_model.simulations['Gun']['sim'](opt_model.models)
