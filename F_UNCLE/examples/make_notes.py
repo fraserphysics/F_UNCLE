@@ -42,6 +42,8 @@ for s, h in (
         ('eos_diff', 'Plot the difference between the prior and true eos'),
         ('eos', 'Plot prior and true eos'),
         ('eos_basis', 'Plots the eos basis functions'),
+        ('info_all',
+         'Plot the eigenvalues and eigenfunctions for all experiments'),
         ('info_gun',
          'Plot the eigenvalues and eigenfunctions for the gun experiment'),
         ('info_stick',
@@ -91,8 +93,8 @@ if __name__ == '__main__':
 
     analysis = Bayesian(
         simulations={
-#            'Gun': [gun_simulation, gun_experiment],
-#            'Stick': [stick_simulation, stick_experiment],
+            'Gun': [gun_simulation, gun_experiment],
+            'Stick': [stick_simulation, stick_experiment],
             'Sphere': [sphere_simulation, sphere_experiment]
         },
         models={'eos': eos_model,
@@ -103,7 +105,7 @@ if __name__ == '__main__':
         precondition=True,
         debug=False,
         verb=True,
-        sens_mode='pll',
+        sens_mode='ser',
         maxiter=6)
 
     # 5. Generate data from the simulations using the prior
@@ -164,7 +166,7 @@ if __name__ == '__main__':
         ax = fig.gca()
         opt_model.simulations['Stick']['sim'].\
             plot(opt_model.models, axes=ax)
-
+        
         eos_model.prior.plot(axes=ax, linestyles=['--b'], labels=['Prior EOS'])
         eos_true.plot(axes=ax, linestyles=['-.g'], labels=['True EOS'])
         ax.legend(loc='best')
@@ -182,6 +184,27 @@ if __name__ == '__main__':
         fig.tight_layout()
         return fig
 
+    def info_all():
+        fisher = opt_model.simulations['Gun']['sim'].\
+            get_fisher_matrix(opt_model.models,
+                              use_hessian=False,
+                              exp=opt_model.simulations['Gun']['exp'],
+                              sens_matrix=sens_matrix['Gun'])
+        fisher += opt_model.simulations['Sphere']['sim'].\
+            get_fisher_matrix(opt_model.models,
+                              sens_matrix=sens_matrix['Sphere'])
+        fisher += opt_model.simulations['Stick']['sim'].\
+            get_fisher_matrix(opt_model.models,
+                              sens_matrix=sens_matrix['Stick'])
+
+        spec_data = opt_model.fisher_decomposition(fisher)
+
+        fig = plt.figure(figsize=tall)
+        fig = opt_model.plot_fisher_data(spec_data, fig=fig)
+        fig.set_size_inches(tall)
+        fig.tight_layout()
+        return fig
+
     def info_gun():
         ''' Fisher information about the gun experiment
         '''
@@ -190,6 +213,7 @@ if __name__ == '__main__':
                               use_hessian=False,
                               exp=opt_model.simulations['Gun']['exp'],
                               sens_matrix=sens_matrix['Gun'])
+
         spec_data = opt_model.fisher_decomposition(fisher)
 
         fig = plt.figure(figsize=tall)
@@ -312,9 +336,9 @@ if __name__ == '__main__':
         fig=plt.figure(figsize=square))    # EOS basis functions
 
     L = locals()
-    for name in '''eos_diff rayl_line eos info_gun info_stick info_sphere
-    stick_results gun_results sphere_results conv gun_sens stick_sens
-    sphere_sens eos_basis '''.split():
+    for name in '''eos_diff rayl_line eos info_all info_gun info_stick info_sphere stick_results gun_results sphere_results conv gun_sens stick_sens sphere_sens eos_basis '''.split():
+    # for name in '''eos_diff rayl_line eos info_stick conv stick_sens
+    # stick_results eos_basis '''.split():    
         if name in options:
             L[name]().savefig(out_dir + name + figtype, dpi=1000)
     if options.show:

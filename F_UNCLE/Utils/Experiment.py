@@ -481,7 +481,7 @@ class Experiment(Struc):
         return hessian
 
     def get_fisher_matrix(self, models, use_hessian=False, exp=None,
-                          sens_matrix=None):
+                          sens_matrix=None, sigma=None):
         """Returns the fisher information matrix of the simulation
 
         Args:
@@ -502,9 +502,13 @@ class Experiment(Struc):
         if sens_matrix is None:
             sens_matrix = self._get_sens(models)
         # end
-
-        sigma = inv(self.get_sigma(models))
-
+        
+        if sigma is None:
+            sigma = inv(self.get_sigma(models))
+        else:
+            sigma = inv(sigma)
+        # end
+        
         if use_hessian:
             hessian = self._get_hessian(models, self.req_models.keys()[0])
             if exp is None:
@@ -559,9 +563,11 @@ class GausianExperiment(Experiment):
         epsilon = self.compare(exp_data[0], exp_data[1][0], sim_data)
 
         p_mat = np.dot(np.dot(sens_matrix.T,
-                              inv(self.get_sigma(models))), sens_matrix)
+                              inv(experiment.get_sigma(models))),
+                       sens_matrix)
         q_mat = -np.dot(np.dot(epsilon,
-                               inv(self.get_sigma(models))), sens_matrix)
+                               inv(experiment.get_sigma(models))),
+                        sens_matrix)
 
         if scale:
             prior_scale = models[opt_key].get_scaling()
@@ -586,7 +592,6 @@ class GausianExperiment(Experiment):
 
         exp_data = experiment()
         epsilon = self.compare(exp_data[0], exp_data[1][0], sim_data)
-
         return -0.5 * np.dot(epsilon,
-                             np.dot(inv(self.get_sigma(models)),
+                             np.dot(inv(experiment.get_sigma(models)),
                                     epsilon))

@@ -128,7 +128,7 @@ class Isentrope(GausianModel):
             'vcj_lower': [float, 5.0E5, 0.0, None, 'cm s-1',
                           "Lower bound on the CJ velocity used in"
                           "bracketing search"],
-            'vcj_upper':[float, 10.0E5, 0.0, None, 'cm s-1',
+            'vcj_upper':[float, 11.0E5, 0.0, None, 'cm s-1',
                          "Upper bound on the CJ velocity used in"
                          " bracketing search"]
         }
@@ -243,9 +243,10 @@ class Isentrope(GausianModel):
             #end
 
         except Exception as inst:
-            print(inst)
-            import pdb
-            pdb.set_trace()
+            raise inst
+            # print(inst)
+            # import pdb
+            # pdb.set_trace()
 
 
         return vel_cj, vol_cj, float(p_cj), rayl_line
