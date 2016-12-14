@@ -41,7 +41,7 @@ def pll_loop(x, func, comm=None, *args, **kwargs):
          (dict): Dictionary of the function outputs with the same indicies as x.
 
     """
-
+    # print('Entering the MPI loop')
     if comm is None:
         try:
             from mpi4py import MPI
@@ -61,15 +61,18 @@ def pll_loop(x, func, comm=None, *args, **kwargs):
 
     myxval = xrange(myrank, len(x), nproc)
     out_data = {}
-
-    Barrier()
-
+    
     # The actuall paralell loop
     send_buf = {}
     for i in myxval:
+        # print('evaluating variable {:d} on rank {:d}'.format(i, myrank))
         send_buf[i] = func(x[i], *args, **kwargs)
     #end
 
+    print('Before the first barrier')
+    Barrier()
+    print('Past the first barrier')
+    
     # Gather the data from rank 0
     if myrank == 0:
         for i in send_buf.keys():
@@ -79,10 +82,12 @@ def pll_loop(x, func, comm=None, *args, **kwargs):
 
     # Send and receive the data
     if myrank != 0:
+        # print('sending from rank {:d} to rank {:d}'.format(myrank, 0))        
         Send(send_buf, dest=0, tag = 1)
     else:
         p_results = []
         for proc in xrange(1, nproc):
+            # print('recieving from rank {:d} on rank {:d}'.format(proc, myrank))            
             p_results.append(Recv(source=proc, tag = 1))
         #end
     #end

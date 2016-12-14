@@ -287,7 +287,7 @@ class Experiment(Struc):
 
         return NotImplemented
 
-    def get_sens_mpi(self, models, model_key, initial_data=None):
+    def get_sens_mpi(self, models, model_key, initial_data=None, comm=None):
         """MPI evaluation of the model gradients
 
         Args:
@@ -297,6 +297,7 @@ class Experiment(Struc):
         Keyword Args:
             initial_data(np.ndarray): The response for the nominal model DOF, if
                 it is `None`, it is calculated when this method is called
+            comm(): A MPI communicator
 
         """
         models = copy.deepcopy(models)
@@ -332,10 +333,11 @@ class Experiment(Struc):
                                 exp(model_dct))
 
         pll_out = pll_loop(new_dof_mat, get_resp,
+                           comm=comm,
                            exp=self,
                            model_dct=models,
                            mkey=model_key,
-                           inti_dat=initial_data)
+                           init_dat=initial_data)
 
         for key in pll_out:
             resp_mat[:,int(key)] = pll_out[key]
@@ -345,16 +347,6 @@ class Experiment(Struc):
         return np.where(np.fabs(sens_matrix) > 1E-21,
                         sens_matrix,
                         np.zeros(sens_matrix.shape))
-        
-        
-        
-    def _get_resp(new_dofi, exp, model_dct, mkey, init_dat):
-        """Class method used in the parallel map function
-        """
-        model_dct[mkey] = model_dct[mkey].update_dof(new_dofi)                
-        return -exp.compare(init_dat[0], init_dat[1][0],
-                            exp(model_dct))
-    # end
 
     def get_sens_pll(self, models, model_key, initial_data=None):
         """Parallel evaluation of each model's sensitivities
@@ -370,8 +362,6 @@ class Experiment(Struc):
 
         import concurrent.futures
 
- #       import pdb
-        
         models = copy.deepcopy(models)
         model = models[model_key]
 
@@ -396,49 +386,57 @@ class Experiment(Struc):
             new_dofs[i] -= float(coeff * step_frac)
         # end
             
-        with concurrent.futures.ProcessPoolExecutor(max_workers=12) as executor:
-            for i, resp in enumerate(executor.map(
-                    Experiment._get_resp,
-                    new_dof_mat,
-                    [copy.deepcopy(self) for i in range(len(new_dof_mat))],
-                    [copy.deepcopy(models) for i in range(len(new_dof_mat))],
-                    [copy.deepcopy(model_key) for i in range(len(new_dof_mat))],
-                    [copy.deepcopy(initial_data) for i in range(len(new_dof_mat))],
-                    chunksize=4)):
-                resp_mat[:, i] = resp
-            # end                
+        # with concurrent.futures.ThreadPoolExecutor(max_workers=50)\
+        #      as executor:
+        #     for i, resp in enumerate(executor.map(
+        #             Experiment._get_resp,
+        #             new_dof_mat,
+        #             [copy.deepcopy(self) for i in range(len(new_dof_mat))],
+        #             [copy.deepcopy(models) for i in range(len(new_dof_mat))],
+        #             [copy.deepcopy(model_key) for i in range(len(new_dof_mat))],
+        #             [copy.deepcopy(initial_data) for i in range(len(new_dof_mat))],
+        #             )):
+        #         resp_mat[:, i] = resp
+        #     # end                
+        # # end
+        def _get_resp(new_dofi, exp, model_dct, mkey, init_dat):
+            """Class method used in the parallel map function
+            """
+            model_dct[mkey] = model_dct[mkey].update_dof(new_dofi)   
+            return -exp.compare(init_dat[0], init_dat[1][0],
+                                exp(model_dct))
         # end
         
-        # with concurrent.futures.ProcessPoolExecutor(max_workers=6) as executor:
-        #     futures = {}
-        #     for i, coeff in enumerate(model.get_dof()):
-        #         new_dofs[i] += float(coeff * step_frac)
-        #         inp_mat[:, i] = (new_dofs - model.get_dof())
-        #         futures[executor.submit(
-        #             Experiment._get_resp,
-        #             new_dofs,
-        #             copy.deepcopy(self),
-        #             copy.deepcopy(models),
-        #             copy.deepcopy(model_key),
-        #             copy.deepcopy(initial_data))] = i
+        with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
+            futures = {}
+            for i, coeff in enumerate(model.get_dof()):
+                new_dofs[i] += float(coeff * step_frac)
+                inp_mat[:, i] = (new_dofs - model.get_dof())
+                futures[executor.submit(
+                    _get_resp,
+                    new_dofs,
+                    copy.deepcopy(self),
+                    copy.deepcopy(models),
+                    copy.deepcopy(model_key),
+                    copy.deepcopy(initial_data))] = i
 
-        #         new_dofs[i] -= float(coeff * step_frac)
-        #     # end
+                new_dofs[i] -= float(coeff * step_frac)
+            # end
 
-        #     for ftr in concurrent.futures.as_completed(futures):
-        #         i = futures[ftr]
+            for ftr in concurrent.futures.as_completed(futures):
+                i = futures[ftr]
 
-        #         try:
-        #             resp = ftr.result()
-        #         except Exception as exc:
-        #             raise RuntimeError('{:s} sensitivities generated an'
-        #                                ' exception {:s}'.
-        #                                format(self.get_inform(1), exc))
-        #         else:
-        #             resp_mat[:, i] = resp
-        #         # end
-        #     # end
-        # # end
+                try:
+                    resp = ftr.result()
+                except Exception as exc:
+                    raise RuntimeError('{:s} sensitivities generated an'
+                                       ' exception {:s}'.
+                                       format(self.get_inform(1), exc))
+                else:
+                    resp_mat[:, i] = resp
+                # end
+            # end
+        # end
  
         sens_matrix = np.linalg.lstsq(inp_mat, resp_mat.T)[0].T
         return np.where(np.fabs(sens_matrix) > 1E-21,

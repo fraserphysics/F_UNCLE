@@ -44,7 +44,20 @@ from numpy.linalg import inv
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 import matplotlib.gridspec as gridspec
-
+try:
+    from mpi4py import MPI
+    mpi_comm = MPI.COMM_WORLD
+    if mpi_comm.Get_rank() == 0:
+        mpi_print = True
+    # end
+    else:
+        mpi_print = False
+    # end
+except ImportError as inst:
+    mpi_print = False
+# end
+        
+        
 try:
     from cvxopt import matrix, solvers
 except:
@@ -427,14 +440,14 @@ class Bayesian(Struc):
             model_dict = analysis.models
 
             # Solve all simulations with the curent model
-            if verb:
+            if verb and mpi_print:
                 print('prior log like', -analysis.model_log_like())
-            if verb:
+            if verb and mpi_print:
                 print('sim log like', -analysis.sim_log_like(initial_data))
             new_log_like = prior_weight * analysis.model_log_like()\
                 + analysis.sim_log_like(initial_data)
 
-            if verb:
+            if verb and mpi_print:
                 print('total log like', new_log_like)
 
             if np.fabs((log_like - new_log_like) / new_log_like) < reltol:
@@ -495,7 +508,7 @@ class Bayesian(Struc):
         log_like = 0
         i = 0
         while not conv and i < maxiter:
-            if verb:
+            if verb and mpi_print:
                 print('Iter {} of {}'.format(i, maxiter))
             analysis, log_like, initial_data, model_dof, conv =\
                 outer_loop_iteration(analysis, log_like, initial_data)
@@ -506,7 +519,7 @@ class Bayesian(Struc):
 
         sens_matrix = analysis._get_sens(initial_data)
 
-        if not conv:
+        if not conv and mpi_print:
             print("{}: Outer loop could not converge to the given"
                   "tolerance in the maximum number of iterations"
                   .format(self.get_inform(1)))
@@ -747,10 +760,19 @@ class Bayesian(Struc):
 
         sens_matrix = {}
         for key in self.simulations:
-            print('Getting sens for {:}'.format(key))
+            if self.get_option('verb') and mpi_print:
+                print('Getting sens for {:}'.format(key))
+            # end
+            
             if self.get_option('sens_mode') == 'pll':
                 sens_matrix[key] = sims[key]['sim'].\
                     get_sens_pll(models, opt_key, initial_data[key])
+            elif self.get_option('sens_mode') == 'mpi':
+                sens_matrix[key] = sims[key]['sim'].\
+                    get_sens_mpi(models,
+                                 opt_key,
+                                 initial_data[key],
+                                 comm=mpi_comm)
             else:
                 sens_matrix[key] = sims[key]['sim'].\
                     get_sens(models, opt_key, initial_data[key])
