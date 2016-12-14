@@ -48,9 +48,11 @@ if __name__ == '__main__':
     sys.path.append(os.path.abspath('./../../'))
     from F_UNCLE.Utils.Struc import Struc
     from F_UNCLE.Utils.PhysicsModel import PhysicsModel
+    from F_UNCLE.Utils.mpi_loop import pll_loop
 else:
     from .Struc import Struc
     from .PhysicsModel import PhysicsModel
+    from .mpi_loop import pll_loop
 # end
 
 # =========================
@@ -285,6 +287,67 @@ class Experiment(Struc):
 
         return NotImplemented
 
+    def get_sens_mpi(self, models, model_key, initial_data=None):
+        """MPI evaluation of the model gradients
+
+        Args:
+            models(dict): The dictionary of models
+            model_key(str): The key of the model for which the sensitivity is
+                            desired
+        Keyword Args:
+            initial_data(np.ndarray): The response for the nominal model DOF, if
+                it is `None`, it is calculated when this method is called
+
+        """
+        models = copy.deepcopy(models)
+        model = models[model_key]
+
+        step_frac = 2E-2
+
+        if initial_data is None:
+            initial_data = self(models)
+        # end
+
+        resp_mat = np.zeros((initial_data[0].shape[0],
+                             model.shape()))
+        inp_mat = np.zeros((model.shape(),
+                            model.shape()))
+        new_dof_mat = []
+        new_dofs = np.array(copy.deepcopy(model.get_dof()),
+                            dtype=np.float64)
+        # Build the input matrix and a lift of dof's to test
+        for i, coeff in enumerate(model.get_dof()):
+            new_dofs[i] += float(coeff * step_frac)
+            inp_mat[:, i] = (new_dofs - model.get_dof())
+            new_dof_mat.append(copy.deepcopy(new_dofs))
+            new_dofs[i] -= float(coeff * step_frac)
+        # end
+
+        # The function to be evaluated in parallel
+        def get_resp(new_dofi, exp, model_dct, mkey, init_dat):
+            """Class method used in the parallel map function
+            """
+            model_dct[mkey] = model_dct[mkey].update_dof(new_dofi)                
+            return -exp.compare(init_dat[0], init_dat[1][0],
+                                exp(model_dct))
+
+        pll_out = pll_loop(new_dof_mat, get_resp,
+                           exp=self,
+                           model_dct=models,
+                           mkey=model_key,
+                           inti_dat=initial_data)
+
+        for key in pll_out:
+            resp_mat[:,int(key)] = pll_out[key]
+        #end
+        
+        sens_matrix = np.linalg.lstsq(inp_mat, resp_mat.T)[0].T
+        return np.where(np.fabs(sens_matrix) > 1E-21,
+                        sens_matrix,
+                        np.zeros(sens_matrix.shape))
+        
+        
+        
     def _get_resp(new_dofi, exp, model_dct, mkey, init_dat):
         """Class method used in the parallel map function
         """
@@ -292,7 +355,7 @@ class Experiment(Struc):
         return -exp.compare(init_dat[0], init_dat[1][0],
                             exp(model_dct))
     # end
-    
+
     def get_sens_pll(self, models, model_key, initial_data=None):
         """Parallel evaluation of each model's sensitivities
 
