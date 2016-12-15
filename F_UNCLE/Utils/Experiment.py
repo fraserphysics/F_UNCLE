@@ -333,6 +333,7 @@ class Experiment(Struc):
                                 exp(model_dct))
 
         pll_out = pll_loop(new_dof_mat, get_resp,
+                           shape=self.shape(),
                            comm=comm,
                            exp=self,
                            model_dct=models,

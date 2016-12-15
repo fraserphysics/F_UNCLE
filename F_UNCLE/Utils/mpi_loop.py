@@ -23,8 +23,9 @@ __version__ = '$Revision: $'
 To Do:
 
 """
-
-def pll_loop(x, func, comm=None, *args, **kwargs):
+import numpy as np
+from mpi4py import MPI
+def pll_loop(x, func, shape=None, comm=None, *args, **kwargs):
     """
     Uses MPI to evaluate `func' for each value of x and returns a dictionary of the results
     - Uses Static Process Management (SPM)
@@ -44,7 +45,6 @@ def pll_loop(x, func, comm=None, *args, **kwargs):
     # print('Entering the MPI loop')
     if comm is None:
         try:
-            from mpi4py import MPI
             comm = MPI.COMM_WORLD
         except:
             raise(ImportError("Could not import MPI for py"))
@@ -55,55 +55,65 @@ def pll_loop(x, func, comm=None, *args, **kwargs):
     nproc = comm.Get_size()
     myrank = comm.Get_rank()
     Barrier = comm.barrier
-    Send = comm.send
-    Recv = comm.recv
+    Send = comm.Send
+    Recv = comm.Recv
     Bcast = comm.bcast
 
     myxval = range(myrank, len(x), nproc)
     out_data = {}
-    
+
     # The actuall paralell loop
-    send_buf = {}
-    for i in myxval:
+    send_buf = np.empty((shape, len(myxval)))
+    for j, i in enumerate(myxval):
         print('evaluating variable {:d} on rank {:d}'.format(i, myrank))
-        send_buf[i] = func(x[i], *args, **kwargs)
+        send_buf[:,j] = func(x[i], *args, **kwargs)
     #end
-
-    # Gather the data from rank 0
-    if myrank == 0:
-        for i in send_buf.keys():
-            out_data[i] = send_buf[i]
-        #end
-    #end
-
+    
     # Send and receive the data
     if myrank != 0:
         print('sending from rank {:d} to rank {:d}'.format(myrank, 0))        
         Send(send_buf, dest=0, tag = 1)
     else:
-        p_results = []
+        for j, i in enumerate(myxval):
+            out_data[i] = send_buf[:,j]
+        #end
+    # end
+
+    Barrier()
+    if myrank == 0:
+        p_results = {}
         for proc in xrange(1, nproc):
+            proc_xval = range(myrank, len(x), nproc)
+            rec_buff = np.empty((shape, len(proc_xval)))
             print('recieving from rank {:d} on rank {:d}'.format(proc, myrank))
-            # tmp_dct={}
-            # Recv(tmp_dct, source=proc, tag = 1)
-            # p_results.append(tmp_dct)
-            p_results.append(Recv(source=proc, tag=1))
             
+            try:
+                Recv(rec_buff, source=proc, tag=1)
+                for j, i in enumerate(proc_xval):
+                    out_data[i] = rec_buff[:,j]
+                # end
+                #p_results.append(Recv(source=proc, tag=1))
+            except MPI.Exception as inst:
+                print("rank %d failed recieving from proc %d"%(myrank, proc))
+                print(type(inst))
+                
+                raise inst
         #end
     #end
 
-    # Barrier()
+
     # Organize the data
     if myrank == 0:
-        for proc in xrange(nproc-1):
-            for i in p_results[proc].keys():
-                out_data[i] = p_results[proc][i]
-            #end
-        #end
+        # for proc in xrange(nproc-1):
+        #     for i in p_results[proc].keys():
+        #         out_data[i] = p_results[proc][i]
+        #     #end
+        # #end
+        print('broadcasting from rank {:d} to rank {:d}'.format(0, myrank))    
+        out_data = Bcast(out_data, root=0)
+#        print(out_data)
     #end
-
-    print('broadcasting from rank {:d} to rank {:d}'.format(0, myrank))    
-    out_data = Bcast(out_data, root=0)
+    Barrier()    
     
     return out_data
 #end
