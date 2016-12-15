@@ -59,20 +59,16 @@ def pll_loop(x, func, comm=None, *args, **kwargs):
     Recv = comm.recv
     Bcast = comm.bcast
 
-    myxval = xrange(myrank, len(x), nproc)
+    myxval = range(myrank, len(x), nproc)
     out_data = {}
     
     # The actuall paralell loop
     send_buf = {}
     for i in myxval:
-        # print('evaluating variable {:d} on rank {:d}'.format(i, myrank))
+        print('evaluating variable {:d} on rank {:d}'.format(i, myrank))
         send_buf[i] = func(x[i], *args, **kwargs)
     #end
 
-    print('Before the first barrier')
-    Barrier()
-    print('Past the first barrier')
-    
     # Gather the data from rank 0
     if myrank == 0:
         for i in send_buf.keys():
@@ -82,16 +78,21 @@ def pll_loop(x, func, comm=None, *args, **kwargs):
 
     # Send and receive the data
     if myrank != 0:
-        # print('sending from rank {:d} to rank {:d}'.format(myrank, 0))        
+        print('sending from rank {:d} to rank {:d}'.format(myrank, 0))        
         Send(send_buf, dest=0, tag = 1)
     else:
         p_results = []
         for proc in xrange(1, nproc):
-            # print('recieving from rank {:d} on rank {:d}'.format(proc, myrank))            
-            p_results.append(Recv(source=proc, tag = 1))
+            print('recieving from rank {:d} on rank {:d}'.format(proc, myrank))
+            # tmp_dct={}
+            # Recv(tmp_dct, source=proc, tag = 1)
+            # p_results.append(tmp_dct)
+            p_results.append(Recv(source=proc, tag=1))
+            
         #end
     #end
 
+    # Barrier()
     # Organize the data
     if myrank == 0:
         for proc in xrange(nproc-1):
@@ -101,6 +102,9 @@ def pll_loop(x, func, comm=None, *args, **kwargs):
         #end
     #end
 
+    print('broadcasting from rank {:d} to rank {:d}'.format(0, myrank))    
+    out_data = Bcast(out_data, root=0)
+    
     return out_data
 #end
 
