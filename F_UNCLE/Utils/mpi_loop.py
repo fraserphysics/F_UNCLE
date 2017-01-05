@@ -78,7 +78,8 @@ def pll_loop(x, func, shape=None, comm=None, *args, **kwargs):
             out_data[i] = send_buf[:,j]
         #end
     # end
-
+    import time
+    time.sleep(2)
     Barrier()
     if myrank == 0:
         p_results = {}
