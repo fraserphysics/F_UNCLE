@@ -93,8 +93,8 @@ if __name__ == '__main__':
 
     analysis = Bayesian(
         simulations={
-#            'Gun': [gun_simulation, gun_experiment],
-#            'Stick': [stick_simulation, stick_experiment],
+            'Gun': [gun_simulation, gun_experiment],
+            'Stick': [stick_simulation, stick_experiment],
             'Sphere': [sphere_simulation, sphere_experiment]
         },
         models={'eos': eos_model,
@@ -105,7 +105,7 @@ if __name__ == '__main__':
         precondition=True,
         debug=False,
         verb=True,
-        sens_mode='mpi',
+        sens_mode='ser',
         maxiter=6)
 
     # 5. Generate data from the simulations using the prior
