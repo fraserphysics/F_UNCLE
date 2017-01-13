@@ -140,9 +140,9 @@ def complex_io(x, p = {}, *args, **kwargs):
 
     kw1 = p['kw1']
 
-    print "var1 ", var1
-    print "var2 ", var2
-    print "kw1 ", kw1
+    # print "var1 ", var1
+    # print "var2 ", var2
+    # print "kw1 ", kw1
 
     out = {}
     out['out1'] = str(var1*var2)
@@ -164,7 +164,7 @@ if __name__ == "__main__":
     y = pll_loop(x, expensive_func)
 
     if MPI.COMM_WORLD.Get_rank() == 0:
-        print "Time taken ", time.time()-to
+        print("Time taken ", time.time()-to)
     #end
 
     # Test 2
@@ -178,6 +178,6 @@ if __name__ == "__main__":
     if MPI.COMM_WORLD.Get_rank() == 0:
         for key in y:
             dct = y[key]
-            print 'out1 ', dct['out1'], ' out2 ', dct['out2'], ' out3 ', dct['out3']
+            print('out1 ', dct['out1'], ' out2 ', dct['out2'], ' out3 ', dct['out3'])
         #end
     # #end
