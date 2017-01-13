@@ -466,30 +466,61 @@ class Bayesian(Struc):
             if precondition:
                 d_hat = np.dot(opt_model.get_scaling(), d_hat)
             # end
-
+            
+            # Finds the optimal step in the d_hat direction 
             n_steps = 5
             costs = np.zeros(n_steps)
             iter_data = []
             initial_dof = copy.deepcopy(opt_model.get_dof())
             max_step = 1.0
             x_list = np.linspace(0, max_step, n_steps)
+            dof_list = []
+            
+            # Builds the list of dof values to test and gets the prior cost
             for i, x_i in enumerate(x_list):
-                model_dict[opt_key] = opt_model.update_dof(
-                    initial_dof + x_i * d_hat)
+                dof_list.append(initial_dof + x_i * d_hat)
+                model_dict[opt_key] = opt_model.update_dof(dof_list[-1])
                 new_analysis = analysis.update(models=model_dict)
                 costs[i] = prior_weight * new_analysis.model_log_like()
-                iter_data.append(new_analysis.get_data())
-                costs[i] += new_analysis.sim_log_like(iter_data[-1])
+            # end
+            
+            # Evaluates each simulation at each dof step
+            # Note: This approach makes use of the multi_solve method
+            #       which helps accelerate the solution when using a
+            #       mpi or run_job.
+            iter_data = {}
+            for key in analysis.simulations:
+                if self.get_option('sens_mode') == 'mpi':
+                    iter_data[key] = analysis.simulations[key]['sim']\
+                                             .multi_solve_mpi(
+                                                 models, opt_key, dof_list)
+                elif self.get_option('sens_mode') == 'runjob':
+                    iter_data[key] = analysis.simulations[key]['sim']\
+                                             .multi_solve_runjob(
+                                                 models, opt_key, dof_list)
+                else:
+                    iter_data[key] = analysis.simulations[key]['sim']\
+                                             .multi_solve(
+                                                 models, opt_key, dof_list)
             # end
 
+            # Calculates the cost of the data for each step
+            sorted_data = []
+            for i in range(len(x_list)):
+                sorted_data.append({})
+                for key in analysis.simulations:
+                    sorted_data[-1][key] = iter_data[key][i]
+                # end
+                costs[i] += new_analysis.sim_log_like(sorted_data[-1])
+            # end
+            
+            # Updates the model dof to the optimal value
             besti = np.argmax(costs)
-
-            model_dict[opt_key] = opt_model.update_dof(
-                initial_dof + d_hat * x_list[besti])
+            model_dict[opt_key] = opt_model.update_dof(dof_list[besti])
 
             return (analysis.update(models=model_dict),
                     new_log_like,
-                    iter_data[besti],
+                    sorted_data[besti],
                     model_dict[opt_key].get_dof(),
                     False)
 
@@ -773,6 +804,11 @@ class Bayesian(Struc):
                                  opt_key,
                                  initial_data[key],
                                  comm=mpi_comm)
+            elif self.get_option('sens_mode') == 'runjob':
+                sens_matrix[key] = sims[key]['sim'].\
+                    get_sens_runjob(models,
+                                 opt_key,
+                                 initial_data[key])
             else:
                 sens_matrix[key] = sims[key]['sim'].\
                     get_sens(models, opt_key, initial_data[key])
