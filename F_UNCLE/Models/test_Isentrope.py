@@ -119,7 +119,59 @@ class TestEosModel(unittest.TestCase):
         # end
 
     # end
+    def test_eos_bounds_plot_vol(self):
+        """Plots the extrapolated behaviour
+        """
+        
+        eos = EOSModel(self.p_fun)
 
+        test_vol = np.linspace(0.01, 1.0, 200)
+
+        fig = plt.figure()
+        ax1 = fig.gca()
+        ax1.plot(test_vol, eos(test_vol))
+
+        for i in range(5):
+            old_dof = eos.get_dof()
+            old_dof[i] *= 1.02
+            new_eos = eos.update_dof(old_dof)
+            ax1.plot(test_vol, new_eos(test_vol))        
+        # end
+        
+        ax1.set_xlabel('Specific volume / cm3 g-1')
+        ax1.set_ylabel('Pressure / Pa')
+        fig.savefig('vol_eos_bounds_test.pdf')
+
+    def test_eos_bounds_plot_dens(self):
+        """Plots the extrapolated behaviour for density basis
+        """
+        
+        eos = EOSModel(lambda rho: 2.56E9 * rho **3,
+                       basis='density',
+                       spline_min=1.0,
+                       spline_max=10.0)
+
+        old_dof = eos.get_dof()
+        old_dof[1] *= 1.02
+        new_eos = eos.update_dof(old_dof)
+        test_dens = np.linspace(0.1, 10.0, 200)
+
+        fig = plt.figure()
+        ax1 = fig.gca()
+        ax1.plot(test_dens, eos(test_dens))
+
+        for i in range(5):
+            old_dof = eos.get_dof()
+            old_dof[i] *= 1.02
+            new_eos = eos.update_dof(old_dof)
+            ax1.plot(test_dens, new_eos(test_dens))        
+        # end
+
+        ax1.set_xlabel('Density / g cm-3')
+        ax1.set_ylabel('Pressure / Pa')
+        fig.savefig('dens_eos_bounds_test.pdf')
+        
+        
     def test_custom_instantiation(self):
         """Tests instantiation with non default values
         """
@@ -154,6 +206,52 @@ class TestEosModel(unittest.TestCase):
         self.assertEqual(eos.get_option('spline_min'), t_list.min())
         self.assertEqual(eos.get_option('spline_max'), t_list.max())
 
+    def test_density_basis_get_dof(self):
+        """Tests getting the coefficients when a density EOS is used
+        """
+
+        eos = EOSModel(lambda rho: 2.56E9 * rho **3,
+                       basis='density',
+                       spline_min=1.0,
+                       spline_max=10.0)
+
+        c_list = eos.get_dof()
+
+        self.assertEqual(c_list[0], eos._eval_args[1][0])
+        self.assertEqual(c_list[1], eos._eval_args[1][1])
+        self.assertEqual(c_list[2], eos._eval_args[1][2])
+        self.assertEqual(c_list[3], eos._eval_args[1][3])        
+        self.assertEqual(c_list[4], eos._eval_args[1][4])
+        self.assertEqual(0.0, eos._eval_args[1][-1])
+        self.assertEqual(0.0, eos._eval_args[1][-2])
+        self.assertEqual(0.0, eos._eval_args[1][-3])
+        self.assertEqual(0.0, eos._eval_args[1][-4])
+
+    def test_density_basis_update_dof(self):
+        """Tests getting the coefficients when a density EOS is used
+        """
+
+        eos = EOSModel(lambda rho: 2.56E9 * rho **3,
+                       basis='density',
+                       spline_min=1.0,
+                       spline_max=10.0)
+
+        c_list = eos.get_dof()
+        c_list[0] *= 1.02
+        first_dof = copy.copy(c_list[0])
+
+        new_eos = eos.update_dof(c_list)
+
+        self.assertEqual(first_dof, new_eos._eval_args[1][0])
+        self.assertEqual(c_list[1], new_eos._eval_args[1][1])
+        self.assertEqual(c_list[2], new_eos._eval_args[1][2])
+        self.assertEqual(c_list[3], new_eos._eval_args[1][3])        
+        self.assertEqual(c_list[4], new_eos._eval_args[1][4])
+        self.assertEqual(0.0, new_eos._eval_args[1][-1])
+        self.assertEqual(0.0, new_eos._eval_args[1][-2])
+        self.assertEqual(0.0, new_eos._eval_args[1][-3])
+        self.assertEqual(0.0, new_eos._eval_args[1][-4])
+        
     def test_spline_get_c(self):
         """Test spline interaction method, get coefficients
         """
@@ -165,6 +263,16 @@ class TestEosModel(unittest.TestCase):
 
         self.assertEqual(eos.get_option('spline_N'), len(c_list))
 
+        self.assertEqual(c_list[0], eos._eval_args[1][0])
+        self.assertEqual(c_list[1], eos._eval_args[1][1])
+        self.assertEqual(c_list[2], eos._eval_args[1][2])
+        self.assertEqual(c_list[3], eos._eval_args[1][3])        
+        self.assertEqual(c_list[-1], eos._eval_args[1][-5])
+        self.assertEqual(0.0, eos._eval_args[1][-1])
+        self.assertEqual(0.0, eos._eval_args[1][-2])
+        self.assertEqual(0.0, eos._eval_args[1][-3])
+        self.assertEqual(0.0, eos._eval_args[1][-4])
+        
     def test_spline_new_c(self):
         """Test spline interaction method, set new coefficients
         """
@@ -182,6 +290,17 @@ class TestEosModel(unittest.TestCase):
         npt.assert_array_equal(new_eos.get_dof(), c_list + 0.1)
         npt.assert_array_equal(c_list, eos.get_dof())
 
+        self.assertEqual(c_list[0] + 0.1, new_eos._eval_args[1][0])
+        self.assertEqual(c_list[1] + 0.1, new_eos._eval_args[1][1])
+        self.assertEqual(c_list[2] + 0.1, new_eos._eval_args[1][2])
+        self.assertEqual(c_list[3]+ 0.1, new_eos._eval_args[1][3])        
+        self.assertEqual(c_list[-1] + 0.1, new_eos._eval_args[1][-5])
+        self.assertEqual(0.0, new_eos._eval_args[1][-1])
+        self.assertEqual(0.0, new_eos._eval_args[1][-2])
+        self.assertEqual(0.0, new_eos._eval_args[1][-3])
+        self.assertEqual(0.0, new_eos._eval_args[1][-4])
+        
+        
     def test_eos_get_sigma(self):
         """ Tests that the co-variance matrix is generated correctly
         """
@@ -245,36 +364,6 @@ class TestEosModel(unittest.TestCase):
         correctly
         """
 
-        # def jwl_isentrope(dens, rho_o=1.838, A=16.689, B=0.5969, E0=0.095,
-        #         R1=5.9, R2=2.1, omega=0.45):
-        #     """The JWL Isentrope.
-
-        #     Eqiation come from the Ps eqiation along an isentrope in sec 8.3.1
-        #     pp 8-21 of Ref [1]
-        #     Args:
-        #         dens(float or np.ndarray): The density of the gas g cm-3
-
-        #     Keyword Args:
-        #         rho_o(float): Reactants density from ref [2] in g cm-3
-        #         A(float): PBX-9501 coefficeint from ref[2] in Mbar
-        #         B(float): PBX-9501 coefficeint from ref[2] in Mbar
-        #         E0(float): PBX-9501 coefficeint from ref[2] in Mbar
-        #         R1(float): PBX-9501 coefficeint from ref[2], dimensionless
-        #         R1(float): PBX-9501 coefficeint from ref[2], dimensionless
-        #         omega(float): PBX-9501 coefficeint from ref[2], dimensionless
-
-        #     Returns:
-        #         (float or np.ndarray): The pressure at the given density in Pa
-
-        #     References
-        #     [1] "LLNL Explosives Handbook" LLNL-URCRL-52997Ve
-        #     """
-        #     v = rho_o / dens
-        #     return 1e11 * (A * (1 - omega / R1 / v) * np.exp(-R1 * v)
-        #                   + B * (1 - omega / R2 / v) * np.exp(-R2 * v)
-        #                   + omega * E0 / v)
-        # # end
-
         def jwl_isentrope(dens, rho_o=1.838, A=16.689, B=0.5969, C=0.018229,
                 R1=5.9, R2=2.1, omega=0.45):
             """The JWL Isentrope.
@@ -336,7 +425,6 @@ class TestEosModel(unittest.TestCase):
             npt.assert_allclose([u_cj], [true_ucj], rtol = 1E-4,
                 err_msg="JWL Isentrope did not calculate CJ particle velocity"
                         "correctly")
-            raise AssertionError('test')
         except AssertionError as exp:
             fig = isen.plot(labels=["JWL Isentrope"])
             ax1 = fig.gca()
@@ -371,8 +459,8 @@ class TestEosModel(unittest.TestCase):
             fig.savefig('jwl_eos_debug.pdf')
 
             print("PBX-9501 Detonation velocity {:f} km/s".format(vel_cj/1E5))
-
             raise exp
+                
 class TestBumpEOS(unittest.TestCase):
     """Test of the bump EOS
     """
