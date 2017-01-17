@@ -157,7 +157,7 @@ class Experiment(Struc):
         raise NotImplementedError('{} has no shape specified'
                                   .format(self.get_inform(1)))
 
-    def __call__(self, models=None, **kwargs):
+    def __call__(self, models=None, *args,  **kwargs):
         """Runs the simulation.
 
         .. note::
@@ -187,7 +187,7 @@ class Experiment(Struc):
                  The composition of this list is problem dependent
         """
 
-        return self._on_call(*self.check_models(models))
+        return self._on_call(*self.check_models(models), **kwargs)
 
     def _on_call(self, *models):
         """The overloaded method where the Experiment does its work
@@ -288,6 +288,102 @@ class Experiment(Struc):
         """
 
         return NotImplemented
+    
+    def multi_solve(self, models, model_key, dof_list):
+        """Returns the results from calling the Experiment object for each 
+        element of dof_list
+
+        Args:
+            models(dict): Dictionary of models
+            model_key(str): The key for the model in the models to be used
+            dof_list(list): A list of numpy array's defininf the model DOFs
+
+        Returns:
+            (list): A list of outputs to __call___ for the experiment 
+                    corresponding to the elements of dof_list
+        """
+
+        models = copy.deepcopy(models)
+        
+        ret_list = []
+        for dof in dof_list:
+            models[model_key] = models[model_key].update_dof(dof)
+            ret_list.append(self(models))
+        # end
+
+        return ret_list
+
+    def multi_solve_mpi(self, models, model_key, dof_list):
+        """Returns the results from calling the Experiment object for each 
+        element of dof_list using mpi
+
+        Args:
+            models(dict): Dictionary of models
+            model_key(str): The key for the model in the models to be used
+            dof_list(list): A list of numpy array's defininf the model DOFs
+
+        Returns:
+            (list): A list of outputs to __call___ for the experiment 
+                    corresponding to the elements of dof_list
+        """
+
+        models = copy.deepcopy(models)
+        
+        ret_list = []
+        
+        raise NotImplementedError('{:} multi solve using MPI has not been implemented'
+                                  .format(self.get_inform(0)))
+
+        return ret_list
+
+    def multi_solve_runjob(self, models, model_key, dof_list):
+        """Returns the results from calling the Experiment object for each 
+        element of dof_list using the runjob script
+
+        .. note::
+        
+             runjob is an internal LANL code
+
+        Args:
+            models(dict): Dictionary of models
+            model_key(str): The key for the model in the models to be used
+            dof_list(list): A list of numpy array's defininf the model DOFs
+
+        Returns:
+            (list): A list of outputs to __call___ for the experiment 
+                    corresponding to the elements of dof_list
+        """
+
+        models = copy.deepcopy(models)
+        
+        ret_list = []
+        
+        raise NotImplementedError('{:} multi solve using runjob is not availible'
+                                  .format(self.get_inform(0)))
+
+        return ret_list
+
+    def get_sens_runjob(self, models, model_key, initial_data=None):
+        """Uses runjob for  evaluation of the model gradients
+        
+        .. note::
+
+            runjob is an internal LANL code
+
+        Args:
+            models(dict): The dictionary of models
+            model_key(str): The key of the model for which the sensitivity is
+                            desired
+        Keyword Args:
+            initial_data(np.ndarray): The response for the nominal model DOF, if
+                it is `None`, it is calculated when this method is called
+            comm(): A MPI communicator
+
+        """
+
+        raise NotImplementedError('{:} multi solve using runjob is not availible'
+                                  .format(self.get_inform(0)))
+
 
     def get_sens_mpi(self, models, model_key, initial_data=None, comm=None):
         """MPI evaluation of the model gradients
