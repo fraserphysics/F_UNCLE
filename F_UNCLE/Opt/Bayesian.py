@@ -407,8 +407,9 @@ class Bayesian(Struc):
                       iterations
                    1. (np.ndarray) model dof history (nxm) where n is iterations
                       and m is the model dofs
-                2. (np.ndarray) sensitity matrix of all experiments to
+               2. (np.ndarray) sensitity matrix of all experiments to
                    the model
+
         """
         def outer_loop_iteration(analysis, log_like, intitial_data):
             """Performs a single step of the outer loop optimization
@@ -817,15 +818,24 @@ class Bayesian(Struc):
         return sens_matrix
 
     def get_hessian(self, initial_data=None, simid=None):
-        """Gets the Hessian (matrix of second derrivatives) of the simulated
+        r"""Gets the Hessian (matrix of second derrivatives) of the simulated
         experiments to the EOS
 
         .. math::
 
-          H(f_i) = \begin{smallmatrix}
-            \frac{\partial^2 f_i}{\partial \mu_1^2} & \frac{\partial^2 f_i}{\partial \mu_1 \partial \mu_2} & \ldots & \frac{\partial^2 f_i}{\partial \mu_1 \partial \mu_n}\\
-            \frac{\partial^2 f_i}{\partial \mu_2 \partial \mu_1} & \frac{\partial^2 f_i}{\partial \mu_2^2} & \ldots & \frac{\partial^2 f_i}{\partial \mu_2 \partial \mu_n}\\
-            \frac{\partial^2 f_i}{\partial \mu_n \partial \mu_1} & \frac{\partial^2 f_i}{\partial \mu_n \partial \mu_2} & \ldots & \frac{\partial^2 f_i}{\partial \mu_n^2}
+            H(f_i) = \begin{smallmatrix}
+            \frac{\partial^2 f_i}{\partial \mu_1^2}
+                & \frac{\partial^2 f_i}{\partial \mu_1 \partial \mu_2}
+                & \ldots
+                & \frac{\partial^2 f_i}{\partial \mu_1 \partial \mu_n}\\
+            \frac{\partial^2 f_i}{\partial \mu_2 \partial \mu_1}
+                & \frac{\partial^2 f_i}{\partial \mu_2^2}
+                & \ldots
+                & \frac{\partial^2 f_i}{\partial \mu_2 \partial \mu_n}\\
+            \frac{\partial^2 f_i}{\partial \mu_n \partial \mu_1}
+                & \frac{\partial^2 f_i}{\partial \mu_n \partial \mu_2}
+                & \ldots
+                & \frac{\partial^2 f_i}{\partial \mu_n^2}
             \end{smallmatrix}
 
         .. math::
@@ -838,7 +848,8 @@ class Bayesian(Struc):
 
           f \in \mathcal{R}^m \\
           \mu \in \mathcal{R}^m
-        """
+  
+      """
 
         sims = self.simulations
         models = self.models
