@@ -24,7 +24,13 @@ To Do:
 
 """
 import numpy as np
-from mpi4py import MPI
+
+try:
+    from mpi4py import MPI
+except Exception as inst:
+    pass
+# end
+
 def pll_loop(x, func, shape=None, comm=None, *args, **kwargs):
     """
     Uses MPI to evaluate `func' for each value of x and returns a dictionary of the results
