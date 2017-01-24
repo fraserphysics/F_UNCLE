@@ -80,7 +80,7 @@ class Stick(GausianExperiment):
 
     **Methods**
     """
-    def __init__(self, name="Rate Stick Computational Experiment",
+    def __init__(self, name=u"Rate Stick Computational Experiment",
                  *args, **kwargs):
         """Instantiate the Experiment object
 

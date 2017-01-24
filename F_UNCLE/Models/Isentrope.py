@@ -648,7 +648,7 @@ class EOSModel(Spline, Isentrope):
         #           self.get_option('spline_max'),
         #           self.get_option('spline_N'))
 
-        Spline.__init__(self, vol, p_fun(vol), ext=3)
+        Spline.__init__(self, vol, p_fun(vol), ext=0)
         self.prior = copy.deepcopy(self)
         self = self._on_update_dof(self)
 

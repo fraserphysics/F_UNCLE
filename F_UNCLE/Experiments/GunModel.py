@@ -110,7 +110,7 @@ class Gun(GausianExperiment):
 
     **Methods**
     """
-    def __init__(self, name='Gun Toy Computational Experiment',
+    def __init__(self, name=u'Gun Toy Computational Experiment',
                  *args, **kwargs):
         """Instantiate the Experiment object
 

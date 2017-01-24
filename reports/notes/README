@@ -1,5 +1,4 @@
 Build instructions
-
    
 1) create a conda environment called p3dev
    $ conda create -n p3dev python=3.4 --file ./../../pip_req.txt

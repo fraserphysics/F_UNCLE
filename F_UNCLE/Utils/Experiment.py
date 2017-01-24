@@ -50,11 +50,11 @@ if __name__ == '__main__':
     sys.path.append(os.path.abspath('./../../'))
     from F_UNCLE.Utils.Struc import Struc
     from F_UNCLE.Utils.PhysicsModel import PhysicsModel
-    from F_UNCLE.Utils.mpi_loop import pll_loop
+#    from F_UNCLE.Utils.mpi_loop import pll_loop
 else:
     from .Struc import Struc
     from .PhysicsModel import PhysicsModel
-    from .mpi_loop import pll_loop
+#    from .mpi_loop import pll_loop
 # end
 
 # =========================

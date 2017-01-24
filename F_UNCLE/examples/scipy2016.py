@@ -60,7 +60,7 @@ A trivial change to test git hub
 # Standard python packages
 import sys
 import os
-import pdb
+import time
 
 # External python packages
 import numpy as np
@@ -93,39 +93,48 @@ if __name__ == '__main__':
     eos_true = EOSBump()
 
     # 3. Create the objects to generate simulations and pseudo experimental data
-    gun_experiment = Gun(eos_true, mass_he=1.0)
-    gun_simulation = Gun(eos_model, mass_he=1.0, sigma=1.0)
+    gun_experiment = Gun(model_attribute=eos_true, mass_he=1.0)
+    gun_simulation = Gun(mass_he=1.0, sigma=1.0)
 
-    stick_experiment = Stick(eos_true)
-    stick_simulation = Stick(eos_model, sigma_t=1E-9, sigma_x=2E-3)
+    stick_experiment = Stick(model_attribute=eos_true)
+    stick_simulation = Stick(sigma_t=1E-9, sigma_x=2E-3)
 
+    # 4. Create the analysis object
+    analysis = Bayesian(
+        simulations={
+            'Gun': [gun_simulation, gun_experiment],
+            'Stick': [stick_simulation, stick_experiment],
+        },
+        models={'eos': eos_model},
+        opt_key='eos',
+        constrain=True,
+        outer_reltol=1E-6,
+        precondition=True,
+        debug=False,
+        verb=True,
+        sens_mode='ser',
+        maxiter=6)
 
-    # 4. Generage data from the simulations using the prior
-    gun_prior_sim = gun_simulation()
-    stick_prior_sim = stick_simulation()
+    # 5. Generage data from the simulations using the prior
+    gun_prior_sim = gun_simulation(analysis.models)
+    stick_prior_sim = stick_simulation(analysis.models)
 
-    # 5. Create the analysis object
-    analysis = Bayesian(simulations=[(gun_simulation, gun_experiment),
-                                     (stick_simulation, stick_experiment)],
-                        model=eos_model,
-                        constrain=True,
-                        outer_reltol=1E-6,
-                        precondition=True,
-                        debug=False,
-                        maxiter=10)
-
+    
     # 6. Run the analysis
-    best_eos, history = analysis()
+    to = time.time()
+    opt_model, history, sens_matrix = analysis()
+    print('time taken ', to - time.time() )
 
 
     # 7. Update the simulations and get new data
-    gun_simulation.update(model=best_eos)
-    g_time_s, (g_vel_s, g_pos_s), g_spline_s = gun_simulation()
-    g_time_e, (g_vel_e, g_pos_e), g_spline_e = gun_experiment()
+    g_time_s, (g_vel_s, g_pos_s), g_spline_s =\
+        opt_model.simulations['Gun']['sim'](opt_model.models)
+    g_time_e, (g_vel_e, g_pos_e), g_spline_e =\
+        opt_model.simulations['Gun']['exp']()
 
-    stick_simulation.update(model=best_eos)
-    s_pos_s, (s_time_s), s_data_s = stick_simulation()
-    s_pos_e, (s_time_e), s_data_e = stick_experiment()
+    s_pos_s, (s_time_s), s_data_s =\
+        opt_model.simulations['Stick']['sim'](opt_model.models)
+    s_pos_e, (s_time_e), s_data_e = opt_model.simulations['Stick']['exp']()
 
 
     ####################
@@ -144,58 +153,59 @@ if __name__ == '__main__':
     figwidth = 1.0 # fraction of \pagewidth for figure
     figwidth *= pagewidth/72.27
     figtype = '.pdf'
-    # out_dir = os.path.join('.', '..', '..',
-    #                        'reports', 'notes', 'figures')+os.sep
-    out_dir = '/Users/saandrews/Documents/projects/tmp/scipy_proceedings/papers/andrew_fraser/'
+    out_dir = os.path.join('.', '..', '..',
+                           'reports', 'poster', 'figures')+os.sep
+    #out_dir = '/Users/saandrews/Documents/projects/tmp/scipy_proceedings/papers/andrew_fraser/'
     square = (figwidth, figwidth)
     tall = (figwidth, 1.25*figwidth)
 
     # Figure 1
     fig1 = plt.figure(figsize=square)
     f1ax1 = fig1.gca()
-    stick_simulation.plot(axis=f1ax1,
-                          eos_style='-k',
-                          ray_style=':k',
-                          cj_style='xk')
-    eos_model.prior.plot(axis=f1ax1, style='--b')
-    eos_true.plot(axis=f1ax1, style='-.g')
-    f1ax1.legend(['Fit EOS',
-                  'Rayleigh line',
-                  'CJ point',
-                  r'($v_o$, $p_o$)',
-                  'Prior EOS',
-                  'True EOS'],
-                 loc='best')
+    opt_model.simulations['Stick']['sim'].\
+        plot(opt_model.models, axes=f1ax1)
 
+    eos_model.prior.plot(axes=f1ax1, linestyles=['--b'], labels=['Prior EOS'])
+    eos_true.plot(axes=f1ax1, linestyles=['-.g'], labels=['True EOS'])
+    f1ax1.legend(loc='best')
     fig1.tight_layout()
     fig1.savefig(out_dir+'scipy2016_figure1'+figtype, dpi=1000)
 
     # Figure 1
     fig1 = plt.figure(figsize=square)
     f1ax1 = fig1.gca()
-    eos_model.prior.plot(axis=f1ax1, style='--b')
-    eos_true.plot(axis=f1ax1, style='-.g')
-    f1ax1.legend(['Prior EOS',
-                  'True EOS'])
+    eos_model.prior.plot(axes=f1ax1, linestyles=['--b'], labels=['Prior EOS'])
+    eos_true.plot(axes=f1ax1, linestyles=['-.g'], labels=['True EOS'])
+    f1ax1.legend(loc='best')
     fig1.tight_layout()
     fig1.savefig(out_dir+'scipy2016_figure1eos'+figtype, dpi=1000)
 
     # Figure 5
+    fisher = opt_model.simulations['Gun']['sim'].\
+        get_fisher_matrix(opt_model.models,
+                          use_hessian=False,
+                          exp=opt_model.simulations['Gun']['exp'],
+                          sens_matrix=sens_matrix['Gun'])
 
-    fisher = analysis.get_fisher_matrix(simid=0, sens_calc=True)
-    spec_data = analysis.fisher_decomposition(fisher)
+    spec_data = opt_model.fisher_decomposition(fisher)
 
-    fig5 = analysis.plot_fisher_data(spec_data)
+    fig5 = plt.figure(figsize=tall)
+    fig5 = opt_model.plot_fisher_data(spec_data, fig=fig5)
     fig5.set_size_inches(tall)
     fig5.tight_layout()
     fig5.savefig(out_dir+'scipy2016_figure5'+figtype, dpi=1000)
 
     # Figure 2
 
-    fisher = analysis.get_fisher_matrix(simid=1, sens_calc=True)
-    spec_data = analysis.fisher_decomposition(fisher)
+    fisher = opt_model.simulations['Stick']['sim'].\
+        get_fisher_matrix(opt_model.models,
+                          sens_matrix=sens_matrix['Stick'])
+    spec_data = opt_model.fisher_decomposition(fisher)
 
-    fig2 = analysis.plot_fisher_data(spec_data)
+    fig2 = plt.figure(figsize=tall)
+    fig2 = opt_model.plot_fisher_data(spec_data, fig=fig2)
+    fig2.tight_layout()
+
     fig2.axes[1].axvline(s_data_s[1])
     fig2.axes[1].annotate(r'$v_{CJ}$',
                           xy=(s_data_s[1],0),
@@ -213,17 +223,21 @@ if __name__ == '__main__':
     fig3 = plt.figure(figsize=square)
     f3ax1 = fig3.gca()
 
-    stick_simulation.plot(axis=f3ax1, data_style='-k', level=2,
+    stick_simulation.plot(opt_model.models,
+                          axes=f3ax1, linestyles=['-k'],
+                          labels=['Fit EOS'], level=2,
                           data=(s_pos_s, (s_time_s), s_data_s))
 
-
-    stick_simulation.plot(axis=f3ax1, data_style='+g', level=2,
+    stick_simulation.plot(opt_model.models,
+                          axes=f3ax1, linestyles=['+g'],
+                          labels=['True EOS'], level=2,
                           data=(s_pos_e, (s_time_e), s_data_e))
 
-    stick_simulation.plot(axis=f3ax1, data_style='--b', level=2,
+    stick_simulation.plot(opt_model.models,
+                          axes=f3ax1, linestyles=['--b'],
+                          labels=['Prior EOS'], level=2,
                           data=stick_prior_sim)
-
-    f3ax1.legend(['Fit EOS', 'True EOS', 'Prior EOS'], loc='best')
+    f3ax1.legend(loc='best')
     fig3.tight_layout()
     fig3.savefig(out_dir+'scipy2016_figure3'+figtype, dpi=1000)
 
@@ -233,27 +247,26 @@ if __name__ == '__main__':
     f4ax1 = fig4.add_subplot(211)
     f4ax2 = fig4.add_subplot(212)
 
-    best_eos.plot(axis=f4ax1, style='-k')
-    eos_model.prior.plot(axis=f4ax1, style='--b')
-    eos_true.plot(axis=f4ax1, style='-.g')
-    f4ax1.legend(['Fit EOS',
-                  'Prior EOS',
-                  'True EOS'], loc='best')
+    opt_model.models['eos'].plot(axes=f4ax1, linestyles=['-k'],
+                                 labels=['Fit EOS'])
+    eos_model.prior.plot(axes=f4ax1, linestyles=['--b'],
+                         labels=['Prior EOS'])
+    eos_true.plot(axes=f4ax1, linestyles=['-.g'], labels=['True EOS'])
+    f4ax1.legend(loc='best')
 
-    gun_simulation.plot(axis=f4ax2, style='-k', err_style='-r',
+    gun_simulation.plot(axes=f4ax2, linestyles=['-k', '-r'],
+                        labels=['Fit EOS', 'Error'],
                         data=[(g_time_s, (g_vel_s, g_pos_s), g_spline_s),
                               (g_time_e, (g_vel_e, g_pos_e), g_spline_e)])
 
-    gun_simulation.plot(axis=f4ax2, style='-.g',
+    gun_simulation.plot(axes=f4ax2, linestyles=['-.g'], labels=['True EOS'],
                         data=[(g_time_e, (g_vel_e, g_pos_e), g_spline_e)])
 
-    gun_simulation.plot(axis=f4ax2, style='--b',
+    gun_simulation.plot(axes=f4ax2, linestyles=['--b'], labels=['Prior EOS'],
                         data=[gun_prior_sim])
-    f4ax2.plot([None],[None], '-r')
-    f4ax2.legend(['Fit EOS',
-                  'Prior EOS',
-                  'True EOS',
-                  'Error'], loc='upper left', framealpha = 0.5)
+    f4ax2.legend(loc='upper left', framealpha=0.5)
+
+    fig4.tight_layout()
 
     fig4.tight_layout()
     fig4.savefig(out_dir+'scipy2016_figure4'+figtype, dpi=1000)
@@ -262,7 +275,7 @@ if __name__ == '__main__':
 
     fig6 = plt.figure(figsize=square)
     f6a1 = fig6.gca()
-    analysis.plot_convergence(history, axis=f6a1)
+    opt_model.plot_convergence(history, axes=f6a1)
     fig6.tight_layout()
     fig6.savefig(out_dir+'scipy2016_figure6'+figtype, dpi=1000)
 
