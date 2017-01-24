@@ -29,12 +29,11 @@
 \newcommand\dum{\xi}
 \newcommand\Ddum{d\dum}
 
-\title{Propagating Uncertainty About Gas EOS to Performance Bounds for
-  an Ideal Gun\footnote{LA-UR-13-23460}}
+\title{The F\_UNCLE Project: Functional UNcertainty Constrained by Law and Experiment\footnote{LA-UR-17-xxxx}}
 
 \author{Andy Fraser}
 \institute{Los Alamos National Laboratory}
-\date{2013-5-21}
+\date{2017-2-8}
 
 % \usetheme{Pittsburgh}
 \usetheme{default}
@@ -44,6 +43,143 @@
 }
 
 \frame{ \frametitle{Outline}\tableofcontents}
+
+\section{Theory: EOS, Isentrope, Shock and Detonation}
+\frame{
+  \frametitle{Equations of State and Isentropes}
+
+  \begin{columns}
+    \begin{column}{0.6\textwidth}
+      Picture here
+      %\resizebox{0.99\textwidth}{!}{\includegraphics{invariant.pdf}}
+    \end{column}
+    \begin{column}{0.4\textwidth}
+    \begin{align*}
+      pv &= NRT & &\text{Ideal Gas} \\
+      pv^3 &\approx c & &\text{Closer to my gas}
+    \end{align*}
+    \end{column}
+  \end{columns}
+}
+\frame{
+  \frametitle{Shocks, Conservation and Chapman Jouguet Conditions}
+
+  \begin{columns}
+    \begin{column}{0.4\textwidth}
+      Assumptions:
+      \begin{itemize}
+      \item 1-d
+      \item Instantaneous detonation
+      \item Stationary in moving frame
+      \item Conserve: Mass, momentum and energy
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.6\textwidth}
+      Slope of \emph{Rayleigh line}: $-(\rho_0 D)^2$
+      \begin{center}
+        Picture
+      \end{center}
+    \end{column}
+  \end{columns}
+}
+
+\section{Goals and Experiments}
+\frame{
+  \frametitle{Goals}
+  %
+  The stockpile stewardship mission involves simulating detonation
+  experiments with multiple shocks.  For such simulations, we need a
+  \emph{regional EOS}
+  \begin{itemize}
+  \item Near nominal \emph{CJ} isentrope
+  \item Extension to higher densities
+  \item Extension to higher entropies (temperatures)
+  \end{itemize}
+}
+\frame{
+  \frametitle{Use Data from Many Experiments}
+  \begin{itemize}
+  \item Rate sticks
+  \item Overdriven flyers
+  \item Copper clad cylinders
+  \end{itemize}
+}
+\section{Analysis: Optimization and Uncertainty}
+\frame{
+  %
+  \frametitle{Mie-Gruneisen form for Empirical EOS}
+  %
+  Fit two functions of specific volume along nominal \emph{CJ}
+  isentrope:
+  \begin{description}
+  \item[$p(V)$] Pressure
+  \item[$\Gamma = V\left( \frac {dp}{de} \right)_V$] Gruneisen gamma.
+    Provides states off of the nominal \emph{CJ} isentrope.
+  \end{description}
+  From now on, I focus on $p(V)$.
+}
+
+\frame{
+  \frametitle{Constrained Optimization}
+  %
+  \begin{description}
+  \item[Constraints] As a function of volume, pressure must be
+    \begin{itemize}
+    \item Positive
+    \item Monotonic
+    \item \textbf{Convex}
+    \end{itemize}
+  \item[Cost] Weighted sum of squares
+    $\leftrightarrow~log(\text{a posteriori probability})$ with
+    Gaussian prior and likelihoods
+    \begin{align*}
+      C(\theta) &= -\frac{1}{2} \sum_i \left(x_i - \mu_i(\theta)
+      \right)^T \Sigma_i^{-1} \left(x_i - \mu_i(\theta)
+      \right) \\
+      &\quad - \frac{1}{2} \left(\theta - \mu_\theta \right)^T
+      \Sigma_\theta^{-1}  \left(\theta - \mu_\theta \right)
+    \end{align*}
+
+  \end{description}
+}
+
+\frame{
+  \frametitle{Uncertainty and Fisher Information}
+  After finding $\hat \theta \equiv \argmin_\theta C(\theta)$,
+  characterize uncertainty by
+  \begin{align*}
+    \frac{\partial^2}{\partial \theta^2} C(\theta) &= \text{blah blah}
+    \\
+    &\quad \text{or} \\
+    \EV{x}{\frac{\partial^2}{\partial \theta^2} C(\theta)} &=
+          \text{blah} \\
+  \end{align*}
+  For each experiment,
+  \begin{equation*}
+    \cal{I}_i \equiv \text{blah}
+  \end{equation*}
+  is called the \emph{Fisher Information}
+}
+
+\frame{
+  \frametitle{Fisher Information in a Surrogate Problem}
+  Pictures
+}
+
+\frame{
+  \frametitle{Software}
+  We are using F\_UNCLE to learn and demonstrate \emph{Best Practices
+    for Scientific Software}.  We use the following tools:
+  \begin{itemize}
+  \item Python, SciPy, NumPy, CVXOPT
+  \item Git
+  \item TravisCI
+  \item Nosetests
+  \item Sphinx
+  \end{itemize}
+}
+
+\end{document}
 
 \section{Uncertain $P(v)$ for Isentropic Expansion(Real Physics)}
 
@@ -295,8 +431,6 @@ define an \emph{allowed polytope} $\textcolor{red}{\PolytopeN} \in
   \resizebox{0.5\textwidth}{!}{\includegraphics{nominal.pdf}}
 }
 \end{document}
-
-nominal
 
 %%%---------------
 %%% Local Variables:

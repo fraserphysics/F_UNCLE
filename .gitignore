@@ -6,3 +6,9 @@ doc/_build
 build
 TAGS
 
+*.aux
+*.log
+*.nav
+*.out
+*.snm
+*.toc
