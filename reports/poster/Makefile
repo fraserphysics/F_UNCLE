@@ -14,8 +14,9 @@ figs/authors.jpg:
 
 # Block to make figures from simulations
 PYTHON = export PYTHONPATH=/home/andy/projects/F_UNCLE/F_UNCLE/; python
-SIM_FIGS = stick_xt stick_fisher stick_CJ eos_nom_true gun_tv gun_fisher
+SIM_FIGS = stick_xt stick_fisher stick_CJ eos_nom_true gun_tv gun_fisher basis
 sim_figs: plot.py
+	mkdir -p figs
 	${PYTHON} plot.py $(patsubst %, --% figs, $(SIM_FIGS))
 	touch $@
 

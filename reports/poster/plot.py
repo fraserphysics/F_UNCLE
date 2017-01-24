@@ -5,6 +5,7 @@ plot_dict = {} # Keys are those keys in args.__dict__ that ask for
                # plots.  Values are the functions that make those
                # plots.
 import sys
+import os
 import matplotlib as mpl
 import numpy as np
 import time
@@ -16,6 +17,14 @@ figwidth *= pagewidth/72.27
 figtype = '.pdf'
 square = (figwidth, figwidth)
 tall = (figwidth, 1.25*figwidth)
+
+def basis(plt, sim):
+    sys.path.append(os.path.abspath('./../../'))
+    from F_UNCLE.Models.Isentrope import EOSModel, EOSBump
+    fig = plt.figure()
+    EOSModel(lambda x: 1/x**3, spline_N=10).plot_basis(fig=fig)
+    return fig
+plot_dict['basis'] = basis
 
 def stick_xt(plt, sim):
     fig3 = plt.figure(figsize=square)
@@ -236,6 +245,7 @@ def main(argv=None):
         argv = sys.argv[1:]
 
     help_dict = {
+        'basis':'Ten basis functions',
         'eos_nom_true':'Nominal and true EOS',
         'stick_CJ':'CJ construction with fit, prior and true EOSs',
         'stick_fisher':'Spectral analysis of Fisher information',
