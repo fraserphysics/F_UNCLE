@@ -4,21 +4,9 @@ poster.pdf:
 # Block to fetch old Man From U.N.C.L.E picture
 ILLYA=Robert_Vaughn_David_McCallum_Man_from_UNCLE_1966.JPG
 figs/authors.jpg:
+	mkdir -p figs
 	wget https://upload.wikimedia.org/wikipedia/commons/8/8b/${ILLYA}
 	mv ${ILLYA} $@
-
-real:
-	touch figs/real.pdf
-
-basis:
-	touch figs/basis.pdf
-
-# Block to copy drawings we don't know how to make
-OLD_DIR = /User/saand/tmp/scipy_proceedings/poster
-figs/stick_poster.pdf: ${OLD_DIR}/stick_poster.pdf
-	cp $< $@
-figs/gun_poster.pdf: ${OLD_DIR}/gun_poster.pdf
-	cp $< $@
 
 # Copy old fig.  FixMe: Should make that here
 #figs/basis.pdf: /home/andy/projects/metfie/like_gun/basis.pdf
@@ -31,8 +19,7 @@ sim_figs: plot.py
 	${PYTHON} plot.py $(patsubst %, --% figs, $(SIM_FIGS))
 	touch $@
 
-SPECIAL =  stick_poster gun_poster
-FIGURES_MADE = $(patsubst %, figs/%.pdf, $(SPECIAL)) figs/authors.jpg sim_figs
+FIGURES_MADE = figs/authors.jpg sim_figs
 
 poster.pdf: poster.tex ${FIGURES_MADE}
 	pdflatex poster
