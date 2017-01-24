@@ -7,114 +7,149 @@ plot_dict = {} # Keys are those keys in args.__dict__ that ask for
 import sys
 import matplotlib as mpl
 import numpy as np
+import time
+
+pagewidth = 500 # pts
+au_ratio = (np.sqrt(5) - 1.0) / 2.0
+figwidth = 1.0 # fraction of \pagewidth for figure
+figwidth *= pagewidth/72.27
+figtype = '.pdf'
+square = (figwidth, figwidth)
+tall = (figwidth, 1.25*figwidth)
 
 def stick_xt(plt, sim):
-    fig = plt.figure()
-    ax = fig.add_subplot(1,1,1)
-    s_pos_s, (s_time_s), s_data_s = sim.stick_simulation()
-    s_pos_e, (s_time_e), s_data_e = sim.stick_experiment()
-    sim.stick_simulation.plot(axis=ax, data_style='-k', level=2,
-                          data=(s_pos_s, (s_time_s), s_data_s))
+    fig3 = plt.figure(figsize=square)
+    f3ax1 = fig3.gca()
 
+    sim.stick_simulation.plot(sim.opt_model.models,
+                          axes=f3ax1, linestyles=['-k'],
+                          labels=['Fit EOS'], level=2,
+                          data=(sim.s_pos_s, (sim.s_time_s), sim.s_data_s))
 
-    sim.stick_simulation.plot(axis=ax, data_style='+g', level=2,
-                          data=(s_pos_e, (s_time_e), s_data_e))
+    sim.stick_simulation.plot(sim.opt_model.models,
+                          axes=f3ax1, linestyles=['+g'],
+                          labels=['True EOS'], level=2,
+                          data=(sim.s_pos_e, (sim.s_time_e), sim.s_data_e))
 
-    sim.stick_simulation.update(sim.eos_model)
-    sim.stick_simulation.plot(axis=ax, data_style='--b', level=2,
-                          data=sim.stick_simulation())
-    sim.stick_simulation.update(sim.best_eos)
+    sim.stick_simulation.plot(sim.opt_model.models,
+                          axes=f3ax1, linestyles=['--b'],
+                          labels=['Prior EOS'], level=2,
+                          data=sim.stick_prior_sim)
+    f3ax1.legend(loc='best')
+    fig3.tight_layout()
+    return fig3
 
-    ax.legend(['Fit EOS', 'True EOS', 'Prior EOS'], loc='best')
-    return fig
 plot_dict['stick_xt'] = stick_xt
 
 def stick_fisher(plt, sim):
-    fisher = sim.analysis.get_fisher_matrix(simid=1, sens_calc=True)
-    spec_data = sim.analysis.fisher_decomposition(fisher)
-    s_pos_s, (s_time_s), s_data_s = sim.stick_simulation()
+    fisher = sim.opt_model.simulations['Stick']['sim'].\
+        get_fisher_matrix(sim.opt_model.models,
+                          sens_matrix=sim.sens_matrix['Stick'])
+    spec_data = sim.opt_model.fisher_decomposition(fisher)
 
-    fig = sim.analysis.plot_fisher_data(spec_data)
-    fig.axes[1].axvline(s_data_s[1])
-    fig.axes[1].annotate(r'$v_{CJ}$',
-                          xy=(s_data_s[1], 0),
+    fig2 = plt.figure(figsize=tall)
+    fig2 = sim.opt_model.plot_fisher_data(spec_data, fig=fig2)
+    fig2.tight_layout()
+
+    fig2.axes[1].axvline(sim.s_data_s[1])
+    fig2.axes[1].annotate(r'$v_{CJ}$',
+                          xy=(sim.s_data_s[1],0),
                           xytext=(30,30),
                           xycoords='data',
                           textcoords='offset points',
                           arrowprops=dict(facecolor='black',
                                           arrowstyle='->'))
-    return fig
+    fig2.set_size_inches(tall)
+    fig2.tight_layout()
+    return fig2
 plot_dict['stick_fisher'] = stick_fisher
 
 def stick_CJ(plt, sim):
-    fig = plt.figure()
-    ax = fig.add_subplot(1,1,1)
-    sim.stick_simulation.plot(axis=ax,
-                          eos_style='-k',
-                          ray_style=':k',
-                          cj_style='xk')
-    sim.eos_model.prior.plot(axis=ax, style='--b')
-    sim.eos_true.plot(axis=ax, style='-.g')
-    ax.legend(['Fit EOS',
-                  'Rayleigh line',
-                  'CJ point',
-                  r'($v_o$, $p_o$)',
-                  'Prior EOS',
-                  'True EOS'],
-                 loc='best')
-    return fig
+    fig1 = plt.figure(figsize=square)
+    f1ax1 = fig1.gca()
+    sim.opt_model.simulations['Stick']['sim'].\
+        plot(sim.opt_model.models, axes=f1ax1)
+
+    sim.eos_model.prior.plot(
+        axes=f1ax1,
+        linestyles=['--b'],
+        labels=['Prior EOS']
+    )
+    sim.eos_true.plot(
+        axes=f1ax1,
+        linestyles=['-.g'],
+        labels=['True EOS']
+    )
+    f1ax1.legend(loc='best')
+    fig1.tight_layout()
+    return fig1
 plot_dict['stick_CJ'] = stick_CJ
 
 def eos_nom_true(plt, sim):
-    fig = plt.figure()
-    ax = fig.add_subplot(1,1,1)
-    sim.eos_model.prior.plot(axis=ax, style='--b')
-    sim.eos_true.plot(axis=ax, style='-.g')
-    ax.legend(['Prior EOS',
-                  'True EOS'])
-    fig.tight_layout()
-    return fig
+    fig1 = plt.figure(figsize=square)
+    f1ax1 = fig1.gca()
+    sim.eos_model.prior.plot(
+        axes=f1ax1,
+        linestyles=['--b'],
+        labels=['Prior EOS']
+    )
+    sim.eos_true.plot(
+        axes=f1ax1,
+        linestyles=['-.g'],
+        labels=['True EOS']
+    )
+    f1ax1.legend(loc='best')
+    fig1.tight_layout()
+    return fig1
 plot_dict['eos_nom_true'] = eos_nom_true
 
 def gun_tv(plt, sim):
-    fig = plt.figure()
-    ax = fig.add_subplot(2,1,1)
-    sim.best_eos.plot(axis=ax, style='-k')
-    sim.eos_model.prior.plot(axis=ax, style='--b')
-    sim.eos_true.plot(axis=ax, style='-.g')
-    ax.legend(['Fit EOS',
-                  'Prior EOS',
-                  'True EOS'], loc='best')
+    fig4 = plt.figure(figsize=tall)
+    f4ax1 = fig4.add_subplot(211)
+    f4ax2 = fig4.add_subplot(212)
 
-    ax = fig.add_subplot(2,1,2)
-    g_time_s, (g_vel_s, g_pos_s), g_spline_s = sim.gun_simulation()
-    g_time_e, (g_vel_e, g_pos_e), g_spline_e = sim.gun_experiment()
-    sim.gun_simulation.plot(axis=ax, style='-k', err_style='-r',
-                        data=[(g_time_s, (g_vel_s, g_pos_s), g_spline_s),
-                              (g_time_e, (g_vel_e, g_pos_e), g_spline_e)])
+    sim.opt_model.models['eos'].plot(axes=f4ax1, linestyles=['-k'],
+                                 labels=['Fit EOS'])
+    sim.eos_model.prior.plot(axes=f4ax1, linestyles=['--b'],
+                         labels=['Prior EOS'])
+    sim.eos_true.plot(axes=f4ax1, linestyles=['-.g'], labels=['True EOS'])
+    f4ax1.legend(loc='best')
 
-    sim.gun_simulation.plot(axis=ax, style='-.g',
-                        data=[(g_time_e, (g_vel_e, g_pos_e), g_spline_e)])
+    sim.gun_simulation.plot(axes=f4ax2, linestyles=['-k', '-r'],
+                        labels=['Fit EOS', 'Error'],
+                        data=[(sim.g_time_s,
+                               (sim.g_vel_s, sim.g_pos_s),
+                               sim.g_spline_s),
+                              (sim.g_time_e,
+                               (sim.g_vel_e, sim.g_pos_e),
+                               sim.g_spline_e)])
 
-    sim.gun_simulation.update(model=sim.eos_model)
-    sim.gun_simulation.plot(axis=ax, style='--b', data=[sim.gun_simulation()])
-    sim.gun_simulation.update(model=sim.best_eos)
-    ax.plot([None],[None], '-r')
-    ax.legend(['Fit EOS',
-                  'Prior EOS',
-                  'True EOS',
-                  'Error'], loc='upper left', framealpha = 0.5)
+    sim.gun_simulation.plot(axes=f4ax2, linestyles=['-.g'], labels=['True EOS'],
+                        data=[(sim.g_time_e,
+                               (sim.g_vel_e, sim.g_pos_e),
+                               sim.g_spline_e)])
 
-    return fig
+    sim.gun_simulation.plot(axes=f4ax2, linestyles=['--b'], labels=['Prior EOS'],
+                        data=[sim.gun_prior_sim])
+    f4ax2.legend(loc='upper left', framealpha=0.5)
+    fig4.tight_layout()
+    return fig4
 plot_dict['gun_tv'] = gun_tv
 
 def gun_fisher(plt, sim):
-    fisher = sim.analysis.get_fisher_matrix(simid=0, sens_calc=True)
-    spec_data = sim.analysis.fisher_decomposition(fisher)
+    fisher = sim.opt_model.simulations['Gun']['sim'].\
+        get_fisher_matrix(sim.opt_model.models,
+                          use_hessian=False,
+                          exp=sim.opt_model.simulations['Gun']['exp'],
+                          sens_matrix=sim.sens_matrix['Gun'])
 
-    fig = sim.analysis.plot_fisher_data(spec_data)
-    fig.set_size_inches((6,7.5))
-    return fig
+    spec_data = sim.opt_model.fisher_decomposition(fisher)
+
+    fig5 = plt.figure(figsize=tall)
+    fig5 = sim.opt_model.plot_fisher_data(spec_data, fig=fig5)
+    fig5.set_size_inches(tall)
+    fig5.tight_layout()
+    return fig5
 plot_dict['gun_fisher'] = gun_fisher
 
 class Sim():
@@ -131,58 +166,67 @@ class Sim():
         plotting functions are useful for debugging, leave them in, but
         don't use them here.
         '''
-        import Models.Isentrope
-        import Experiments.GunModel
-        import Experiments.Stick
-        import Opt.Bayesian
+        import sys, os
+        sys.path.append(os.path.abspath('./../../'))
+        from F_UNCLE.Experiments.GunModel import Gun
+        from F_UNCLE.Experiments.Stick import Stick
+        from F_UNCLE.Models.Isentrope import EOSModel, EOSBump
+        from F_UNCLE.Opt.Bayesian import Bayesian
+
         # 1. Generate a functional form for the prior
         init_prior = np.vectorize(lambda v: 2.56e9 / v**3)
 
         # 2. Create the model and *true* EOS
-        eos_model = Models.Isentrope.EOSModel(init_prior, Spline_sigma=0.05)
-        eos_true = Models.Isentrope.EOSBump()
-        self.eos_model = eos_model
-        self.eos_true = eos_true
+        self.eos_model = EOSModel(init_prior, Spline_sigma=0.05)
+        self.eos_true = EOSBump()
 
-        # 3. Create the objects to generate simulations and pseudo experimental data
-        gun_experiment = Experiments.GunModel.Gun(eos_true, mass_he=1.0)
-        gun_simulation = Experiments.GunModel.Gun(eos_model, mass_he=1.0, sigma=1.0)
-        self.gun_simulation = gun_simulation
-        self.gun_experiment = gun_experiment
+        # 3. Create the objects to generate simulations and pseudo
+        #    experimental data
+        self.gun_experiment = Gun(model_attribute=self.eos_true, mass_he=1.0)
+        self.gun_simulation = Gun(mass_he=1.0, sigma=1.0)
 
-        stick_experiment = Experiments.Stick.Stick(eos_true)
-        stick_simulation = Experiments.Stick.Stick(
-            eos_model,
-            sigma_t=1E-9,
-            sigma_x=2E-3)
-        self.stick_simulation = stick_simulation
-        self.stick_experiment = stick_experiment
+        self.stick_experiment = Stick(model_attribute=self.eos_true)
+        self.stick_simulation = Stick(sigma_t=1E-9, sigma_x=2E-3)
 
-
-
-        # 4. Generate data from the simulations using the prior
-        gun_prior_sim = gun_simulation()
-        stick_prior_sim = stick_simulation()
-        self.gun_prior_sim = gun_prior_sim
-        self.stick_prior_sim = stick_prior_sim
-
-        # 5. Create the analysis object
-        analysis = Opt.Bayesian.Bayesian(
-            simulations=[
-                (gun_simulation, gun_experiment),
-                (stick_simulation, stick_experiment)],
-            model=eos_model,
+        # 4. Create the analysis object
+        analysis = Bayesian(
+            simulations={
+                'Gun': [self.gun_simulation, self.gun_experiment],
+                'Stick': [self.stick_simulation, self.stick_experiment],
+            },
+            models={'eos': self.eos_model},
+            opt_key='eos',
             constrain=True,
             outer_reltol=1E-6,
             precondition=True,
             debug=False,
-            maxiter=10)
+            verb=True,
+            sens_mode='ser',
+            maxiter=6)
+
+        # 5. Generage data from the simulations using the prior
+        self.gun_prior_sim = self.gun_simulation(analysis.models)
+        self.stick_prior_sim = self.stick_simulation(analysis.models)
+
 
         # 6. Run the analysis
-        best_eos, history = analysis()
-        self.analysis = analysis
-        self.best_eos = best_eos
+        to = time.time()
+        self.opt_model, history, self.sens_matrix = analysis()
+        print('time taken ', to - time.time() )
 
+
+        # 7. Update the simulations and get new data
+        self.g_time_s, (self.g_vel_s, self.g_pos_s), self.g_spline_s =\
+            self.opt_model.simulations['Gun']['sim'](self.opt_model.models)
+        self.g_time_e, (self.g_vel_e, self.g_pos_e), self.g_spline_e =\
+            self.opt_model.simulations['Gun']['exp']()
+
+        self.s_pos_s, (self.s_time_s), self.s_data_s =\
+            self.opt_model.simulations['Stick']['sim'](self.opt_model.models)
+        self.s_pos_e, (self.s_time_e), self.s_data_e =\
+            self.opt_model.simulations['Stick']['exp']()
+
+        
 def main(argv=None):
     import argparse
     import os
