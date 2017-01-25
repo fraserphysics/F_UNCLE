@@ -1,14 +1,20 @@
-'''
-======================
-3D surface (color map)
-======================
+'''surf.py for plotting EOS as surface
 
-Demonstrates plotting a 3D surface colored with the coolwarm color map.
-The surface is made opaque by using antialiased=False.
+Derived from
+http://matplotlib.org/mpl_toolkits/mplot3d/tutorial.html#surface-plots
 
-Also demonstrates using the LinearLocator and custom formatting for the
-z axis tick labels.
+Use ideal gas law PV = nRT
+
+From wikipedia:
+
+n is the # of moles
+R is the gas constant (8.314 J*K-1*mol-1)
 '''
+
+def ideal_P(V,T):
+    R = 8.314 # The gas constant
+    n = 0.1   # Number of moles
+    return (n*R*T)/V
 
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
@@ -20,24 +26,27 @@ import numpy as np
 fig = plt.figure()
 ax = fig.gca(projection='3d')
 
-# Make data.
-X = np.arange(-5, 5, 0.25)
-Y = np.arange(-5, 5, 0.25)
-X, Y = np.meshgrid(X, Y)
-Z = X**2 + Y**2
-#R = np.sqrt(X**2 + Y**2)
-#Z = np.sin(R)
+V = np.linspace(5, 10, 20)
+T = np.linspace(200, 300, 20)
+V, T = np.meshgrid(V, T)
+P = ideal_P(V,T)
+print('P.shape={0}'.format(P.shape))
 
 # Plot the surface.
-surf = ax.plot_surface(X, Y, Z, cmap=cm.jet,
-                       linewidth=1, antialiased=False)
+surf = ax.plot_surface(V,T,P, linewidth=.15, antialiased=False) #cmap=cm.jet, )
 
 # Customize the z axis.
-#ax.set_zlim(-1.01, 1.01)
-ax.zaxis.set_major_locator(LinearLocator(10))
+ax.zaxis.set_major_locator(LinearLocator(4))
 ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
 
-# Add a color bar which maps values to colors.
-#fig.colorbar(surf, shrink=0.5, aspect=5)
+ax.xaxis.set_major_locator(LinearLocator(6))
+ax.yaxis.set_major_locator(LinearLocator(5))
+ax.set_xlabel(r'$V$')
+ax.set_ylabel(r'$T$')
+ax.set_zlabel(r'$P$')
 
-plt.show()
+import sys
+if len(sys.argv) > 1:
+    fig.savefig(sys.argv[1])
+else:
+    plt.show()

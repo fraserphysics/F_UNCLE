@@ -50,13 +50,12 @@
 
   \begin{columns}
     \begin{column}{0.6\textwidth}
-      FixMe: picture here
-      %\resizebox{0.99\textwidth}{!}{\includegraphics{invariant.pdf}}
+      \resizebox{0.99\textwidth}{!}{\includegraphics{surf.pdf}}
     \end{column}
     \begin{column}{0.4\textwidth}
     \begin{align*}
       pv &= NRT & &\text{Ideal Gas} \\
-      pv^3 &\approx c & &\text{For an explosive}
+      pv^3 &\approx c(S) & &\text{For an explosive}
     \end{align*}
     \end{column}
   \end{columns}
@@ -129,7 +128,6 @@
   \end{description}
   From now on, I focus on $p(V)$.
 }
-
 \frame{
   \frametitle{Constrained Optimization}
   %
@@ -146,10 +144,11 @@
     \begin{align*}
       C(\theta) &= -\frac{1}{2} \sum_i \left(x_i - \mu_i(\theta)
       \right)^T \Sigma_i^{-1} \left(x_i - \mu_i(\theta)
-      \right) && \text{Likelihood}\\
+      \right)\\
+      &\equiv \sum_i \LL_i  && \text{Log likelihood} \\
       &\quad - \frac{1}{2} \left(\theta - \mu_\theta \right)^T
-      \Sigma_\theta^{-1}  \left(\theta - \mu_\theta \right) &&
-             \text{Prior} 
+      \Sigma_\theta^{-1}  \left(\theta - \mu_\theta \right)\\
+      &\equiv \LL_0 && \text{Log prior} 
     \end{align*}
 }
 
@@ -192,20 +191,23 @@
 \frame{
   \frametitle{Uncertainty and Fisher Information}
   After finding $\hat \theta \equiv \argmin_\theta C(\theta)$,
-  characterize uncertainty by
-  %FixMe
-  \begin{align*}
-    \frac{\partial^2}{\partial \theta^2} C(\theta) &= \text{blah blah}
-    \\
-    &\quad \text{or} \\
-    \EV{x}{\frac{\partial^2}{\partial \theta^2} C(\theta)} &=
-          \text{blah} \\
-  \end{align*}
-  For each experiment,
+  characterize uncertainty by $\frac{\partial^2}{\partial \theta^2}
+  C(\theta)$ or its expected value.  Note:
+  \newcommand{\dmudtheta}{\left(\frac{\partial \mu_i(\theta)}
+      {\partial \theta} \right)}
   \begin{equation*}
-    {\cal{I}}_i \equiv \text{blah}
+    \frac{\partial^2}{\partial \theta^2} \LL_i(\theta) = 
+      \dmudtheta^T \Sigma_i^{-1} \dmudtheta +  (x_i-\mu_i(\theta))^T \Sigma_i^{-1}
+       \left(\frac{\partial^2 \mu_i(\theta)}{\partial \theta^2} \right)
   \end{equation*}
-  is called the \emph{Fisher Information}
+  Note: Since $X_i\sim$ symmetric about $\mu_i(\theta)$, the expected
+  value of the second term is 0.  The first term called the
+  \emph{Fisher Information}
+  \begin{equation*}
+    {\cal{I}}_i \equiv \EV{x}{\frac{\partial^2}{\partial \theta^2}
+      \LL_i} = \dmudtheta^T \Sigma_i^{-1} \dmudtheta
+  \end{equation*}
+  characterizes how tightly the experiment constrains $\theta$.
 }
 
 \frame{
@@ -242,6 +244,20 @@
 
 \frame{
   \frametitle{The End}
+}
+
+\frame{ \frametitle{Abstract}
+  %
+  We are fitting equations of state (EOS) to the mixtures of gasses
+  produced by detonating explosives.  Given a set of experimental
+  measurements, we intend our code to provide: 1. An estimate of the
+  EOS; 2. A characterization the residual uncertainty. 3. A
+  description of how each different experiment (both those that have
+  been run and those that are proposed) constrains the estimated EOS.
+  Matrices called the \emph{Fisher Information} represent the
+  constraints.  The presentation will outline the problem and
+  illustrate the resulting constraints.
+%
 }
 
 \frame{
