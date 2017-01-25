@@ -606,7 +606,7 @@ class EOSModel(Spline, Isentrope):
    +--------------+---------+------+-----+-----+-----+-------------------------+
     """
 
-    def __init__(self, p_fun, name=u'Equation of State Spline',
+    def __init__(self, p_fun, name=u'Equation of State Spline', spacing='log',
                  *args, **kwargs):
         """Instantiates the object
 
@@ -640,14 +640,18 @@ class EOSModel(Spline, Isentrope):
                             .format(self.get_inform(0)))
         # end
 
-        vol = np.logspace(np.log10(self.get_option('spline_min')),
-                          np.log10(self.get_option('spline_max')),
-                          self.get_option('spline_N'))
-
-        # vol = np.linspace(self.get_option('spline_min'),
-        #           self.get_option('spline_max'),
-        #           self.get_option('spline_N'))
-
+        if spacing.lower() == 'log':
+            vol = np.logspace(np.log10(self.get_option('spline_min')),
+                              np.log10(self.get_option('spline_max')),
+                              self.get_option('spline_N'))
+        elif spacing.lower() == 'lin':
+            vol = np.linspace(self.get_option('spline_min'),
+                      self.get_option('spline_max'),
+                      self.get_option('spline_N'))
+        else:
+            raise KeyError("{:} only `lin`ear and `log` spacing are"
+                           "accepted".format(self.get_inform(1)))
+        # end 
         Spline.__init__(self, vol, p_fun(vol), ext=0)
         self.prior = copy.deepcopy(self)
         self = self._on_update_dof(self)

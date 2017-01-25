@@ -182,6 +182,17 @@ class TestEosModel(unittest.TestCase):
         self.assertEqual(eos.get_option('spline_N'), 65)
         self.assertEqual(eos.get_option('spline_sigma'), 2.5e-3)
 
+    def test_linear_knot_spacing(self):
+        """Tests alternate knot spacing
+        """
+
+        eos = EOSModel(self.p_fun, spacing='lin', spline_N=10)
+
+        with self.assertRaises(KeyError):
+            eos = EOSModel(self.p_fun, spacing='bad_spacing')            
+        # end
+
+        
     def test_spline_get_t(self):
         """Test spline interaction method, get knots
         """
