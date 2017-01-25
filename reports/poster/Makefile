@@ -1,3 +1,6 @@
+# conda create -n something FixMe
+# source activate something FixMe
+PYTHON = export PYTHONPATH=../../F_UNCLE/;  python
 # poster.pdf is the default target
 poster.pdf:
 
@@ -8,18 +11,15 @@ figs/authors.jpg:
 	wget https://upload.wikimedia.org/wikipedia/commons/8/8b/${ILLYA}
 	mv ${ILLYA} $@
 
-# Copy old fig.  FixMe: Should make that here
-#figs/basis.pdf: /home/andy/projects/metfie/like_gun/basis.pdf
-#	ln -s $< $@
-
 # Block to make figures from simulations
-PYTHON = export PYTHONPATH=/home/andy/projects/F_UNCLE/F_UNCLE/; python
 SIM_FIGS = stick_xt stick_fisher stick_CJ eos_nom_true gun_tv gun_fisher basis
 sim_figs: plot.py
 	mkdir -p figs
 	${PYTHON} plot.py $(patsubst %, --% figs, $(SIM_FIGS))
 	touch $@
-
+figs/%.pdf: plot.py
+	mkdir -p figs
+	${PYTHON} plot.py --$* figs
 FIGURES_MADE = figs/authors.jpg sim_figs
 
 poster.pdf: poster.tex ${FIGURES_MADE}

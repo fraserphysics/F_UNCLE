@@ -50,13 +50,13 @@
 
   \begin{columns}
     \begin{column}{0.6\textwidth}
-      Picture here
+      FixMe: picture here
       %\resizebox{0.99\textwidth}{!}{\includegraphics{invariant.pdf}}
     \end{column}
     \begin{column}{0.4\textwidth}
     \begin{align*}
       pv &= NRT & &\text{Ideal Gas} \\
-      pv^3 &\approx c & &\text{Closer to my gas}
+      pv^3 &\approx c & &\text{For an explosive}
     \end{align*}
     \end{column}
   \end{columns}
@@ -77,7 +77,8 @@
     \begin{column}{0.6\textwidth}
       Slope of \emph{Rayleigh line}: $-(\rho_0 D)^2$
       \begin{center}
-        Picture
+      \resizebox{0.99\textwidth}{!}{\includegraphics{figs/stick_CJ.pdf}}
+        FixMe: limit v axis
       \end{center}
     \end{column}
   \end{columns}
@@ -98,11 +99,21 @@
 }
 \frame{
   \frametitle{Use Data from Many Experiments}
+  \begin{columns}
+    \begin{column}{0.4\textwidth}
   \begin{itemize}
   \item Rate sticks
   \item Overdriven flyers
   \item Copper clad cylinders
   \end{itemize}
+    \end{column}
+    \begin{column}{0.6\textwidth}
+      \begin{center}
+      \resizebox{0.99\textwidth}{!}{\includegraphics{static_figs/real.pdf}}
+        Data and simulations of copper clad cylinders
+      \end{center}
+    \end{column}
+  \end{columns}
 }
 \section{Analysis: Optimization and Uncertainty}
 \frame{
@@ -129,18 +140,53 @@
     \item Monotonic
     \item \textbf{Convex}
     \end{itemize}
-  \item[Cost] Weighted sum of squares
-    $\leftrightarrow~log(\text{a posteriori probability})$ with
-    Gaussian prior and likelihoods
+  \item[Cost] Weighted sum of squares or
+    $C(\theta) = -\log(\text{a posteriori probability})$
+  \end{description}
     \begin{align*}
       C(\theta) &= -\frac{1}{2} \sum_i \left(x_i - \mu_i(\theta)
       \right)^T \Sigma_i^{-1} \left(x_i - \mu_i(\theta)
-      \right) \\
+      \right) && \text{Likelihood}\\
       &\quad - \frac{1}{2} \left(\theta - \mu_\theta \right)^T
-      \Sigma_\theta^{-1}  \left(\theta - \mu_\theta \right)
+      \Sigma_\theta^{-1}  \left(\theta - \mu_\theta \right) &&
+             \text{Prior} 
     \end{align*}
+}
 
-  \end{description}
+\frame{
+  \frametitle{Surrogate Problem}
+  Rate Stick
+  \begin{columns}
+    \begin{column}{0.5\textwidth}
+      \begin{center}
+        \resizebox{0.99\textwidth}{!}{
+          \includegraphics{static_figs/stick_poster.pdf}}
+      \end{center}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \begin{center}
+        \resizebox{0.99\textwidth}{!}{\includegraphics{figs/stick_xt.pdf}}
+      \end{center}
+    \end{column}
+  \end{columns}
+}
+
+\frame{
+  \frametitle{Surrogate Problem Cont.}
+  Gun
+  \begin{columns}
+    \begin{column}{0.5\textwidth}
+      \begin{center}
+        \resizebox{0.99\textwidth}{!}{
+          \includegraphics{static_figs/gun_poster.pdf}}
+      \end{center}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \begin{center}
+        \resizebox{0.99\textwidth}{!}{\includegraphics{figs/gun_tv.pdf}}
+      \end{center}
+    \end{column}
+  \end{columns}
 }
 
 \frame{
@@ -156,14 +202,28 @@
   \end{align*}
   For each experiment,
   \begin{equation*}
-    \cal{I}_i \equiv \text{blah}
+    {\cal{I}}_i \equiv \text{blah}
   \end{equation*}
   is called the \emph{Fisher Information}
 }
 
 \frame{
-  \frametitle{Fisher Information in a Surrogate Problem}
-  Pictures
+  \frametitle{Fisher Information for the Surrogate Problem}
+  Rate Stick
+  \begin{columns}
+    \begin{column}{0.5\textwidth}
+      \begin{center}
+        \resizebox{0.99\textwidth}{!}{
+          \includegraphics{figs/stick_fisher.pdf}}
+      \end{center}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      Gun
+      \begin{center}
+        \resizebox{0.99\textwidth}{!}{\includegraphics{figs/gun_fisher.pdf}}
+      \end{center}
+    \end{column}
+  \end{columns}
 }
 
 \frame{
@@ -179,257 +239,15 @@
   \end{itemize}
 }
 
-\end{document}
-
-\section{Uncertain $P(v)$ for Isentropic Expansion(Real Physics)}
-
-\frame{ \frametitle{Isentropic Expansion}
-  \begin{columns}
-    \begin{column}[l]{0.55\textwidth}
-      \resizebox{0.99\textwidth}{!}{\includegraphics{hixson.pdf}}\\
-      Model from Hixson et al.\ JAP, 2000, \emph{Release isentropes of
-        overdriven plastic-bonded explosive PBX-9501}
-    \end{column}
-    \begin{column}[r]{0.35\textwidth}
-      \begin{itemize}
-      \item $\pm \frac{1}{2} \%$
-      \item Convex
-      \item Monotonic
-      \end{itemize}
-     \bigskip
-
-      Want probability measure $\mu$ for sets of functions to
-      characterize uncertainty.
-    \end{column}
-  \end{columns}
- }
-
-\section{Toy Problem: Uncertain $f(x)$}
-
-\frame{ \frametitle{Toy Problem}
-  \begin{columns}
-    \begin{column}[l]{0.45\textwidth}
-      \resizebox{1.0\columnwidth}{!}  {\input{schematic.pdf_t}}\bigskip
-      
-      \resizebox{0.9\textwidth}{!}{\includegraphics{lognom.pdf}}
-    \end{column}
-    \begin{column}[r]{0.45\textwidth}
-      For ideal gun:\bigskip
-      \begin{align*}
-        \text{QOI}& 
-        \begin{cases}
-          T = \text{Muzzle time}\\
-          E = \text{Muzzle energy}
-        \end{cases}
-      \end{align*}
-      What is \emph{uncertainty}
-      \begin{align*}
-        \text{Given}&
-        \begin{cases}
-          f(x) = \frac{C}{x^3} \pm 2.5\%\\
-          \text{Monotonic} \\
-          \text{Convex}          
-        \end{cases}
-      \end{align*}
-    \end{column}
-  \end{columns}
-}
-
-\frame{ \frametitle{Allowed Functions at $E\times T$ Edge}
-    \resizebox{0.7\textwidth}{!}{\includegraphics{pert.pdf}}
-    \resizebox{0.7\textwidth}{!}{\includegraphics{allowedET.pdf}}
-}
-
-\section{Allowed Polytope, $\PolytopeN$, for $f(x) \, | \,x\in \left\{x_1,
-    x_2, \ldots, x_N\right\}$}
-
-\frame{ \frametitle{Allowed Polytope $\PolytopeN$}%
-  If $\tilde f$ denotes the nominal function and
-  $(x_1,x_2,\ldots,x_N)$ an ordered sequence of sample points.  Then
-  the constraints on $f_i = f(x_i)$, namely
-  \begin{align*}
-    \Delta_i &\equiv x_{i+1} - x_i \\
-    \epsilon_i &\equiv 0.025\cdot \tilde f(x_i) \\
-    f_i & \leq \frac{\Delta_{i}f_{i-1} + \Delta_{i-1} f_{i+1} } {
-    \Delta_{i-1} + \Delta_i } &&\text{\color{red}Convexity} \\
-  f_i & \geq f_{i-1}          &&\text{\color{red}Monotonicity} \\
-  f_i & \geq \nomf_i - \epsilon_i &&\text{\color{red}2.5\% error bound} \\
-  \label{eq:constraint7}
-  f_i & \leq \nomf_i + \epsilon_i &&\text{\color{red}2.5\% error bound}
-\end{align*}
-define an \emph{allowed polytope} $\textcolor{red}{\PolytopeN} \in
-\RN$.  I want to characterize $\Polytope{\infty}$.  }
-
-\section{Transitionally Invariant Metric, $L_1(g)$, for $g = \log(f)$}
 \frame{
-  \frametitle{Transitionally Invariant Log-log View}
-  Choosing $(x_1,x_2,\ldots,x_N)$ uniformly on a log scale and
-  expressing the constraints in log-log coordinates makes them shift
-  invariant
-
-  \begin{columns}
-    \begin{column}[l]{0.75\textwidth}
-      \resizebox{0.99\textwidth}{!}{\includegraphics{invariant.pdf}}
-    \end{column}
-    \begin{column}[l]{0.24\textwidth}
-      New coordinates:
-    \begin{align*}
-      y &= \log(x) \\
-      g &= \log\left(\frac{f}{\tilde f} \right)
-    \end{align*}
-    \end{column}
-  \end{columns}
-}
-
-\frame{\frametitle{Allowed Region in 3-d}
-  \vspace{-1.0cm}
-  \begin{center}
-    \resizebox{0.7\textwidth}{!}{\includegraphics[
-      trim=0 0 0 -3cm]{allowed_tp2.pdf}}
-  \end{center}\vspace{-1.5cm}
-  Choose \textcolor{red}{$P(g_2|g_1,g_0)$} so that for every interior
-  $\hat g$, the \textcolor{red}{epsilon ball} $\left\{ g: \int \left|
-      g(y) - \hat g (y) \right| dy < \epsilon \right\}$ has the
-  \textcolor{red}{same measure}, $\mu_\epsilon$.\bigskip
-  
-  Solve by quantizing $g$ and making all trajectories of length $N$
-  have same probability.
-}
-
-\section{Uniform Probability from Eigenvectors of Adjacency Matrix}
-
-\frame{ \frametitle{Transitions that Make all Trajectories
-    Equiprobable}
-  \begin{columns}
-    \begin{column}[l]{0.45\textwidth}
-      Choose $P_{X(\tau+1)|X(\tau)}$ to make
-      \begin{equation}
-        \label{eq:uniform}
-        P(x_0^{L-1}) \approx e^{-Lh} ~\forall x_0^{L-1}
-      \end{equation}
-      (IE, achieve \textcolor{red}{\emph{entropy rate}} $h$ of
-      \emph{sub-shift}.  See \textcolor{red}{Shannon} 1948, Theorem
-      8.)\vspace{2mm}
-
-      \resizebox{1.0\columnwidth}{!}  {\input{mt2.pdf_t}}
-
-      Use the \textcolor{red}{\emph{cycle basis}} $(\alpha, \beta)$
-      and the probabilities $(a, b, c)$
-    \end{column}
-    \begin{column}[r]{0.45\textwidth}
-      \begin{align*}
-        \alpha &= 0 \rightarrow 0 & P(\alpha) &=a \\
-        \beta &= 0 \rightarrow 1 \rightarrow 0 & P(\beta)  &=bc
-      \end{align*}
-      EG. $010010 \mapsto \beta \alpha \beta$ and
-      \begin{equation*}
-        P(010010) = P_0 \left( P(\beta) \right)^2 P(\alpha)
-      \end{equation*}
-     Normalization and \eqref{eq:uniform}:
-      \begin{align*}
-        a^2 &= \left(P(\alpha)\right)^2 =  P(\beta) = bc \\
-        a+b &= 1\\
-        c &= 1
-      \end{align*}
-      Positive solution of system:
-      \begin{equation*}
-        \textcolor{magenta}{a = \frac{\sqrt{5}-1}{2}~~~ b =
-            \frac{3-\sqrt{5}}{2}}
-      \end{equation*}
-    \end{column}
-  \end{columns}
+  \frametitle{The End}
 }
 
 \frame{
-  \frametitle{A Power Method}
-  List all allowed trajectories of length
-  $2T$, then estimate
-  \begin{equation*}
-    \hat \T_{i,j} =
-    \frac{_{2T}N_{T,T+1}(i,j)}{_{2T}N_{T}(i)},\text{ where}
-  \end{equation*}
-  $_{2T}N_{T}(i)=$ number of length $2T$ trajectories for which
-  $i$ is the value at position $T$\medskip
-
-  $\textcolor{red}{_{2T}N_{T,T+1}(i,j)}=$ \textcolor{red}{number of
-    trajectories} of length $2T$ that have values $i$ and $j$ at
-  positions $T$ and $T+1$\bigskip
-
-  The number of allowed sequences of length six that exactly
-  matches a given sequence is either zero or one.  I write
-  \begin{equation*}
-    _6N_{1,2,3,4,5,6}(a,b,c,d,e,f) = A_{a,b}A_{b,c}A_{c,d}A_{d,e}A_{e,f}.
-  \end{equation*}
-  The number of sequences matching at positions three and four
-  is
-  \begin{equation*}
-    \textcolor{red}{_6N_{3,4}(c,d)} =  \sum_{a,b,e,f}
-    {_6N}_{1,2,3,4,5,6}(a,b,c,d,e,f) = \textcolor{red}{ 
-    \sum_{a,f} \left(A^2\right)_{a,c} A_{c,d} \left(A^2\right)_{d,f}}
-  \end{equation*}
-}
-\frame{
-  \frametitle{A Power Method cont.}
-  Similarly
-  \begin{equation*}
-    _{202}N_{101,102}(c,d) = \sum_{a,f} \left(A^{100}\right)_{a,c}
-    A_{c,d} \left(A^{100}\right)_{d,f}
-  \end{equation*}
-  Defining $R(t)$ and $L(t)$ recursively as
-  \begin{align*}
-    L(1) &= \begin{bmatrix} 1,&1,&\cdots,&1,&1\end{bmatrix} \\
-    N_L(t) &= \left| L(t) \right| \\
-    L(t+1) &= \frac{L(t) A}{N_L(t)} \\
-    R(1) &= L^{\text{T}}(1) \\
-    N_R(t) &= \left| R(t) \right| \\
-    R(t+1) &= \frac{A R(t)}{N_R(t)}.
-  \end{align*}
-  Note \textcolor{red}{$\lim_{t\rightarrow\infty}R(t) = \tilde R$ and
-    $\lim_{t\rightarrow\infty}L(t) = \tilde L$} the right and left
-  \textcolor{red}{eigenvectors of $A$} that correspond to the largest
-  eigenvalue } \frame{ \frametitle{A Power Method cont.}  Using
-  \begin{equation*}
-    _{2(T+1)}N_{T+1,T+2}(c,d) \propto \left(L(T)\right)_c  A_{c,d}
-    \left(R(T)\right)_d ,
-  \end{equation*}
-  I calculate the \textcolor{magenta}{maximum entropy} transition
-  probabilities and the \textcolor{magenta}{stationary distribution}
-  as follows
-  \begin{align*}
-    {\color{magenta}\tilde P_{i,j}} &= {\color{magenta}\tilde L_i A_{i,j}
-      \tilde R_j} \\
-    \tilde m_i &= \sum_j \tilde P_{i,j} \\
-    P_{X(0)}(x) &= \frac{\tilde m_x}{\sum_i \tilde m_i} \\
-    \T_{i,j} &= \frac{\tilde P_{i,j}}{\tilde m_i}
-  \end{align*}
+  \frametitle{Extra Stuff}
+      \resizebox{0.8\textwidth}{!}{\includegraphics{figs/eos_nom_true.pdf}}
 }
 
-\frame{
-  \frametitle{Spectral Decomposition of Covariance}
-  \resizebox{0.99\textwidth}{!}{\includegraphics{PCA.pdf}}
-}
-
-\frame{
-  \frametitle{Polytope Cross Sections}
-  \resizebox{1.1\textwidth}{!}{\includegraphics{ellipsoid.pdf}}
-}
-
-\section{Continuum Limit?}
-\frame{
-  \frametitle{Conclusion}
-  \begin{description}
-  \item[Generality:] Uncertain functions are common.
-  \item[Limitations:] My approach used translation invariance and
-    compactness.
-  \item[Incomplete:] I used a finite number of samples in $y$ and $g$.
-    I want the \textcolor{magenta}{continuum limit}.
-  \end{description}
-}
-
-\frame{
-  \frametitle{Nominal Performance}
-  \resizebox{0.5\textwidth}{!}{\includegraphics{nominal.pdf}}
-}
 \end{document}
 
 %%%---------------
