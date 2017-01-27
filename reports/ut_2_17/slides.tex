@@ -56,7 +56,8 @@
     \begin{column}{0.4\textwidth}
     \begin{align*}
       pv &= NRT & &\text{Ideal Gas} \\
-      pv^3 &\approx c(S) & &\text{For an explosive}
+      pv^\gamma &= c \\
+      \gamma &\approx 3 & &\text{For our explosive}
     \end{align*}
     \end{column}
   \end{columns}
@@ -127,29 +128,30 @@
   \item[$\Gamma = V\left( \frac {dp}{de} \right)_V$] Gruneisen gamma.
     Provides states off of the nominal \emph{CJ} isentrope.
   \end{description}
-  From now on, I focus on $p(V)$.
+  Also need $C_V$.  From now on, I focus on $p(V)$.
 }
 \frame{
   \frametitle{Constrained Optimization}
   %
   \begin{description}
-  \item[Constraints] As a function of volume, pressure must be
+  \item[Constraints] As a function of volume, require pressure to be
     \begin{itemize}
     \item Positive
     \item Monotonic
     \item \textbf{Convex}
     \end{itemize}
   \item[Cost] Weighted sum of squares or
-    $C(\theta) = -\log(\text{a posteriori probability})$
+    $C(\theta) = \log(z)-\log(\text{a posteriori probability})$
   \end{description}
     \begin{align*}
-      C(\theta) &= -\frac{1}{2} \sum_i \left(x_i - \mu_i(\theta)
-      \right)^T \Sigma_i^{-1} \left(x_i - \mu_i(\theta)
-      \right)\\
-      &\equiv \sum_i \LL_i  && \text{Log likelihood} \\
-      &\quad - \frac{1}{2} \left(\theta - \mu_\theta \right)^T
-      \Sigma_\theta^{-1}  \left(\theta - \mu_\theta \right)\\
-      &\equiv \LL_0 && \text{Log prior} 
+      C(\theta) &= - \frac{1}{2} \left(\theta - \mu_\theta \right)^T
+                   \Sigma_\theta^{-1}  \left(\theta - \mu_\theta \right)  &&
+                   \text{Log prior} \\
+      &\quad
+                  -\frac{1}{2} \sum_i \left(x_i - \mu_i(\theta)
+                  \right)^T \Sigma_i^{-1} \left(x_i - \mu_i(\theta)
+                  \right) && \text{Log likelihood} \\        
+      &\equiv - \LL_0 -\sum_i \LL_i
     \end{align*}
 }
 
@@ -201,11 +203,12 @@
       \dmudtheta^T \Sigma_i^{-1} \dmudtheta +  (x_i-\mu_i(\theta))^T \Sigma_i^{-1}
        \left(\frac{\partial^2 \mu_i(\theta)}{\partial \theta^2} \right)
   \end{equation*}
-  Note: Since $X_i\sim$ symmetric about $\mu_i(\theta)$, the expected
-  value of the second term is 0.  The first term called the
+  and since $\EV{x|\theta} x_i = \mu_i(\theta)$, the expected
+  value of the second term is 0.  The first term, called the
   \emph{Fisher Information}
   \begin{equation*}
-    {\cal{I}}_i \equiv \EV{x}{\frac{\partial^2}{\partial \theta^2}
+    {\cal{I}}(\theta)_i \equiv
+    \EV{x|\theta}{\frac{\partial^2}{\partial \theta^2}
       \LL_i} = \dmudtheta^T \Sigma_i^{-1} \dmudtheta
   \end{equation*}
   characterizes how tightly the experiment constrains $\theta$.
