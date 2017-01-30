@@ -248,7 +248,8 @@ class Stick(GausianExperiment):
     def plot(self, models, axes=None, fig=None, data=None, level=1,
              linestyles=['-k', ':k', 'ok', '+k'],
              labels=['Fit EOS', 'Rayleigh Line', r'($v_o$, $p_o$)',
-                     'Inital point']):
+                     'Inital point'],
+             vrange=None):
         """Plots the EOS and Rayleigh line
         Plots the critical Rayleigh line corresponding to the detonation
         velocity tangent to the EOS.
@@ -274,13 +275,20 @@ class Stick(GausianExperiment):
                  1. 'Rayleigh line'
                  2. 'v_o, p_o'
                  3. 'Initial point'
+            vrange(tuple): Range of volumes to plot
         see :py:meth:`F_UNCLE.Utils.Struc.Struc.plot`
         """
 
         eos = self.check_models(models)[0]
 
-        v_min = eos.get_option('spline_min')
-        v_max = eos.get_option('spline_max')
+        if vrange is not None:
+            v_min = vrange[0]
+            v_max = vrange[1]
+        else:
+            v_min = eos.get_option('spline_min')
+            v_max = eos.get_option('spline_max')
+        # end
+        
         v_0 = self.get_option('vol_0')
 
         if axes is None:
@@ -292,7 +300,10 @@ class Stick(GausianExperiment):
         # end
 
         if level == 1:
-            eos.plot(axes=ax1, linestlyes=[linestyles[0]], labels=[labels[0]])
+            eos.plot(axes=ax1,
+                     linestlyes=[linestyles[0]],
+                     labels=[labels[0]],
+                     vrange=vrange)
             vel_cj, vol_cj, p_cj, rayl_line =\
                 eos._get_cj_point(1.835**-1)
 
@@ -302,6 +313,10 @@ class Stick(GausianExperiment):
                      label="Rayl Line {:4.3f} km/s".format(vel_cj/1E5))
             ax1.plot(vol_cj, p_cj, linestyles[2], label=labels[2])
             ax1.plot(v_0, 0.0, linestyles[3], label=labels[3])
+            if vrange is not None:
+                ax1.set_xlim(*vrange)
+            # end
+            ax1.set_ylim(bottom=0.0, top = None)
         elif level == 2:
             ax1.plot(data[0], 1E-3 * data[1][0], linestyles[0], label=labels[0])
             ax1.set_xlabel("Sensor position / cm")
