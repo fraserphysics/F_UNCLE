@@ -252,7 +252,7 @@ class Isentrope(GausianModel):
         return vel_cj, vol_cj, float(p_cj), rayl_line
 
     def plot(self, axes=None, figure=None, linestyles=['-k'],
-             labels=['Isentrope'], *args, **kwargs):
+             labels=['Isentrope'], vrange=None, *args, **kwargs):
         """Plots the EOS
 
         Overloads the :py:meth:`F_UNCLE.Utils.Struc.Struc.plot` method to plot
@@ -266,6 +266,7 @@ class Isentrope(GausianModel):
                 0. '-k', The Isentrope
             labels(list): Strings for the plot labels
                 0. 'Isentrope'
+            vrange(tuple): Specific volume range to plot
 
         Return:
             (plt.Figure): A reference to the figure containing the plot
@@ -286,13 +287,23 @@ class Isentrope(GausianModel):
         # v_spec = np.logspace(np.log10(self.get_option('spline_min')),\
         #                 np.log10(self.get_option('spline_max')),\
         #                 50)
-        v_spec = np.linspace(self.get_option('spline_min'),
-                             self.get_option('spline_max'),
-                             200)
+
+        if vrange is not None:
+            v_spec = np.linspace(vrange[0],
+                                 vrange[1],
+                                 200)
+        else:
+            v_spec = np.linspace(self.get_option('spline_min'),
+                                 self.get_option('spline_max'),
+                                 200)
         ax1.plot(v_spec, self(v_spec), linestyles[0], label=labels[0])
         ax1.set_xlabel(r'Specific volume / cm$^3$g^{-1}')
         ax1.set_ylabel(r'Pressure / Pa')
-        # ax1.set_xlabel(r'Specific volume / $\si{\cubic\centi\meter\per\gram}$')
+
+        if vrange is not None:
+            ax1.set_xlim(*vrange)
+        # ax1.set_xlabel(r'Specific volume
+        #/ $\si{\cubic\centi\meter\per\gram}$')
         # ax1.set_ylabel(r'Pressure / $\si{\pascall}$')
 
         return fig

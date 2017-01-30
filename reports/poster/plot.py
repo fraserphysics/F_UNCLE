@@ -76,18 +76,24 @@ plot_dict['stick_fisher'] = stick_fisher
 def stick_CJ(plt, sim):
     fig1 = plt.figure(figsize=square)
     f1ax1 = fig1.gca()
+    vrange=(.2, .5)
     sim.opt_model.simulations['Stick']['sim'].\
-        plot(sim.opt_model.models, axes=f1ax1)
+        plot(sim.opt_model.models,
+             axes=f1ax1,
+             vrange=vrange)
 
     sim.eos_model.prior.plot(
         axes=f1ax1,
         linestyles=['--b'],
-        labels=['Prior EOS']
+        labels=['Prior EOS'],
+        vrange=vrange
     )
     sim.eos_true.plot(
         axes=f1ax1,
         linestyles=['-.g'],
-        labels=['True EOS']
+        labels=['True EOS'],
+        vrange=vrange
+
     )
     f1ax1.legend(loc='best')
     fig1.tight_layout()
@@ -97,15 +103,18 @@ plot_dict['stick_CJ'] = stick_CJ
 def eos_nom_true(plt, sim):
     fig1 = plt.figure(figsize=square)
     f1ax1 = fig1.gca()
+    vrange=(.2, .5)        
     sim.eos_model.prior.plot(
         axes=f1ax1,
         linestyles=['--b'],
-        labels=['Prior EOS']
+        labels=['Prior EOS'],
+        vrange=vrange
     )
     sim.eos_true.plot(
         axes=f1ax1,
         linestyles=['-.g'],
-        labels=['True EOS']
+        labels=['True EOS'],
+        vrange=vrange
     )
     f1ax1.legend(loc='best')
     fig1.tight_layout()
@@ -116,12 +125,19 @@ def gun_tv(plt, sim):
     fig4 = plt.figure(figsize=tall)
     f4ax1 = fig4.add_subplot(211)
     f4ax2 = fig4.add_subplot(212)
-
-    sim.opt_model.models['eos'].plot(axes=f4ax1, linestyles=['-k'],
-                                 labels=['Fit EOS'])
-    sim.eos_model.prior.plot(axes=f4ax1, linestyles=['--b'],
-                         labels=['Prior EOS'])
-    sim.eos_true.plot(axes=f4ax1, linestyles=['-.g'], labels=['True EOS'])
+    vrange=(.2, .5)
+    sim.opt_model.models['eos'].plot(axes=f4ax1,
+                                     linestyles=['-k'],
+                                     labels=['Fit EOS'],
+                                     vrange=vrange)
+    sim.eos_model.prior.plot(axes=f4ax1,
+                             linestyles=['--b'],
+                             labels=['Prior EOS'],
+                             vrange=vrange)
+    sim.eos_true.plot(axes=f4ax1,
+                      linestyles=['-.g'],
+                      labels=['True EOS'],
+                      vrange=vrange)
     f4ax1.legend(loc='best')
 
     sim.gun_simulation.plot(axes=f4ax2, linestyles=['-k', '-r'],
