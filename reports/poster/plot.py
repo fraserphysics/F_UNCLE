@@ -76,7 +76,7 @@ plot_dict['stick_fisher'] = stick_fisher
 def stick_CJ(plt, sim):
     fig1 = plt.figure(figsize=square)
     f1ax1 = fig1.gca()
-    vrange=(.2, .5)
+    vrange=(.3, .8)
     sim.opt_model.simulations['Stick']['sim'].\
         plot(sim.opt_model.models,
              axes=f1ax1,
@@ -103,7 +103,7 @@ plot_dict['stick_CJ'] = stick_CJ
 def eos_nom_true(plt, sim):
     fig1 = plt.figure(figsize=square)
     f1ax1 = fig1.gca()
-    vrange=(.2, .5)        
+    vrange=(.3, .8)        
     sim.eos_model.prior.plot(
         axes=f1ax1,
         linestyles=['--b'],
@@ -125,7 +125,7 @@ def gun_tv(plt, sim):
     fig4 = plt.figure(figsize=tall)
     f4ax1 = fig4.add_subplot(211)
     f4ax2 = fig4.add_subplot(212)
-    vrange=(.2, .5)
+    vrange=(.3, .8)
     sim.opt_model.models['eos'].plot(axes=f4ax1,
                                      linestyles=['-k'],
                                      labels=['Fit EOS'],
