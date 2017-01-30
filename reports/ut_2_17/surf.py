@@ -29,11 +29,18 @@ ax = fig.gca(projection='3d')
 V = np.linspace(5, 10, 20)
 T = np.linspace(200, 300, 20)
 V, T = np.meshgrid(V, T)
-P = ideal_P(V,T)
+P = ideal_P(V,T) 
 print('P.shape={0}'.format(P.shape))
 
 # Plot the surface.
-surf = ax.plot_surface(V,T,P, linewidth=.15, antialiased=False) #cmap=cm.jet, )
+surf = ax.plot_surface(V,T,P,
+                       linewidth=.15,
+                       antialiased=False,
+                       rstride=1,
+                       cstride=1,
+                       vmin=np.min(P),
+                       vmax=np.max(P),
+                       cmap=cm.Greys)
 
 # Customize the z axis.
 ax.zaxis.set_major_locator(LinearLocator(4))
