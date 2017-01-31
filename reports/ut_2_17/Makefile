@@ -1,6 +1,8 @@
 # Depends on files built in ../poster
 PYTHON = export PYTHONPATH=../../F_UNCLE/;  python
 # slides.pdf is the default target
+# conda create --name qtmayavi scipy pyside pyface mayavi python=2.7
+# 
 slides.pdf:
 
 surf.pdf: surf.py
@@ -15,7 +17,8 @@ slides.pdf: slides.aux
 	pdflatex slides
 
 ui_%.py: %.ui
-	pyside-uic $< > $@
+	pyuic4 $< > $@
+#	pyside-uic $< > $@
 
 ###---------------
 ### Local Variables:
