@@ -45,14 +45,15 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 import matplotlib.gridspec as gridspec
 try:
-    from mpi4py import MPI
-    mpi_comm = MPI.COMM_WORLD
-    if mpi_comm.Get_rank() == 0:
-        mpi_print = True
-    # end
-    else:
-        mpi_print = False
-    # end
+    # from mpi4py import MPI
+    # mpi_comm = MPI.COMM_WORLD
+    # if mpi_comm.Get_rank() == 0:
+    #     mpi_print = True
+    # # end
+    # else:
+    #     mpi_print = False
+    # # end
+    mpi_print = False
 except ImportError as inst:
     mpi_print = False
 # end
@@ -745,6 +746,7 @@ class Bayesian(Struc):
 
                 0. independent value
                 1. dependent value of interest
+                2. the summary data (3rd element) of sim
 
         """
         sims = self.simulations

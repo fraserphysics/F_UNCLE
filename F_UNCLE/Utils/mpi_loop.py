@@ -26,7 +26,8 @@ To Do:
 import numpy as np
 
 try:
-    from mpi4py import MPI
+    pass
+#    from mpi4py import MPI
 except Exception as inst:
     pass
 # end
