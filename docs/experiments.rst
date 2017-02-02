@@ -19,6 +19,14 @@ Stick
    :private-members:
    :special-members:
 
+Sphere
+......
+
+.. autoclass:: F_UNCLE.Experiments.Sphere.Sphere
+   :members:	     
+   :private-members:
+   :special-members:
+
 Cylinder
 ........
 

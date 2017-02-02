@@ -253,7 +253,7 @@ class PhysicsModel(Struc):
         return NotImplemented
 
 
-class GausianModel(PhysicsModel):
+class GaussianModel(PhysicsModel):
     """Generates model statistics assuming a gausian error
     """
 

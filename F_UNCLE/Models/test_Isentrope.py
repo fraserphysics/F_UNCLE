@@ -53,10 +53,10 @@ from scipy.interpolate import InterpolatedUnivariateSpline as IU_Spline
 # =========================
 if __name__ == '__main__':
     sys.path.append(os.path.abspath('./../../'))
-    from F_UNCLE.Utils.PhysicsModel import GausianModel
+    from F_UNCLE.Utils.PhysicsModel import GaussianModel
     from F_UNCLE.Models.Isentrope import EOSModel, EOSBump, Isentrope
 else:
-    from ..Utils.PhysicsModel import GausianModel
+    from ..Utils.PhysicsModel import GaussianModel
     from .Isentrope import EOSModel, EOSBump, Isentrope
 # end
 

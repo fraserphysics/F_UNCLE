@@ -124,7 +124,7 @@ class Stick(GausianExperiment):
         return (models['eos'],)
 
     def _on_str(self, *args, **kwargs):
-        """Print method of the gun model
+        """Print method of the gun model.  Called by Struct.__str__
 
         Args:
             *args: Variable length argument list.
@@ -251,6 +251,7 @@ class Stick(GausianExperiment):
                      'Inital point'],
              vrange=None):
         """Plots the EOS and Rayleigh line
+
         Plots the critical Rayleigh line corresponding to the detonation
         velocity tangent to the EOS.
 
@@ -261,20 +262,19 @@ class Stick(GausianExperiment):
             axes(plt.Axes): The Axes on which to plot
             fig(plt.Figure): The figure on which to plot *ignored*
             data(list): The output from a call to Stick
-            level(int): Specified what to plot
-                 1. Plots the EOS with the Raylight line intersecting the CJ
-                    point
-                 2. Plots the output from a simulation
+            level(int): Specifies what to plot
+		1. Plots the EOS with the Raylight line intersecting the CJ point
+		2. Plots the output from a simulation
             linestyles(list): Format strings for the trends, entries as follow
-                 0. Stlye for the best fit EOS OR The data trend
-                 1. Style for the Rayleigh line
-                 2. Style for the CJ point
-                 3. Style for the initial condiations
+		0. Stlye for the best fit EOS OR The data trend
+                1. Style for the Rayleigh line
+                2. Style for the CJ point
+                3. Style for the initial condiations
             labels(list): Strings for the legend
-                 0. 'Fit EOS' (Change to Data for level 2 plot)
-                 1. 'Rayleigh line'
-                 2. 'v_o, p_o'
-                 3. 'Initial point'
+		0. 'Fit EOS' (Change to Data for level 2 plot)
+                1. 'Rayleigh line'
+                2. 'v_o, p_o'
+                3. 'Initial point'
             vrange(tuple): Range of volumes to plot
         see :py:meth:`F_UNCLE.Utils.Struc.Struc.plot`
         """

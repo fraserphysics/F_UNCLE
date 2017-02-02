@@ -21,7 +21,11 @@ import pdb
 import numpy as np
 import matplotlib.pyplot as plt
 
-import pyOpt
+try:
+    import pyOpt
+except:
+    print('''You must import pyOpt to run CostOpt, but you can build the
+documentations without it.''')
 
 # =========================
 # Custom Packages
@@ -42,6 +46,11 @@ else:
 
 
 class CostOpt(Bayesian):
+    '''Code for experimenting with alternative optimization algorithms
+
+    This class is experimental.  It Requires importing pyOpt.
+
+    '''
 
     def __call__(self):
         """Overloaded call function to optimize cost directly
