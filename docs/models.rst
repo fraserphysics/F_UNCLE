@@ -1,7 +1,7 @@
 Models
 ======
 
-The pysics models used in the analysys
+The physics models used in the analyses
 
 Isentrope
 ...........
@@ -24,6 +24,14 @@ EOSModel
 ........
 
 .. autoclass:: F_UNCLE.Models.Isentrope.EOSModel
+   :members:
+   :private-members:
+   :special-members:
+
+PTW
+...
+
+.. autoclass:: F_UNCLE.Models.Ptw.Ptw
    :members:
    :private-members:
    :special-members:

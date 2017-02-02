@@ -14,9 +14,9 @@ Contents:
    code
    models
    experiments
-   analysis
+   optimization
    utils
-   scipy16
+   examples
    
 Indices and tables
 ==================
