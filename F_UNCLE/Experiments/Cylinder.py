@@ -1,6 +1,6 @@
 """
 
-Stick: A simplified model of a rate stick
+For now, this is a copy of Stick.py
 
 Authors
 -------

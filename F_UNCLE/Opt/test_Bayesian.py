@@ -5,6 +5,10 @@ test_Bayesian
 
 Test class for the Bayesian analysis
 
+To run all tests, issue "nosetests" in the root directory, ie ../..
+
+To run this file, issue "python test_Bayesian.py" in this directory.
+
 Authors
 -------
 

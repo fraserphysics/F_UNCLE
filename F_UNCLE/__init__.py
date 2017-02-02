@@ -53,6 +53,10 @@ Opt
 
 Utils
    Scripts with base classes for Experiments and Models
+
+__init__.py
+   File that enables importing directory as module and contains text
+   for documentation
    
 
 """

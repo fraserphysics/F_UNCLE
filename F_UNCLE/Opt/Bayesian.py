@@ -3,13 +3,13 @@
 
 pyBayesian
 
-An object to extract properties of the bayesian analysis of experiments
+An object to extract properties of the Bayesian analysis of experiments
 
 Authors
 -------
 
 - Stephen Andrews (SA)
-- Andrew M. Fraiser (AMF)
+- Andrew M. Fraser (AMF)
 
 Revisions
 ---------
@@ -19,8 +19,16 @@ Revisions
 TODO
 ----
 
-- Examine impact of prior weight **Prior weight currently zero**
-- Examine effect of choice of true eos
+- Remove "prior-weight" from code and documentation
+- Examine effect of choice of true EOS
+- Change name from EOS to more general uncertain function
+- Change name "simulations" attribute of Bayesian to "experiment".  Present
+  stucture is designed for toy data from simulations.  Future structure should
+  be designed for real experimental measurements and simulated toy data is
+  special case.
+- Change names from Bayesian to indicate limitations, namely constrained MAP
+  with quadratic approximation at the maximum
+- Enable simultaneous optimization of more than one model
 
 """
 from __future__ import absolute_import
@@ -58,11 +66,7 @@ except ImportError as inst:
 # end
         
         
-try:
-    from cvxopt import matrix, solvers
-except:
-    print('cvxopt package not found. Install by running\n'
-          '`$ pip install cvxopt`')
+from cvxopt import matrix, solvers
 # end
 
 # =========================
@@ -86,12 +90,12 @@ else:
 
 
 class Bayesian(Struc):
-    """A calss for performing bayesian inference on a model given data
+    """A class for performing Bayesian inference on a model given data
 
     **Attributes**
 
     Attributes:
-       simulations(list):  Each element is a tupple with the following elemnts
+       simulations(list):  Each element is a tuple with the following elements
 
            0. A simulation
            1. Experimental results
@@ -104,21 +108,22 @@ class Bayesian(Struc):
            - [i,j] sensitivity of model response i to experiment DOF j
 
     **Options**
+    These can be set as keyword arguments in a call to self.__init__
 
   +--------------+-------+-----+-----+-----+-----+----------------------------+
   |Name          |Type   |Def  |Min  |Max  |Units|Description                 |
   +==============+=======+=====+=====+=====+=====+============================+
   |`outer_atol`  |(float)|1E-6 |0.0  |1.0  |-    |Absolute tolerance on change|
-  |              |       |     |     |     |     |in likelyhood for outer loop|
+  |              |       |     |     |     |     |in likelihood for outer loop|
   |              |       |     |     |     |     |convergence                 |
   +--------------+-------+-----+-----+-----+-----+----------------------------+
   |`outer_rtol`  |(float)|1E-4 |0.0  |1.0  |-    |Relative tolerance on change|
-  |              |       |     |     |     |     |in likelyhood for outer loop|
+  |              |       |     |     |     |     |in likelihood for outer loop|
   |              |       |     |     |     |     |convergence                 |
   +--------------+-------+-----+-----+-----+-----+----------------------------+
   |`maxiter`     |(int)  |6    |1    |100  |-    |Maximum iterations for      |
   |              |       |     |     |     |     |convergence of the          |
-  |              |       |     |     |     |     |likelyhood                  |
+  |              |       |     |     |     |     |likelihood                  |
   +--------------+-------+-----+-----+-----+-----+----------------------------+
   |`constrain`   |(bool) |True |None |None |-    |Flag to constrain the       |
   |              |       |     |     |     |     |optimization                |
@@ -138,7 +143,7 @@ class Bayesian(Struc):
 
     .. note::
 
-       The options `outer_atol` and `prior_weight` are depricated and should be
+       The options `outer_atol` and `prior_weight` are deprecated and should be
        used for debugging purposes only
 
     **Methods**
@@ -153,7 +158,7 @@ class Bayesian(Struc):
            models(dict): A dictionary of models
            opt_key(str): The model from models which is being optimized
         Keyword Args:
-            name(str): Name for the analysis.('Bayesian')
+           name(str): Name for the analysis.('Bayesian')
 
         Return:
            None
@@ -163,14 +168,14 @@ class Bayesian(Struc):
         # Name: [type, default, min, max, units, note]
         def_opts = {
             'outer_atol': [float, 1E-6, 0.0, 1.0, '-',
-                           'Absolute tolerance on change in likelyhood for'
+                           'Absolute tolerance on change in likelihood for'
                            'outer loop convergence'],
             'outer_rtol': [float, 1E-4, 0.0, 1.0, '-',
-                           'Relative tolerance on change in likelyhood for'
+                           'Relative tolerance on change in likelihood for'
                            'outer loop convergence'],
             'maxiter': [int, 6, 1, 100, '-',
                         'Maximum iterations for convergence'
-                        'of the likelyhood'],
+                        'of the likelihood'],
             'constrain': [bool, True, None, None, '-',
                           'Flag to constrain the optimization'],
             'precondition': [bool, True, None, None, '-',
@@ -208,10 +213,10 @@ class Bayesian(Struc):
     # end
 
     def _check_inputs(self, models, simulations):
-        """Checks that the values for model and simulaion are valid
+        """Checks that the values for model and simulation are valid
         """
         if not isinstance(models, dict):
-            raise TypeError('001 {:}, model must be provided as a dictonary'
+            raise TypeError('001 {:}, model must be provided as a dictionary'
                             'with the key being the name of the model'
                             .format(self.get_inform(1)))
         elif not np.all([isinstance(models[key], PhysicsModel)
@@ -219,8 +224,8 @@ class Bayesian(Struc):
             raise TypeError('002 {:}, all models must be a PhysicsModel type'
                             .format(self.get_inform(1)))
         elif not isinstance(simulations, dict):
-            raise TypeError('003 {:}, sumulations must be provided as a'
-                            'dictonary with the key being the name of the'
+            raise TypeError('003 {:}, simulations must be provided as a'
+                            'dictionary with the key being the name of the'
                             'simulation'
                             .format(self.get_inform(1)))
         # end
@@ -269,7 +274,7 @@ class Bayesian(Struc):
         return copy.deepcopy(models), sim_out
 
     def _on_str(self):
-        """Print method for bayesian model
+        """Print method for Bayesian model called by Struct.__str__
 
         Args:
             None
@@ -309,12 +314,12 @@ class Bayesian(Struc):
         return out_str
 
     def update(self, simulations=None, models=None):
-        """Updates the properties of the bayesian analtsis
+        """Updates the properties of the Bayesian analysis
 
         Keyword Args:
-           simulations(dict): Dictonary of simulation experiment pairs
+           simulations(dict): Dictionary of simulation experiment pairs
                                     (Default None)
-           models(dict): Dictonary of models
+           models(dict): Dictionary of models
                                 (Default None)
 
         Return:
@@ -335,7 +340,7 @@ class Bayesian(Struc):
         return new_object
 
     def shape(self):
-        """Gets the dimenstions of the problem
+        """Gets the dimensions of the problem
 
         Return:
            (tuple): The (n, m) dimensions of the problem
@@ -403,30 +408,31 @@ class Bayesian(Struc):
                   space
                1. (list): is of solution history elements are:
 
-                   0. (np.ndarray) Log likelyhood, (nx1) where n is number of
+                   0. (np.ndarray) Log likelihood, (nx1) where n is number of
                       iterations
                    1. (np.ndarray) model dof history (nxm) where n is iterations
                       and m is the model dofs
-               2. (np.ndarray) sensitity matrix of all experiments to
+               2. (np.ndarray) sensitivity matrix of all experiments to
                    the model
 
         """
+        #FixMe: "intitial_data" misspelled and not used
         def outer_loop_iteration(analysis, log_like, intitial_data):
             """Performs a single step of the outer loop optimization
 
             Args:
                 analysis(Bayesian): The collection of simulations and
                                     experiments to be tested
-                log_like(float): The log likelyhood of the last iteration
+                log_like(float): The log likelihood of the last iteration
                 initial_data(list): The results of the simulations at the
                                     current model state
             Return:
                 (Bayesian): A copy of the analysis object with the new model
                             estimate
-                (float): The log likelyhood of the updated model
+                (float): The log likelihood of the updated model
                 (list): The results of the simulations at the new model state
                 (list): A list of the model DOFs
-                (bool): A flag, true of the log likelyhood has converged
+                (bool): A flag, true of the log likelihood has converged
             """
             precondition = self.get_option('precondition')
             atol = self.get_option('outer_atol')
@@ -440,7 +446,7 @@ class Bayesian(Struc):
             opt_model = models[opt_key]
             model_dict = analysis.models
 
-            # Solve all simulations with the curent model
+            # Solve all simulations with the current model
             if verb and mpi_print:
                 print('prior log like', -analysis.model_log_like())
             if verb and mpi_print:
@@ -569,7 +575,7 @@ class Bayesian(Struc):
             fisher(np.ndarray): A nxn array where n is model dof
 
         Keyword Args:
-            tol(float): Eigen values less than tol are ignored
+            tol(float): Eigenvalues less than tol are ignored
 
         Return:
             (tuple): Elements are:
@@ -583,9 +589,9 @@ class Bayesian(Struc):
                 2. (np.ndarray): nxm array
 
                       - n is the number of eigenvalues greater than tol
-                      - m is an arbutary dimension of independent variable
+                      - m is an arbitrary dimension of independent variable
 
-                3. (np.ndarray): vector of independent varible
+                3. (np.ndarray): vector of independent variable
 
         """
 
@@ -618,16 +624,16 @@ class Bayesian(Struc):
         return vals[:n_vals], vecs, funcs, vol
 
     def _local_opt(self, initial_data, sens_matrix):
-        """Soves the quadratic problem for maximization of the log likelihood
+        """Solves the quadratic problem for maximization of the log likelihood
 
         Args:
-           initial_data(list): The initial data corresonding to simulations
+           initial_data(list): The initial data corresponding to simulations
                from sims
            sens_matrix(np.array): The sensitivity matrix about the model
 
         Return:
             (np.ndarray):
-                The step direction for greates improvement in log lieklyhood
+                The step direction for greatest improvement in log likelihood
         """
         constrain = self.get_option('constrain')
         debug = self.get_option('debug')
@@ -678,11 +684,11 @@ class Bayesian(Struc):
             scale=self.get_option('precondition'))
 
     def _get_model_pq(self):
-        """Gets the quadratic optimizaiton matrix contributions from the prior
+        """Gets the quadratic optimization matrix contributions from the prior
 
         Args:
             None
-        Retrun:
+        Return:
             (tuple): elements are
 
                 0. (np.ndarray): `p`, a nxn matrix where n is the model DOF
@@ -697,12 +703,12 @@ class Bayesian(Struc):
         .. note::
 
              This method is specific to the model type under consideration.
-             This implementation is onlt for spline models of EOS
+             This implementation is only for spline models of EOS
 
         Args:
-           initial_data(list): A list of the inital results from the simulations
+           initial_data(list): A list of the initial results from the simulations
                                in the same order as in the `sim` list
-           sens_matric(np.ndarray): The sensitivity matrix
+           sens_matrix(np.ndarray): The sensitivity matrix
 
         Return:
             (tuple): Elements are:
@@ -732,7 +738,7 @@ class Bayesian(Struc):
         return p_mat, q_mat
 
     def get_data(self):
-        """Generates a set of data at each expeimental data-point
+        """Generates a set of data at each experimental data-point
 
         For each pair of simulations and experiments, generates the
         the simulation response.
@@ -769,7 +775,7 @@ class Bayesian(Struc):
         .. note::
 
              This method is specific to the model type under consideration.
-             This implementation is onlt for spline models of EOS
+             This implementation is only for spline models of EOS
 
         Args:
             None
@@ -818,7 +824,7 @@ class Bayesian(Struc):
         return sens_matrix
 
     def get_hessian(self, initial_data=None, simid=None):
-        r"""Gets the Hessian (matrix of second derrivatives) of the simulated
+        r"""Gets the Hessian (matrix of second derivatives) of the simulated
         experiments to the EOS
 
         .. math::
@@ -883,7 +889,7 @@ class Bayesian(Struc):
         """
 
         if fig is None:
-            fig = plt.Figuree()
+            fig = plt.Figure()
         else:
             pass
         # end
@@ -953,7 +959,7 @@ class Bayesian(Struc):
         ax1.xaxis.set_major_formatter(FormatStrFormatter('%d'))
 
         ax1.set_xlabel('Iteration number')
-        ax1.set_ylabel('Negative a posteori log likelihood')
+        ax1.set_ylabel('Negative a posteriori log likelihood')
 
         # fig = plt.figure()
         # ax1 = fig.add_subplot(121)
@@ -979,14 +985,14 @@ class Bayesian(Struc):
             labels(list): Strings for labels *Ignored*
             linestyles(list): Strings for linestyles *Ignored*
 
-        Retrun:
+        Return:
             (plt.Figure): The figure
         """
         if sens_matrix is None:
             sens_matrix = self._get_sens()
         elif isinstance(sens_matrix, dict):
             if simid not in sens_matrix:
-                raise IndexError('{:} simid not in the sensitity'
+                raise IndexError('{:} simid not in the sensitivity'
                                  'matrix'.format(self.get_inform(1)))
         else:
             raise TypeError('{:} sens matrix must be none or an dict'.
@@ -1065,3 +1071,8 @@ class Bayesian(Struc):
         fig.tight_layout()
 
         return fig
+
+###---------------
+### Local Variables:
+### mode: python
+### End:
