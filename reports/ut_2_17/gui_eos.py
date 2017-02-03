@@ -16,7 +16,10 @@
 Reference:  http://docs.enthought.com/mayavi/mayavi/
 
 '''
-from PySide.QtGui import QApplication, QMainWindow, QWidget
+import sip
+for s in 'QString QDate QDateTime QTextStream QTime QUrl QVariant'.split():
+    sip.setapi(s, 2)
+from PyQt4.QtGui import QApplication, QMainWindow, QWidget
 from ui_PVE_control import Ui_Form as PVE_control
 class variable:
     '''A class that collects, for P, v, E or S the spin box, slider
@@ -109,7 +112,7 @@ class state:
         This is separate from __init__ because var_dict isn't ready when
         __init__ is called.
         '''
-        import mayavi.mlab as ML
+        import mayavi.mlab
         self.values = {}
         self.displayed_values = {}
         for s, var in self.var_dict.items():
@@ -124,7 +127,7 @@ class state:
         # Get coordinates for the displayed state point + size
         args = tuple(self.var_dict[s].frac for s in 'PvE') + (.05,)
         # Initialize the displayed state point
-        self.vis.point =  ML.points3d(
+        self.vis.point =  mayavi.mlab.points3d(
             *args, scale_factor=1.0, figure=self.vis.scene.mayavi_scene)
     def __init__(self,     # state instance
                  var_dict, # Dictionary that will hold variable instances
@@ -189,7 +192,7 @@ class state:
             if self.var_dict[s].button.isChecked():
                 self.constant = s
                 self.update(s, button=True)
-                if self.vis.curve != None:
+                if type(self.vis.curve) != type(None):
                     self.vis.curve.remove()
                     self.curve_data = []
                 self.vis.curve = None
@@ -225,7 +228,7 @@ class state:
         6. If the new values are out of bounds, revert to self.old_values
         '''
         import numpy as np
-        import mayavi.mlab as ML
+        import mayavi.mlab
         def revert():
             '''Revert to self.old_values
             '''
@@ -262,10 +265,10 @@ class state:
         self.unique.add(key)
         self.curve_data.append(fracs)
         if len(self.curve_data) == 1: return
-        if self.vis.curve != None: self.vis.curve.remove()
+        if type(self.vis.curve) != type(None): self.vis.curve.remove()
         self.curve_data.sort(key=self.u_key)
         x,y,z = (np.array(self.curve_data)[:,i] for i in (0,1,2))
-        self.vis.curve = ML.plot3d(
+        self.vis.curve = mayavi.mlab.plot3d(
             x, y, z, figure=self.vis.scene.mayavi_scene, tube_radius=0.01)
         return
 
@@ -295,12 +298,12 @@ import qt_surf
 from ui_eos_qt import Ui_MainWindow
 class MainWindow(QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
-        '''Mandatory initialisation of a class.'''
         super(MainWindow, self).__init__(parent)
         self.setupUi(self, qt_surf.MayaviQWidget, PVE_widget)
 
 if __name__ == '__main__':
+    import sys
     app = QApplication.instance() # traitsui.api has created app
     frame = MainWindow()
     frame.show()
-    app.exec_()
+    sys.exit(app.exec_())

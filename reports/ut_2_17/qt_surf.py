@@ -1,33 +1,25 @@
 ''' qt_surf.py derived from Enthought example qt_embedding.py
 '''
-# First, and before importing any Enthought packages, set the ETS_TOOLKIT
-# environment variable to qt4, to tell Traits that we will use Qt.
-import os
-os.environ['ETS_TOOLKIT'] = 'qt4'
 
-# To be able to use PySide or PyQt4 and not run in conflicts with traits,
-# we need to import QtGui and QtCore from pyface.qt
-#from pyface.qt import QtGui, QtCore
-
-import mayavi.mlab as ML
-import traits.api as TA
-class Visualization(TA.HasTraits):
-    import traitsui.api as TUA # Doing this import creates a QApplication
-    import mayavi.core.ui.api as MCUA
+import mayavi.mlab
+import traits.api
+import traitsui.api # Doing this import creates a QApplication
+import mayavi.core.ui.api
+class Visualization(traits.api.HasTraits):
     # Scene variable
-    scene = TA.Instance(MCUA.MlabSceneModel, ())
+    scene = traits.api.Instance(mayavi.core.ui.api.MlabSceneModel, ())
     # The panel layout
-    view = TUA.View(
-        TUA.Item('scene', editor=MCUA.SceneEditor(), resizable=True,
-                 show_label=False),
-        resizable=True,
-        )
-    @TA.on_trait_change('scene.activated')
+    view = traitsui.api.View(
+        traitsui.api.Item(
+            'scene', editor=mayavi.core.ui.api.SceneEditor(),resizable=True,
+            show_label=False),
+        resizable=True)
+    @traits.api.on_trait_change('scene.activated')
     def create_pipeline(self):
         ''' Put frame/axes around surface plot
         '''
-        ML.axes(ranges=self.ranges,xlabel='P',ylabel='v',zlabel='E')
-        ML.outline()
+        mayavi.mlab.outline()
+        mayavi.mlab.axes(ranges=self.ranges,xlabel='P',ylabel='v',zlabel='E')
     def __init__(self # Visualization
         ):
         """ Calculate three 2-d arrays of values to describe EOS
@@ -36,7 +28,7 @@ class Visualization(TA.HasTraits):
         import numpy as np
         import eos
         EOS = eos.ideal()
-        TA.HasTraits.__init__(self)
+        traits.api.HasTraits.__init__(self)
         P, v = np.mgrid[1e10:4e10:20j, 1e-6:4e-6:20j]
         P = P.T
         v = v.T
@@ -49,11 +41,12 @@ class Visualization(TA.HasTraits):
         for a in (P,v,E):
             self.ranges += [a.min(),a.max()]
         scale = lambda z: (z-z.min())/(z.max()-z.min())
-        ML.mesh(scale(P),scale(v),scale(E),figure=self.scene.mayavi_scene)
+        mesh = mayavi.mlab.mesh(
+            scale(P), scale(v), scale(E), figure=self.scene.mayavi_scene)
         self.flag = False
 #-----------------------------------------------------------------------------
 # The QWidget containing the visualization
-from PySide.QtGui import QWidget, QVBoxLayout
+from PyQt4.QtGui import QWidget, QVBoxLayout
 class MayaviQWidget(QWidget):
     def __init__(self, parent=None):
         QWidget.__init__(self, parent)

@@ -2,7 +2,10 @@
 PYTHON = export PYTHONPATH=../../F_UNCLE/;  python
 # slides.pdf is the default target
 # Use the following to make an environment with PyQt4
-# conda create --name qtmayavi scipy pyqt=4 pyface mayavi python=2.7 ipython
+# conda create --name qtmayavi scipy pyqt=4 pyface mayavi=4.4.0 python=2.7 ipython
+# 1m12.065s
+# conda remove --name qtmayavi --all
+# 0m51.317s
 # 
 # In 2016, I used pyside.  This makes an environment with pyside
 # conda create --name qtmayavi scipy pyside pyface mayavi python=2.7
@@ -33,6 +36,11 @@ ui_no_mayavi_qt.py: eos_qt.ui patch_no_mayavi
 	mv ui_temp.py $@
 #	pyside-uic $< > $@
 
+test_gui: ui_eos_qt.py ui_no_mayavi_qt.py ui_PVE_control.py
+	#python no_mayavi.py
+	python gui_eos.py
+clean:
+	rm -f *.pyc ui*.py
 ###---------------
 ### Local Variables:
 ### mode: makefile
