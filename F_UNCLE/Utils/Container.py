@@ -217,7 +217,7 @@ if __name__ == '__main__':
 
     my_iter=Container('test iterable')
 
-    [my_iter[i] = a[i] for i in range(len(a))]
-
+    for i in range(len(a)):
+        my_iter[i] = a[i]
     print(my_iter)
 

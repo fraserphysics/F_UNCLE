@@ -110,7 +110,7 @@ class TestGun(unittest.TestCase):
         self.assertEqual(len(vel), n_time)
         self.assertIsInstance(spline, Spline)
 
-    # @unittest.skip('skipped plotting routine')
+    @unittest.skip('skipped plotting routine')
     def test_shot_plot(self):
         """tests the plotting function
         """
@@ -184,7 +184,7 @@ class TestStick(unittest.TestCase):
         self.assertIsInstance(smry[2], float)
         self.assertTrue(hasattr(smry[3], '__call__'))
 
-    # @unittest.skip('skipped plotting routine')
+    @unittest.skip('skipped plotting routine')
     def test_eos_step(self):
         """Tests that the stick model is sensitive to changes in EOS
         """
@@ -269,8 +269,8 @@ class TestSphere(unittest.TestCase):
 
     def test_call(self):
         data = self.sim({'eos': self.eos, 'strength': self.strength})
-        self.sim.plot(data)
-        plt.show()
+        #self.sim.plot(data)
+        #plt.show()
 
 if __name__ == '__main__':
     unittest.main(verbosity=4)
