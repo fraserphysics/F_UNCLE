@@ -16,7 +16,7 @@
 Reference:  http://docs.enthought.com/mayavi/mayavi/
 
 '''
-from PySide.QtGui import QApplication, QMainWindow, QWidget
+from PyQt4.QtGui import QApplication, QMainWindow, QWidget
 from ui_PVE_control import Ui_Form as PVE_control
 class variable:
     '''A class that collects, for P, v, E or S the spin box, slider
@@ -277,7 +277,7 @@ class PVE_widget(QWidget, PVE_control):
             button.clicked.connect(self.state.new_constant)
         self.state.initial_values() # Set up state information from var_dict
 
-from ui_eos_qt import Ui_MainWindow
+from ui_no_mayavi_qt import Ui_MainWindow
 class MainWindow(QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
