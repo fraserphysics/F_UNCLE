@@ -202,7 +202,7 @@ class Sim():
         init_prior = np.vectorize(lambda v: 2.56e9 / v**3)
 
         # 2. Create the model and *true* EOS
-        self.eos_model = EOSModel(init_prior, Spline_sigma=0.05)
+        self.eos_model = EOSModel(init_prior, Spline_sigma=0.5)
         self.eos_true = EOSBump()
 
         # 3. Create the objects to generate simulations and pseudo

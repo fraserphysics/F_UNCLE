@@ -1,6 +1,8 @@
 """
 
-Stick: A simplified model of a rate stick
+To run all tests, issue "nosetests" in the root directory, ie ../..
+
+To run this file, issue "python test_Experiments.py" in this directory.
 
 Authors
 -------

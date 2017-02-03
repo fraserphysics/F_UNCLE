@@ -37,13 +37,13 @@ import numpy.testing as npt
 if __name__ == '__main__':
     sys.path.append(os.path.abspath('./../../'))
     from F_UNCLE.Utils.Struc import Struc
-    from F_UNCLE.Utils.PhysicsModel import PhysicsModel, GausianModel
+    from F_UNCLE.Utils.PhysicsModel import PhysicsModel, GaussianModel
 else:
     from .Struc import Struc
-    from .PhysicsModel import PhysicsModel, GausianModel
+    from .PhysicsModel import PhysicsModel, GaussianModel
 
 
-class SimpleModel(GausianModel):
+class SimpleModel(GaussianModel):
     """Simplified physics model for testing
     """
     def __init__(self, prior, name="Simplified physics model"):

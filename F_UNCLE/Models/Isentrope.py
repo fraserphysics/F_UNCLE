@@ -19,7 +19,7 @@ Revisions
 ToDo
 ----
 
-None
+- Move Spline to Utils
 
 
 """
@@ -52,16 +52,16 @@ from scipy.optimize import brentq
 # =========================
 if __name__ == '__main__':
     sys.path.append(os.path.abspath('./../../'))
-    from F_UNCLE.Utils.PhysicsModel import GausianModel
+    from F_UNCLE.Utils.PhysicsModel import GaussianModel
 else:
-    from ..Utils.PhysicsModel import GausianModel
+    from ..Utils.PhysicsModel import GaussianModel
 
 
 # =========================
 # Main Code
 # =========================
 
-class Isentrope(GausianModel):
+class Isentrope(GaussianModel):
     """Abstract class for an isentrope
 
     The equation of state for an isentropic expansion of high explosive is
@@ -137,7 +137,7 @@ class Isentrope(GausianModel):
             def_opts.update(kwargs.pop('def_opts'))
         # end
 
-        GausianModel.__init__(self, None, name=name, def_opts=def_opts,
+        GaussianModel.__init__(self, None, name=name, def_opts=def_opts,
                               *args, **kwargs)
 
     def shape(self):
@@ -312,7 +312,7 @@ class Isentrope(GausianModel):
         """Returns the G and h matricies corresponding to the model
 
         Args:
-           model(GausianModel): The physics model subject to
+           model(GaussianModel): The physics model subject to
                                 physical constraints
         Return:
            ():
@@ -398,10 +398,10 @@ class Isentrope(GausianModel):
 class Spline(IU_Spline):
     """Overloaded scipy spline to work as a PhysicsModel
 
-    Child of the Scipy IU spline class which provides access to details to
-    the knots which are treated as degrees of freedom
-
-    """
+    Child of the scipy.interpolate.InterpolatedUnivariateSpline class
+    which provides access to details to the knots which are treated as
+    degrees of freedom
+"""
 
     def get_t(self):
         """Gives the knot locations
@@ -644,7 +644,7 @@ class EOSModel(Spline, Isentrope):
 
         Isentrope.__init__(self, name, def_opts=def_opts, *args, **kwargs)
 
-        # Update the prior of this GausianModel with the spline generated from
+        # Update the prior of this GaussianModel with the spline generated from
         # the nominal EOS given in __init__
         if not hasattr(p_fun, '__call__'):
             raise TypeError("{:} the initial EOS estimate must be a function"
@@ -751,7 +751,8 @@ class EOSModel(Spline, Isentrope):
                   axes=None,
                   figure=None,
                   linestyles=['-k', '--k', '-.k'],
-                  labels=None):
+                  labels=None,
+                  vrange=None):
         """Plots the difference between the current EOS and ither isentropes
 
         Plots the difference vs the prior
@@ -762,7 +763,7 @@ class EOSModel(Spline, Isentrope):
             figure(plt.Figure): The figure object *Ignored*
             linestyles(list): A list of styles to plot
             labels(list): A list of labels for the isentropes
-
+            vrange(tuple): the specific volume range to plot
         Return:
             (plt.Axes)
         """
@@ -777,9 +778,14 @@ class EOSModel(Spline, Isentrope):
                             .format(self.get_inform(1)))
         # end
 
-        v_list = np.linspace(0.2,  # self.get_option('spline_min'),
-                             0.6,  # self.get_option('spline_max'),
-                             200)
+        if vrange is not None:
+            v_list = np.linspace(vrange[0],
+                                 vrange[1],
+                                 200)
+        else:
+            v_list = np.linspace(self.get_option('spline_min'),
+                                 self.get_option('spline_max'),
+                                 200)
 
         axes.plot(v_list, self(v_list) - self.prior(v_list), label="Model")
 
@@ -795,7 +801,9 @@ class EOSModel(Spline, Isentrope):
                             "isentropes".format(self.get_inform(1)))
         # end
         for isen, lbl in zip(isentropes, labels):
-            axes.plot(v_list, isen(v_list) - self.prior(v_list), label=lbl)
+            axes.plot(v_list, isen(v_list) - self.prior(v_list),
+                      label=lbl,
+                      )
         # end
 
         axes.legend(loc='best')

@@ -65,6 +65,7 @@ class Ptw(PhysicsModel):
     """PTW Flow stress model
 
     **Usage**
+    
     1. Instantiate a Ptw object with desired options
     2. *optional* set the options as desired
     3. Call the Ptw object with a valid temperature, strain rate and material
@@ -139,16 +140,16 @@ class Ptw(PhysicsModel):
         """Solves for the yield stress and flow stress at the given condition
 
         Args:
-            temp(float): Temperature, in degrees Kelvin
-            strain_rate(float): Strain rate, in sec**-1
-            material(str): Key for material type
-
+           temp(float): Temperature, in degrees Kelvin
+	   strain_rate(float): Strain rate, in sec**-1
+	   material(str): Key for material type
         Keyword Args:
            **overrides(dict): Passed as a chain of keyword arguments. These
                               arguments override any material property
-        Returns:
-            flow_stress(float): Flow stress in ??Pa??
-            yield_stress(float): Yield stress in ??Pa??
+
+        Return:
+           flow_stress(float): Flow stress in ??Pa??
+           yield_stress(float): Yield stress in ??Pa??
 
         """
 
@@ -189,6 +190,7 @@ class Ptw(PhysicsModel):
     def get_stress_strain(self, temp, strain_rate, material, min_strain=0.05,
                           max_strain=0.7, **overrides):
         """Returns the stress strain relationship for the material
+
         """
 
         t_s, t_y = self(temp, strain_rate, material, **overrides)
@@ -235,6 +237,7 @@ class Ptw(PhysicsModel):
 
         Return:
             (float or np.array): The stress in the material
+
         """
 
         t_s, t_y = self(temp, strain_rate, material, **overrides)
@@ -293,7 +296,8 @@ class Ptw(PhysicsModel):
            (float): The shear modulus
            (float): The characteristic temperature. Temp normalized by melt temp
            (float): The characteristic timescale. Time for a vibration to pass
-                    through one atom
+           through one atom
+
         """
 
         # uses the Struc object to perform the checks
@@ -387,6 +391,7 @@ class Ptw(PhysicsModel):
             temp(float): Temperature, in degrees Kelvin
             strain_rate(float): Strain rate, in sec**-1
             t_melt(float): Melt temperature of the material in Kelvin
+
         """
 
         return self.get_option('G_o') *\
@@ -401,6 +406,7 @@ class Ptw(PhysicsModel):
 
         Returns:
             (float): The melt temperature in Kelvin
+
         """
 
         melt_temp = {

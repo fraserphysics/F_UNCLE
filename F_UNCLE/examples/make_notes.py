@@ -76,7 +76,7 @@ if __name__ == '__main__':
     init_prior = np.vectorize(lambda v: 2.56e9 / v**3)
 
     # 2. Create the model and *true* EOS
-    eos_model = EOSModel(init_prior, Spline_sigma=0.05)
+    eos_model = EOSModel(init_prior, Spline_sigma=0.005)
     eos_true = EOSBump()
 
     # 3. Create the objects to generate simulations and pseudo experimental data
@@ -150,13 +150,16 @@ if __name__ == '__main__':
     out_dir = options.fig_dir
     square = (figwidth, figwidth)
     tall = (figwidth, 1.25 * figwidth)
-
+    vrange=(0.2,0.9)
     def eos_diff():
         ''' Compare EOS functions
         '''
         fig = plt.figure(figsize=square)
         opt_model.models['eos'].plot_diff(
-            axes=fig.gca(), isentropes=[eos_true], labels=['True'])
+            axes=fig.gca(),
+            isentropes=[eos_true],
+            labels=['True'],
+            vrange=vrange)
         return fig
 
     def rayl_line():
@@ -165,10 +168,18 @@ if __name__ == '__main__':
         fig = plt.figure(figsize=square)
         ax = fig.gca()
         opt_model.simulations['Stick']['sim'].\
-            plot(opt_model.models, axes=ax)
+            plot(opt_model.models,
+                 axes=ax,
+                 vrange=vrange)
         
-        eos_model.prior.plot(axes=ax, linestyles=['--b'], labels=['Prior EOS'])
-        eos_true.plot(axes=ax, linestyles=['-.g'], labels=['True EOS'])
+        eos_model.prior.plot(axes=ax,
+                             linestyles=['--b'],
+                             labels=['Prior EOS'],
+                             vrange=vrange)
+        eos_true.plot(axes=ax,
+                      linestyles=['-.g'],
+                      labels=['True EOS'],
+                      vrange=vrange)
         ax.legend(loc='best')
         fig.tight_layout()
         return fig
@@ -178,8 +189,14 @@ if __name__ == '__main__':
         '''
         fig = plt.figure(figsize=square)
         ax = fig.gca()
-        eos_model.prior.plot(axes=ax, linestyles=['--b'], labels=['Prior EOS'])
-        eos_true.plot(axes=ax, linestyles=['-.g'], labels=['True EOS'])
+        eos_model.prior.plot(axes=ax,
+                             linestyles=['--b'],
+                             labels=['Prior EOS'],
+                             vrange=vrange)
+        eos_true.plot(axes=ax,
+                      linestyles=['-.g'],
+                      labels=['True EOS'],
+                      vrange=vrange)
         ax.legend(loc='best')
         fig.tight_layout()
         return fig
@@ -279,11 +296,19 @@ if __name__ == '__main__':
         ax1 = fig.add_subplot(211)
         ax2 = fig.add_subplot(212)
 
-        opt_model.models['eos'].plot(axes=ax1, linestyles=['-k'],
-                                     labels=['Fit EOS'])
-        eos_model.prior.plot(axes=ax1, linestyles=['--b'],
-                             labels=['Prior EOS'])
-        eos_true.plot(axes=ax1, linestyles=['-.g'], labels=['True EOS'])
+        opt_model.models['eos'].plot(axes=ax1,
+                                     linestyles=['-k'],
+                                     labels=['Fit EOS'],
+                                     vrange=vrange)
+        eos_model.prior.plot(axes=ax1,
+                             linestyles=['--b'],
+                             labels=['Prior EOS'],
+                             vrange=vrange)
+        eos_true.plot(axes=ax1,
+                      linestyles=['-.g'],
+                      labels=['True EOS'],
+                      vrange=vrange)
+        
         ax1.legend(loc='best')
 
         gun_simulation.plot(axes=ax2, linestyles=['-k', '-r'],

@@ -54,7 +54,6 @@ Figures
 
    Figure 6
 
-A trivial change to test git hub
 """
 
 # Standard python packages
