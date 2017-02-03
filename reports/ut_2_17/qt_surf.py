@@ -46,8 +46,8 @@ class Visualization(traits.api.HasTraits):
         for a in variables:
             self.ranges += [a.min(),a.max()]
         scale = lambda z: (z-z.min())/(z.max()-z.min())
-        scaled = (scale(t) for t in variables)
-        mesh = mayavi.mlab.mesh(*scaled, colormap='gray', figure=self.scene.mayavi_scene)
+        scaled = (scale(t) for t in variables) # color=(.8,.2,.5)colormap='bone'
+        mesh = mayavi.mlab.mesh(*scaled, color=(.2,.5,.8), figure=self.scene.mayavi_scene)
         self.flag = False
 #-----------------------------------------------------------------------------
 # The QWidget containing the visualization

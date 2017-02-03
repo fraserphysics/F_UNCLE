@@ -127,7 +127,7 @@ class state:
         self.new_constant()
         # Get coordinates for the displayed state point + size.
         # Map xyz by surf.order, eg order = 'vEP' -> x=v, y=E, z=P
-        args = tuple(self.var_dict[s].frac for s in qt_surf.order) + (.03,)
+        args = tuple(self.var_dict[s].frac for s in qt_surf.order) + (.025,)
         # Initialize the displayed state point
         self.vis.point =  mayavi.mlab.points3d(
             *args, scale_factor=1.0, figure=self.vis.scene.mayavi_scene)
