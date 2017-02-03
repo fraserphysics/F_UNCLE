@@ -19,6 +19,7 @@ Reference:  http://docs.enthought.com/mayavi/mayavi/
 import sip
 for s in 'QString QDate QDateTime QTextStream QTime QUrl QVariant'.split():
     sip.setapi(s, 2)
+import qt_surf
 from PyQt4.QtGui import QApplication, QMainWindow, QWidget
 from ui_PVE_control import Ui_Form as PVE_control
 class variable:
@@ -124,8 +125,9 @@ class state:
             self.displayed_values[s] = var.set_value(v, force=True)
         self.old_values = self.values.copy()
         self.new_constant()
-        # Get coordinates for the displayed state point + size
-        args = tuple(self.var_dict[s].frac for s in 'PvE') + (.05,)
+        # Get coordinates for the displayed state point + size.
+        # Map xyz by surf.order, eg order = 'vEP' -> x=v, y=E, z=P
+        args = tuple(self.var_dict[s].frac for s in qt_surf.order) + (.03,)
         # Initialize the displayed state point
         self.vis.point =  mayavi.mlab.points3d(
             *args, scale_factor=1.0, figure=self.vis.scene.mayavi_scene)
@@ -256,8 +258,8 @@ class state:
         for t, var in self.var_dict.items(): # Update display
             if t != s:
                 self.displayed_values[t] = var.set_value(self.values[t])
-        # Move the displayed state point
-        fracs = list(self.var_dict[s].frac for s in 'PvE')
+        # Move the displayed state point.  qt_surf specifies coordinates
+        fracs = list(self.var_dict[s].frac for s in qt_surf.order)
         self.vis.point.mlab_source.set(x=fracs[0], y=fracs[1], z=fracs[2])
         # Add point to curve if it is new
         key = self.u_key(fracs)
@@ -294,7 +296,6 @@ class PVE_widget(QWidget, PVE_control):
             button.clicked.connect(self.state.new_constant)
         self.state.initial_values() # Set up state information from var_dict
 
-import qt_surf
 from ui_eos_qt import Ui_MainWindow
 class MainWindow(QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):

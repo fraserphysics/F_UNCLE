@@ -1,6 +1,7 @@
 ''' qt_surf.py derived from Enthought example qt_embedding.py
 '''
 
+order = 'vEP' # Order of axes
 import mayavi.mlab
 import traits.api
 import traitsui.api # Doing this import creates a QApplication
@@ -19,7 +20,8 @@ class Visualization(traits.api.HasTraits):
         ''' Put frame/axes around surface plot
         '''
         mayavi.mlab.outline()
-        mayavi.mlab.axes(ranges=self.ranges,xlabel='P',ylabel='v',zlabel='E')
+        mayavi.mlab.axes(ranges=self.ranges,xlabel=order[0],ylabel=order[1],
+                             zlabel=order[2])
     def __init__(self # Visualization
         ):
         """ Calculate three 2-d arrays of values to describe EOS
@@ -29,7 +31,7 @@ class Visualization(traits.api.HasTraits):
         import eos
         EOS = eos.ideal()
         traits.api.HasTraits.__init__(self)
-        P, v = np.mgrid[1e10:4e10:20j, 1e-6:4e-6:20j]
+        P, v = np.mgrid[1e10:4e10:40j, 1e-6:4e-6:50j]
         P = P.T
         v = v.T
         E = np.empty(v.shape)
@@ -37,12 +39,15 @@ class Visualization(traits.api.HasTraits):
         for i in range(n_i):
             for j in range(n_j):
                 E[i,j] = EOS.Pv2E(P[i,j],v[i,j])
+        L = locals()
+        variables = [L[s] for s in order]
+        #variables = (P,v,E)
         self.ranges = []
-        for a in (P,v,E):
+        for a in variables:
             self.ranges += [a.min(),a.max()]
         scale = lambda z: (z-z.min())/(z.max()-z.min())
-        mesh = mayavi.mlab.mesh(
-            scale(P), scale(v), scale(E), figure=self.scene.mayavi_scene)
+        scaled = (scale(t) for t in variables)
+        mesh = mayavi.mlab.mesh(*scaled, colormap='gray', figure=self.scene.mayavi_scene)
         self.flag = False
 #-----------------------------------------------------------------------------
 # The QWidget containing the visualization
