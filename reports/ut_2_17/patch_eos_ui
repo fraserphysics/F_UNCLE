@@ -1,0 +1,12 @@
+13c13
+<     def setupUi(self, MainWindow):
+---
+>     def setupUi(self, MainWindow, vis_widget, PVE_widget):
+24c24
+<         self.widget = QtGui.QWidget(self.centralwidget)
+---
+>         self.widget = vis_widget(self.centralwidget)
+28c28
+<         self.widget_2 = QtGui.QWidget(self.centralwidget)
+---
+>         self.widget_2 = PVE_widget(self.centralwidget, vis_widget=self.widget)

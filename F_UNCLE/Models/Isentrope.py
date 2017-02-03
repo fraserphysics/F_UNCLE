@@ -751,7 +751,8 @@ class EOSModel(Spline, Isentrope):
                   axes=None,
                   figure=None,
                   linestyles=['-k', '--k', '-.k'],
-                  labels=None):
+                  labels=None,
+                  vrange=None):
         """Plots the difference between the current EOS and ither isentropes
 
         Plots the difference vs the prior
@@ -762,7 +763,7 @@ class EOSModel(Spline, Isentrope):
             figure(plt.Figure): The figure object *Ignored*
             linestyles(list): A list of styles to plot
             labels(list): A list of labels for the isentropes
-
+            vrange(tuple): the specific volume range to plot
         Return:
             (plt.Axes)
         """
@@ -777,9 +778,14 @@ class EOSModel(Spline, Isentrope):
                             .format(self.get_inform(1)))
         # end
 
-        v_list = np.linspace(0.2,  # self.get_option('spline_min'),
-                             0.6,  # self.get_option('spline_max'),
-                             200)
+        if vrange is not None:
+            v_list = np.linspace(vrange[0],
+                                 vrange[1],
+                                 200)
+        else:
+            v_list = np.linspace(self.get_option('spline_min'),
+                                 self.get_option('spline_max'),
+                                 200)
 
         axes.plot(v_list, self(v_list) - self.prior(v_list), label="Model")
 
@@ -795,7 +801,9 @@ class EOSModel(Spline, Isentrope):
                             "isentropes".format(self.get_inform(1)))
         # end
         for isen, lbl in zip(isentropes, labels):
-            axes.plot(v_list, isen(v_list) - self.prior(v_list), label=lbl)
+            axes.plot(v_list, isen(v_list) - self.prior(v_list),
+                      label=lbl,
+                      )
         # end
 
         axes.legend(loc='best')

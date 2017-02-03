@@ -16,9 +16,6 @@
 Reference:  http://docs.enthought.com/mayavi/mayavi/
 
 '''
-import sip
-for s in 'QString QDate QDateTime QTextStream QTime QUrl QVariant'.split():
-    sip.setapi(s, 2)
 from PyQt4.QtGui import QApplication, QMainWindow, QWidget
 from ui_PVE_control import Ui_Form as PVE_control
 class variable:
@@ -112,7 +109,6 @@ class state:
         This is separate from __init__ because var_dict isn't ready when
         __init__ is called.
         '''
-        import mayavi.mlab
         self.values = {}
         self.displayed_values = {}
         for s, var in self.var_dict.items():
@@ -127,16 +123,12 @@ class state:
         # Get coordinates for the displayed state point + size
         args = tuple(self.var_dict[s].frac for s in 'PvE') + (.05,)
         # Initialize the displayed state point
-        self.vis.point =  mayavi.mlab.points3d(
-            *args, scale_factor=1.0, figure=self.vis.scene.mayavi_scene)
     def __init__(self,     # state instance
                  var_dict, # Dictionary that will hold variable instances
-                 vis):     # mayavi visualization instance
+                 ):     # mayavi visualization instance
         import eos
         self.EOS = eos.ideal()       # Methods for EOS constraints
         self.var_dict = var_dict
-        self.vis = vis
-        self.vis.curve = None
         self.curve_data = []
         self.dispatch = {                # Map GUI actions to methods
             #(Moved, constant): Method,
@@ -192,10 +184,6 @@ class state:
             if self.var_dict[s].button.isChecked():
                 self.constant = s
                 self.update(s, button=True)
-                if type(self.vis.curve) != type(None):
-                    self.vis.curve.remove()
-                    self.curve_data = []
-                self.vis.curve = None
                 if s == 'P':
                     self.u_key = lambda v: v[1] # Sort on v
                 else:
@@ -228,7 +216,6 @@ class state:
         6. If the new values are out of bounds, revert to self.old_values
         '''
         import numpy as np
-        import mayavi.mlab
         def revert():
             '''Revert to self.old_values
             '''
@@ -258,27 +245,23 @@ class state:
                 self.displayed_values[t] = var.set_value(self.values[t])
         # Move the displayed state point
         fracs = list(self.var_dict[s].frac for s in 'PvE')
-        self.vis.point.mlab_source.set(x=fracs[0], y=fracs[1], z=fracs[2])
         # Add point to curve if it is new
         key = self.u_key(fracs)
         if key in self.unique: return
         self.unique.add(key)
         self.curve_data.append(fracs)
         if len(self.curve_data) == 1: return
-        if type(self.vis.curve) != type(None): self.vis.curve.remove()
         self.curve_data.sort(key=self.u_key)
         x,y,z = (np.array(self.curve_data)[:,i] for i in (0,1,2))
-        self.vis.curve = mayavi.mlab.plot3d(
-            x, y, z, figure=self.vis.scene.mayavi_scene, tube_radius=0.01)
         return
 
 class PVE_widget(QWidget, PVE_control):
-    def __init__(self, parent=None, vis_widget=None):
+    def __init__(self, parent=None):
         '''Mandatory initialisation of a class.'''
         super(PVE_widget, self).__init__(parent)
         self.setupUi(self)
         var_dict = {}
-        self.state = state(var_dict, vis_widget.visualization)
+        self.state = state(var_dict)
         self.Ideal_button.clicked.connect(self.state.ideal_eos)
         self.Shaw_button.clicked.connect(self.state.shaw_eos)
         for spin, slide, button, name, factor in (
@@ -294,16 +277,15 @@ class PVE_widget(QWidget, PVE_control):
             button.clicked.connect(self.state.new_constant)
         self.state.initial_values() # Set up state information from var_dict
 
-import qt_surf
-from ui_eos_qt import Ui_MainWindow
+from ui_no_mayavi_qt import Ui_MainWindow
 class MainWindow(QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
-        self.setupUi(self, qt_surf.MayaviQWidget, PVE_widget)
+        self.setupUi(self, PVE_widget)
 
 if __name__ == '__main__':
     import sys
-    app = QApplication.instance() # traitsui.api has created app
+    app = QApplication(sys.argv)
     frame = MainWindow()
     frame.show()
     sys.exit(app.exec_())

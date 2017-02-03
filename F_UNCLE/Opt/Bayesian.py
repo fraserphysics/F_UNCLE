@@ -131,10 +131,6 @@ class Bayesian(Struc):
   +--------------+-------+-----+-----+-----+-----+----------------------------+
   |`precondition`|(bool) |True |None |None |-    |Flag to scale the problem   |
   +--------------+-------+-----+-----+-----+-----+----------------------------+
-  |`prior_weight`|(float)|1.0  |0.0  |0.0  |-    |Weight of the prior when    |
-  |              |       |     |     |     |     |calculating the log         |
-  |              |       |     |     |     |     |likelihood                  |
-  +--------------+-------+-----+-----+-----+-----+----------------------------+
   |`debug`       |(bool) |False|None |None |-    |Flag to print debug         |
   |              |       |     |     |     |     |information                 |
   +--------------+-------+-----+-----+-----+-----+----------------------------+
@@ -183,12 +179,8 @@ class Bayesian(Struc):
                              'Flag to scale the problem'],
             'debug': [bool, False, None, None, '-',
                       'Flag to print debug information'],
-
             'verb': [bool, True, None, None, '-',
                      'Flag to print stats during optimization'],
-            'prior_weight': [float, 1.0, 0.0, 1.0, '-',
-                             'Weighting of the prior when calculating log'
-                             'likelihood'],
             'sens_mode': [str, 'ser', None, None, '-',
                           'Flag for how to evaluate sensitivities, `ser`'
                           'serial, `pll` parallel']
@@ -439,7 +431,6 @@ class Bayesian(Struc):
             atol = self.get_option('outer_atol')
             reltol = self.get_option('outer_rtol')
             verb = self.get_option('verb')
-            prior_weight = self.get_option('prior_weight')
 
             sens_matrix = analysis._get_sens(initial_data)
             models = analysis.models
@@ -452,7 +443,7 @@ class Bayesian(Struc):
                 print('prior log like', -analysis.model_log_like())
             if verb and mpi_print:
                 print('sim log like', -analysis.sim_log_like(initial_data))
-            new_log_like = prior_weight * analysis.model_log_like()\
+            new_log_like = analysis.model_log_like()\
                 + analysis.sim_log_like(initial_data)
 
             if verb and mpi_print:
@@ -489,7 +480,7 @@ class Bayesian(Struc):
                 dof_list.append(initial_dof + x_i * d_hat)
                 model_dict[opt_key] = opt_model.update_dof(dof_list[-1])
                 new_analysis = analysis.update(models=model_dict)
-                costs[i] = prior_weight * new_analysis.model_log_like()
+                costs[i] = new_analysis.model_log_like()
             # end
             
             # Evaluates each simulation at each dof step
