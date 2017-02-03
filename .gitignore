@@ -19,4 +19,5 @@ TAGS
 /reports/ut_2_17/figs
 /reports/ut_2_17/static_figs
 /reports/ut_2_17/ui*.py
+/reports/ut_2_17/ui_temp.py.orig 
 _build/
