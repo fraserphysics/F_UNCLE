@@ -25,6 +25,8 @@ FIGURES_MADE = figs/authors.jpg sim_figs
 poster.pdf: poster.tex ${FIGURES_MADE}
 	pdflatex poster
 
+clean:
+	rm -f *.aux *.ps *.log figs/*.pdf *.pdf sim_figs
 ###---------------
 ### Local Variables:
 ### mode: makefile

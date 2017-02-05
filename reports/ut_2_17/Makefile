@@ -2,7 +2,8 @@
 PYTHON = export PYTHONPATH=../../F_UNCLE/;  python
 # slides.pdf is the default target
 # Use the following to make an environment with PyQt4
-# conda create --name qtmayavi scipy pyqt=4 pyface mayavi=4.4.0 python=2.7 ipython
+# conda create --name qtmayavi scipy pyqt=4 pyface mayavi=4.4.0 python=2.7
+# matplotlib cvxopt ipython
 # 1m12.065s
 # conda remove --name qtmayavi --all
 # 0m51.317s
