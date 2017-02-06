@@ -358,7 +358,7 @@ class Isentrope(GaussianModel):
         and it is sufficient to check eq:star at the knots.
 
         """
-
+        
         c_model = copy.deepcopy(self)
         spline_end = c_model.get_option('spline_end')
         dim = c_model.shape()
@@ -370,12 +370,18 @@ class Isentrope(GaussianModel):
         c_tmp = np.zeros(dim)
         c_init = c_model.get_dof()
         scaling = c_model.get_scaling()
+        if self.get_option('basis') == 'dens':
+            last_idx = 0
+        else:
+            last_idx = -1
+        # end
+        
         for i in range(dim):
             c_tmp[i] = 1.0
             mod_tmp = c_model.update_dof(c_tmp)
             G_mat[:-2, i] = -mod_tmp.derivative(2)(v_unique)
-            G_mat[-2, i] = mod_tmp.derivative(1)(v_unique[-1])
-            G_mat[-1, i] = -mod_tmp(v_unique[-1])
+            G_mat[-2, i] = mod_tmp.derivative(1)(v_unique[last_idx])
+            G_mat[-1, i] = -mod_tmp(v_unique[last_idx])
             c_tmp[i] = 0.0
         # end
 
