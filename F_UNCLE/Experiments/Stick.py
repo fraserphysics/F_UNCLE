@@ -318,9 +318,9 @@ class Stick(GausianExperiment):
             # end
             ax1.set_ylim(bottom=0.0, top = None)
         elif level == 2:
-            ax1.plot(data[0], 1E-3 * data[1][0], linestyles[0], label=labels[0])
+            ax1.plot(data[0], 1E6 * data[1][0], linestyles[0], label=labels[0])
             ax1.set_xlabel("Sensor position / cm")
-            ax1.set_ylabel("Shock arrival time / ms")
+            ax1.set_ylabel(r"Shock arrival time / $\mu$s")
         # end
 
         return fig

@@ -275,14 +275,14 @@ def main(argv=None):
         parser.add_argument('--{0}'.format(key), type=str, help=value)
     args = parser.parse_args(argv)
     
-    params = {'axes.labelsize': 18,     # Plotting parameters for latex
-              'font.size': 15,
-              'legend.fontsize': 15,
+    params = {'axes.labelsize': 24,     # Plotting parameters for latex
+              'font.size': 24,
+              'legend.fontsize': 20,
               'text.usetex': True,
               'font.family':'serif',
               'font.serif':'Computer Modern Roman',
-              'xtick.labelsize': 15,
-              'ytick.labelsize': 15}
+              'xtick.labelsize': 20,
+              'ytick.labelsize': 20}
     mpl.rcParams.update(params)
     if not args.show:
         mpl.use('PDF')  # Enables running without DISPLAY enviroment variable

@@ -297,7 +297,7 @@ class Isentrope(GaussianModel):
                                  self.get_option('spline_max'),
                                  200)
         ax1.plot(v_spec, self(v_spec), linestyles[0], label=labels[0])
-        ax1.set_xlabel(r'Specific volume / cm$^3$g^{-1}')
+        ax1.set_xlabel(r'Specific volume / cm$^3$g$^{-1}$')
         ax1.set_ylabel(r'Pressure / Pa')
 
         if vrange is not None:
