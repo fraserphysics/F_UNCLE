@@ -44,6 +44,7 @@ import unittest
 import copy
 import math
 import pdb
+import pickle
 # =========================
 # Python Packages
 # =========================
@@ -61,9 +62,9 @@ try:
     # else:
     #     mpi_print = False
     # # end
-    mpi_print = False
+    mpi_print = True
 except ImportError as inst:
-    mpi_print = False
+    mpi_print = True
 # end
         
         
@@ -177,6 +178,8 @@ class Bayesian(Struc):
                           'Flag to constrain the optimization'],
             'precondition': [bool, True, None, None, '-',
                              'Flag to scale the problem'],
+            'pickle_sens' :[bool, False, None, None, '-',
+                            'Flag to save sens matrix each iteration'],
             'debug': [bool, False, None, None, '-',
                       'Flag to print debug information'],
             'verb': [bool, True, None, None, '-',
@@ -410,7 +413,7 @@ class Bayesian(Struc):
 
         """
         #FixMe: "intitial_data" misspelled and not used
-        def outer_loop_iteration(analysis, log_like, intitial_data):
+        def outer_loop_iteration(analysis, log_like, intitial_data, i):
             """Performs a single step of the outer loop optimization
 
             Args:
@@ -419,6 +422,7 @@ class Bayesian(Struc):
                 log_like(float): The log likelihood of the last iteration
                 initial_data(list): The results of the simulations at the
                                     current model state
+                i(int): The iteration number
             Return:
                 (Bayesian): A copy of the analysis object with the new model
                             estimate
@@ -431,13 +435,20 @@ class Bayesian(Struc):
             atol = self.get_option('outer_atol')
             reltol = self.get_option('outer_rtol')
             verb = self.get_option('verb')
-
+            if verb and mpi_print:
+                print('Begining sensitivities calculation')
             sens_matrix = analysis._get_sens(initial_data)
+            if verb and mpi_print:
+                print('End of sensitivities calculation')
+
             models = analysis.models
             opt_key = analysis.opt_key
             opt_model = models[opt_key]
             model_dict = analysis.models
-
+            
+            if self.get_option('pickle_sens'):
+                with open("./sens_iter{:02d}.pkl".format(i), 'wb') as fid:
+                    pickle.dump(sens_matrix, fid)
             # Solve all simulations with the current model
             if verb and mpi_print:
                 print('prior log like', -analysis.model_log_like())
@@ -457,6 +468,8 @@ class Bayesian(Struc):
                     True
 
             # end
+            if verb and mpi_print:
+                print('Begining local optimization')
 
             local_sol = analysis._local_opt(initial_data,
                                             sens_matrix)
@@ -465,6 +478,12 @@ class Bayesian(Struc):
             if precondition:
                 d_hat = np.dot(opt_model.get_scaling(), d_hat)
             # end
+            if verb and mpi_print:
+                original_dof = opt_model.get_dof()
+                print('End of local optimization\nOptimalStep')
+                for i, dof in enumerate(d_hat):
+                    print("{:d}\t{:f}".format(i, dof/original_dof[i]))
+                print('Start of line search')
             
             # Finds the optimal step in the d_hat direction 
             n_steps = 5
@@ -490,17 +509,27 @@ class Bayesian(Struc):
             iter_data = {}
             for key in analysis.simulations:
                 if self.get_option('sens_mode') == 'mpi':
-                    iter_data[key] = analysis.simulations[key]['sim']\
+                    sim_data = analysis.simulations[key]['sim']\
                                              .multi_solve_mpi(
                                                  models, opt_key, dof_list)
                 elif self.get_option('sens_mode') == 'runjob':
-                    iter_data[key] = analysis.simulations[key]['sim']\
+                    sim_data = analysis.simulations[key]['sim']\
                                              .multi_solve_runjob(
                                                  models, opt_key, dof_list)
                 else:
-                    iter_data[key] = analysis.simulations[key]['sim']\
+                    sim_data = analysis.simulations[key]['sim']\
                                              .multi_solve(
                                                  models, opt_key, dof_list)
+                # end
+                # Evaluate the simulation data to the same times as the exp
+                for data in sim_data:
+                    expdata = analysis.simulations[key]['exp']()
+                    tmp = expdata[1][0]\
+                          -  analysis.simulations[key]['exp'].compare(
+                              expdata[0], expdata[1][0], data)
+                    data = (expdata[0], [tmp], data[2])
+                # end
+                iter_data[key] = sim_data
             # end
 
             # Calculates the cost of the data for each step
@@ -516,6 +545,11 @@ class Bayesian(Struc):
             # Updates the model dof to the optimal value
             besti = np.argmax(costs)
             model_dict[opt_key] = opt_model.update_dof(dof_list[besti])
+
+            if verb and mpi_print:
+                print('End of line search\n'
+                      'Costs {:s}\n'
+                      'End of iteration {:02d}'.format(costs, i))
 
             return (analysis.update(models=model_dict),
                     new_log_like,
@@ -541,7 +575,7 @@ class Bayesian(Struc):
             if verb and mpi_print:
                 print('Iter {} of {}'.format(i, maxiter))
             analysis, log_like, initial_data, model_dof, conv =\
-                outer_loop_iteration(analysis, log_like, initial_data)
+                outer_loop_iteration(analysis, log_like, initial_data, i)
             history.append(log_like)
             dof_hist.append(model_dof)
             i += 1
@@ -752,8 +786,8 @@ class Bayesian(Struc):
         for key in sims:
             expdata = sims[key]['exp']()
             simdata = sims[key]['sim'](self.models)
-            tmp = -1 * sims[key]['sim'].compare(
-                expdata[0], np.zeros(expdata[0].shape), simdata)
+            tmp = expdata[1][0] -  sims[key]['exp'].compare(
+                expdata[0], expdata[1][0], simdata)
             data[key] = (expdata[0], [tmp], simdata[2])
         # end
 
