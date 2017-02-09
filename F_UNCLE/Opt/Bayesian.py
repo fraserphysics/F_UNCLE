@@ -77,19 +77,24 @@ from cvxopt import matrix, solvers
 
 if __name__ == '__main__':
     sys.path.append(os.path.abspath('./../../'))
+    sys.path.append(os.path.abspath('./../../../fit_9501'))
     from F_UNCLE.Utils.Experiment import Experiment
     from F_UNCLE.Utils.PhysicsModel import PhysicsModel
     from F_UNCLE.Utils.Struc import Struc
+#    from fit_9501.Utils.DataExperiment import DataExperiment
 else:
     from ..Utils.Experiment import Experiment
     from ..Utils.PhysicsModel import PhysicsModel
     from ..Utils.Struc import Struc
+    sys.path.append(os.path.abspath('./../../../fit_9501'))    
+#    from fit_9501.Utils.DataExeriment import DataExperiment
 # end
 
 # =========================
 # Main Code
 # =========================
-
+#TODO
+# - fix check _inputs to test class type 
 
 class Bayesian(Struc):
     """A class for performing Bayesian inference on a model given data
@@ -232,7 +237,7 @@ class Bayesian(Struc):
                 raise TypeError('005 {:}, each list for simulation must be'
                                 'length 2'
                                 .format(self.get_inform(1)))
-            elif not np.all([[isinstance(sim, Experiment)
+            elif not np.all([[isinstance(sim, (Struc))
                               for sim in simulations[key]]
                              for key in simulations]):
                 raise TypeError('006 {:}, each element in the simulation list'
@@ -525,8 +530,10 @@ class Bayesian(Struc):
                 for data in sim_data:
                     expdata = analysis.simulations[key]['exp']()
                     tmp = expdata[1][0]\
-                          -  analysis.simulations[key]['exp'].compare(
-                              expdata[0], expdata[1][0], data)
+                          -  analysis.simulations[key]['exp'].compare(data)
+                    if 'trigger' in data[2]:
+                        data[2]['trigger'] = expdata.trigger
+                    # end                    
                     data = (expdata[0], [tmp], data[2])
                 # end
                 iter_data[key] = sim_data
@@ -786,8 +793,10 @@ class Bayesian(Struc):
         for key in sims:
             expdata = sims[key]['exp']()
             simdata = sims[key]['sim'](self.models)
-            tmp = expdata[1][0] -  sims[key]['exp'].compare(
-                expdata[0], expdata[1][0], simdata)
+            tmp = expdata[1][0] -  sims[key]['exp'].compare(simdata)
+            if 'trigger' in simdata[2]:
+                simdata[2]['trigger'] = expdata.trigger
+            # end
             data[key] = (expdata[0], [tmp], simdata[2])
         # end
 

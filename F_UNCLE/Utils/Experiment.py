@@ -719,8 +719,8 @@ class GausianExperiment(Experiment):
 
         """
 
-        exp_data = experiment()
-        epsilon = self.compare(exp_data[0], exp_data[1][0], sim_data)
+
+        epsilon = experiment.compare(sim_data)
 
         p_mat = np.dot(np.dot(sens_matrix.T,
                               inv(experiment.get_sigma(models))),
@@ -750,8 +750,7 @@ class GausianExperiment(Experiment):
             (float): The log of the likelihood of the simulation
         """
 
-        exp_data = experiment()
-        epsilon = self.compare(exp_data[0], exp_data[1][0], sim_data)
+        epsilon = experiment.compare(sim_data)
         return -0.5 * np.dot(epsilon,
                              np.dot(inv(experiment.get_sigma(models)),
                                     epsilon))
