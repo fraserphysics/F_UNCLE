@@ -257,7 +257,7 @@ class Bayesian(Struc):
                           for key in simulations]):
                 raise TypeError('007 {:}Each dictionary must contain the keys'
                                 'sim and exp'.format(self.get_inform(1)))
-            elif not np.all([[isinstance(sim, Experiment)
+            elif not np.all([[isinstance(sim, Struc)
                               for sim in [simulations[key]['sim'],
                                           simulations[key]['exp']]]
                              for key in simulations]):
@@ -418,7 +418,7 @@ class Bayesian(Struc):
 
         """
         #FixMe: "intitial_data" misspelled and not used
-        def outer_loop_iteration(analysis, log_like, intitial_data, i):
+        def outer_loop_iteration(analysis, log_like, intitial_data, itn):
             """Performs a single step of the outer loop optimization
 
             Args:
@@ -452,7 +452,7 @@ class Bayesian(Struc):
             model_dict = analysis.models
             
             if self.get_option('pickle_sens'):
-                with open("./sens_iter{:02d}.pkl".format(i), 'wb') as fid:
+                with open("./sens_iter{:02d}.pkl".format(itn), 'wb') as fid:
                     pickle.dump(sens_matrix, fid)
             # Solve all simulations with the current model
             if verb and mpi_print:
@@ -487,7 +487,7 @@ class Bayesian(Struc):
                 original_dof = opt_model.get_dof()
                 print('End of local optimization\nOptimalStep')
                 for i, dof in enumerate(d_hat):
-                    print("{:d}\t{:f}".format(i, dof/original_dof[i]))
+                    print("{:d}\t{:f}\t{:e}".format(i, dof/original_dof[i], dof))
                 print('Start of line search')
             
             # Finds the optimal step in the d_hat direction 
@@ -503,6 +503,8 @@ class Bayesian(Struc):
             for i, x_i in enumerate(x_list):
                 dof_list.append(initial_dof + x_i * d_hat)
                 model_dict[opt_key] = opt_model.update_dof(dof_list[-1])
+                fig = model_dict[opt_key].plot()
+                fig.savefig('isen_itn{:d}_step{:d}.pdf'.format(itn,i))
                 new_analysis = analysis.update(models=model_dict)
                 costs[i] = new_analysis.model_log_like()
             # end
@@ -527,14 +529,10 @@ class Bayesian(Struc):
                                                  models, opt_key, dof_list)
                 # end
                 # Evaluate the simulation data to the same times as the exp
-                for data in sim_data:
-                    expdata = analysis.simulations[key]['exp']()
-                    tmp = expdata[1][0]\
-                          -  analysis.simulations[key]['exp'].compare(data)
-                    if 'trigger' in data[2]:
-                        data[2]['trigger'] = expdata.trigger
-                    # end                    
-                    data = (expdata[0], [tmp], data[2])
+                for i, data in enumerate(sim_data):
+                    sim_data[i] = analysis.simulations[key]['exp'].align(
+                        data
+                    )
                 # end
                 iter_data[key] = sim_data
             # end
@@ -556,7 +554,8 @@ class Bayesian(Struc):
             if verb and mpi_print:
                 print('End of line search\n'
                       'Costs {:s}\n'
-                      'End of iteration {:02d}'.format(costs, i))
+                      'Besti {:d}\n'
+                      'End of iteration {:02d}'.format(costs, besti, i))
 
             return (analysis.update(models=model_dict),
                     new_log_like,
@@ -791,13 +790,9 @@ class Bayesian(Struc):
 
         data = {}
         for key in sims:
-            expdata = sims[key]['exp']()
-            simdata = sims[key]['sim'](self.models)
-            tmp = expdata[1][0] -  sims[key]['exp'].compare(simdata)
-            if 'trigger' in simdata[2]:
-                simdata[2]['trigger'] = expdata.trigger
-            # end
-            data[key] = (expdata[0], [tmp], simdata[2])
+            data[key] = sims[key]['exp'].align(
+                sims[key]['sim'](self.models)
+            )
         # end
 
         return data

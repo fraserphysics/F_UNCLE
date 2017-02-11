@@ -125,6 +125,8 @@ class Isentrope(GaussianModel):
             'basis': [str, 'volume', None, None, '',
                       "The basis of the isentrope, can be `volume` or"
                       " `density`"],
+            'cj_vol_range': [tuple, (0.33,0.66), None, None, 'cm**3 g**-1',
+                             "Range of specific volumes for CJ search"],
             'vcj_lower': [float, 5.0E5, 0.0, None, 'cm s-1',
                           "Lower bound on the CJ velocity used in"
                           "bracketing search"],
@@ -183,15 +185,18 @@ class Isentrope(GaussianModel):
         # Search for det velocity between 1 and 10 km/sec
         d_min = eos.get_option('vcj_lower')  # cm s**-1
         d_max = eos.get_option('vcj_upper')  # cm s**-1
-        if eos.get_option('basis').lower()[:3] == 'vol':
-            v_min = eos.get_option('spline_min')
-            v_max = eos.get_option('spline_max')
-        elif eos.get_option('basis').lower()[:3] == 'den':
-            v_min = eos.get_option('spline_max')**-1
-            v_max = eos.get_option('spline_min')**-1
-        else:
-            raise IOError('Unknown Isentrope basis, must be `vol` or `den`'
-                          .format(self.get_inform(1)))
+        # if eos.get_option('basis').lower()[:3] == 'vol':
+        #     v_min = eos.get_option('spline_min')
+        #     v_max = eos.get_option('spline_max')
+        # elif eos.get_option('basis').lower()[:3] == 'den':
+        #     v_min = eos.get_option('spline_max')**-1
+        #     v_max = eos.get_option('spline_min')**-1
+        # else:
+        #     raise IOError('Unknown Isentrope basis, must be `vol` or `den`'
+        #                   .format(self.get_inform(1)))
+        # v_min = 1.0
+        # v_min = 3.5**-1
+        v_min, v_max = self.get_option('cj_vol_range')
 
         # R is Rayleigh line
         def rayl_line(vel, vol, vol_0, p_0):
@@ -371,17 +376,17 @@ class Isentrope(GaussianModel):
         c_init = c_model.get_dof()
         scaling = c_model.get_scaling()
         if self.get_option('basis') == 'dens':
-            last_idx = 0
+            slope = -1
         else:
-            last_idx = -1
+            slope = 1
         # end
         
         for i in range(dim):
             c_tmp[i] = 1.0
             mod_tmp = c_model.update_dof(c_tmp)
             G_mat[:-2, i] = -mod_tmp.derivative(2)(v_unique)
-            G_mat[-2, i] = mod_tmp.derivative(1)(v_unique[last_idx])
-            G_mat[-1, i] = -mod_tmp(v_unique[last_idx])
+            G_mat[-2, i] = slope * mod_tmp.derivative(1)(v_unique[-1])
+            G_mat[-1, i] = -mod_tmp(v_unique[-1])
             c_tmp[i] = 0.0
         # end
 
