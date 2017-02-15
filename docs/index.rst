@@ -17,6 +17,7 @@ Contents:
    optimization
    utils
    examples
+   README
    
 Indices and tables
 ==================
