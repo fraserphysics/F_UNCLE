@@ -13,16 +13,39 @@ Functional Uncertainty Constrained by Law and Experiment
 Prerequisites
 -------------
 
-To run the tests, certain software must be installed.  The required
-packages are described in the file foo.  Using the conda package
-manager, one can create an environment by foobar.
+To run the tests, certain software must be installed.  
+
+The minimum required python packages to run F_UNCLE are shown in the
+file /pip_req.txt. These packages can either be installed manually or
+the conda package manager can be used to create an environment
+containing all the required packages. In the root F_UNCLE folder run
+the following commands::
+
+   conda create -n funcle python=3.5 -f pip_req.txt
+   source activate funcle
+
+The conda environment will now be active and provide all the packages
+needed to run F_UNCLE
+
+To run the tests, several other packages are needed, they are given in
+`pip_test_req.txt`. These packages can either be installed manually or
+added to the conda environment with the following commands from the
+root F_UNCLE directory::
+
+    source activate F_UNCLE
+    conda install --file pip_optional.txt
+
+To build the documentation, further packages are needed, they are
+given in `pip_doc_req.txt` and can be installed as above
 
 Testing
 -------
 
-From the root directory of `F_UNCLE` run:
+From the root directory of `F_UNCLE` run::
 
-   $ nosetests -all-modules
+   nosetests
+
+This will discover, run and report on all test in the F_UNCLE module
 
 Documentation
 -------------
