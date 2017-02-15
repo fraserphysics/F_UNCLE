@@ -125,7 +125,7 @@ class Isentrope(GaussianModel):
             'basis': [str, 'volume', None, None, '',
                       "The basis of the isentrope, can be `volume` or"
                       " `density`"],
-            'cj_vol_range': [tuple, (0.33,0.66), None, None, 'cm**3 g**-1',
+            'cj_vol_range': [tuple, (0.25,0.58), None, None, 'cm**3 g**-1',
                              "Range of specific volumes for CJ search"],
             'vcj_lower': [float, 5.0E5, 0.0, None, 'cm s-1',
                           "Lower bound on the CJ velocity used in"
@@ -153,7 +153,7 @@ class Isentrope(GaussianModel):
 
         return self.get_option('spline_N')
 
-    def _get_cj_point(self, vol_0, pres_0=0.0):
+    def _get_cj_point(self, vol_0, pres_0=0.0, debug=False):
         """Find CJ conditions using two nested line searches.
 
         The CJ point is the location on the EOS where a Rayleigh line
@@ -170,6 +170,7 @@ class Isentrope(GaussianModel):
 
         Keyword Args:
             pres_0(float): The pressure of the reactants
+            debug(bool): Flag to print debug information
 
         Return:
             (tuple): Length 3 elements are:
@@ -197,7 +198,7 @@ class Isentrope(GaussianModel):
         # v_min = 1.0
         # v_min = 3.5**-1
         v_min, v_max = self.get_option('cj_vol_range')
-
+        
         # R is Rayleigh line
         def rayl_line(vel, vol, vol_0, p_0):
             # Pressure in Pa, vel in cm s-1 vol in cm3 g-1
@@ -227,9 +228,12 @@ class Isentrope(GaussianModel):
         # arg_min(vel, self) finds volume that minimizes self(v) - R(v)
 
         def arg_min(vel, eos, vol_0):
-            return brentq(derr_dvol, v_min, v_max,
-                          args=(vel, eos, vol_0))
-
+            try:
+                return brentq(derr_dvol, v_min, v_max,
+                              args=(vel, eos, vol_0))
+            except Exception as inst:
+                print ("Argmin failed, vel {:f} km/s".format(vel/1E5))
+                raise inst
         def error(vel, eos, vol_0, p_0):
             return rayl_err(vel, arg_min(vel, eos, vol_0),
                             eos, vol_0, p_0)
@@ -248,6 +252,7 @@ class Isentrope(GaussianModel):
             #end
 
         except Exception as inst:
+            print("brentq failed")
             raise inst
             # print(inst)
             # import pdb
@@ -257,7 +262,7 @@ class Isentrope(GaussianModel):
         return vel_cj, vol_cj, float(p_cj), rayl_line
 
     def plot(self, axes=None, figure=None, linestyles=['-k'],
-             labels=['Isentrope'], vrange=None, *args, **kwargs):
+             labels=['Isentrope'], vrange=None, log=False, *args, **kwargs):
         """Plots the EOS
 
         Overloads the :py:meth:`F_UNCLE.Utils.Struc.Struc.plot` method to plot
@@ -272,7 +277,7 @@ class Isentrope(GaussianModel):
             labels(list): Strings for the plot labels
                 0. 'Isentrope'
             vrange(tuple): Specific volume range to plot
-
+            log(bool): Flag to plot on semilogy
         Return:
             (plt.Figure): A reference to the figure containing the plot
 
@@ -301,9 +306,24 @@ class Isentrope(GaussianModel):
             v_spec = np.linspace(self.get_option('spline_min'),
                                  self.get_option('spline_max'),
                                  200)
-        ax1.plot(v_spec, self(v_spec), linestyles[0], label=labels[0])
-        ax1.set_xlabel(r'Specific volume / cm$^3$g$^{-1}$')
+        if log:
+            ax1.semilogy(v_spec,
+                         self(v_spec),
+                         linestyles[0],
+                         label=labels[0])
+        else:
+            ax1.plot(v_spec,
+                     self(v_spec),
+                     linestyles[0],
+                     label=labels[0])
+        # end
+
         ax1.set_ylabel(r'Pressure / Pa')
+        
+        if self.get_option('basis') == 'dens':
+            ax1.set_xlabel(r'Density / g cm$^{-3}$')
+        else:
+            ax1.set_xlabel(r'Specific volume / cm$^3$g$^{-1}$')
 
         if vrange is not None:
             ax1.set_xlim(*vrange)
@@ -675,9 +695,9 @@ class EOSModel(Spline, Isentrope):
                            "accepted".format(self.get_inform(1)))
         # end 
         Spline.__init__(self, vol, p_fun(vol), ext=0)
-        self.prior = copy.deepcopy(self)
-        self = self._on_update_dof(self)
 
+        self = self._on_update_dof(self)
+        self.prior = copy.deepcopy(self)
 
     def get_scaling(self):
         """Returns a scaling matrix to make the dofs of the same scale

@@ -487,7 +487,9 @@ class Bayesian(Struc):
                 original_dof = opt_model.get_dof()
                 print('End of local optimization\nOptimalStep')
                 for i, dof in enumerate(d_hat):
-                    print("{:d}\t{:f}\t{:e}".format(i, dof/original_dof[i], dof))
+                    print("{:d}\t{:f}\t{:e}"
+                          .format(i, dof/original_dof[i], dof)
+                    )
                 print('Start of line search')
             
             # Finds the optimal step in the d_hat direction 
@@ -500,14 +502,33 @@ class Bayesian(Struc):
             dof_list = []
             
             # Builds the list of dof values to test and gets the prior cost
+            fig = plt.figure()
+            ax1 = fig.gca()
+            
+            ax1.semilogy(opt_model.get_t()[:-4],
+                         np.fabs(d_hat),
+                         label='Total Step')
+            opt_model.prior.plot(
+                axes=ax1,
+                labels=['Prior'],
+                linestyles=['-'],
+                log=True
+                )
             for i, x_i in enumerate(x_list):
                 dof_list.append(initial_dof + x_i * d_hat)
                 model_dict[opt_key] = opt_model.update_dof(dof_list[-1])
-                fig = model_dict[opt_key].plot()
-                fig.savefig('isen_itn{:d}_step{:d}.pdf'.format(itn,i))
+                model_dict[opt_key].plot(
+                    axes=ax1,
+                    labels=['Step {:02d}'.format(i)],
+                    linestyles=['-'],
+                    log=True
+                )
                 new_analysis = analysis.update(models=model_dict)
                 costs[i] = new_analysis.model_log_like()
             # end
+            ax1.legend(loc='best')
+
+            fig.savefig('lineSearch_itn{:02d}.pdf'.format(itn))
             
             # Evaluates each simulation at each dof step
             # Note: This approach makes use of the multi_solve method
