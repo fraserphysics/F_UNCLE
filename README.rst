@@ -21,7 +21,7 @@ the conda package manager can be used to create an environment
 containing all the required packages. In the root F_UNCLE folder run
 the following commands::
 
-   conda create -n funcle python=3.5 -f pip_req.txt
+   conda create -n funcle python=3.5 --file pip_req.txt
    source activate funcle
 
 The conda environment will now be active and provide all the packages
@@ -32,8 +32,8 @@ To run the tests, several other packages are needed, they are given in
 added to the conda environment with the following commands from the
 root F_UNCLE directory::
 
-    source activate F_UNCLE
-    conda install --file pip_optional.txt
+    source activate funcle
+    conda install --file pip_test_req.txt
 
 To build the documentation, further packages are needed, they are
 given in `pip_doc_req.txt` and can be installed as above
