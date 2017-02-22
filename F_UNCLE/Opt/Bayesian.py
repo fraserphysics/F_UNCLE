@@ -794,7 +794,8 @@ class Bayesian(Struc):
         """Generates a set of data at each experimental data-point
 
         For each pair of simulations and experiments, generates the
-        the simulation response.
+        the simulation response, aligning it with the experimental 
+        data
 
         Args:
             None

@@ -577,9 +577,8 @@ class Experiment(Struc):
             models[model_key] = model.update_dof(new_dofs)
             inp_mat[:, i] = (new_dofs - model.get_dof())
             resp_mat[:, i] = -self.compare(
-                initial_data[0],
-                initial_data[1][0],
-                self(models))
+                self(models),                
+                initial_data)
             new_dofs[i] -= float(coeff * step_frac)
         # end
    

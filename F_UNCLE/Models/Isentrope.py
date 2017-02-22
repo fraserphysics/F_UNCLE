@@ -232,7 +232,7 @@ class Isentrope(GaussianModel):
                 return brentq(derr_dvol, v_min, v_max,
                               args=(vel, eos, vol_0))
             except Exception as inst:
-                print ("Argmin failed, vel {:f} km/s".format(vel/1E5))
+                # print ("Argmin failed, vel {:f} km/s".format(vel/1E5))
                 raise inst
         def error(vel, eos, vol_0, p_0):
             return rayl_err(vel, arg_min(vel, eos, vol_0),
@@ -252,7 +252,7 @@ class Isentrope(GaussianModel):
             #end
 
         except Exception as inst:
-            print("brentq failed")
+            # print("brentq failed")
             raise inst
             # print(inst)
             # import pdb
