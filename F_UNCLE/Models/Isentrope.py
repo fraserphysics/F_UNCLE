@@ -138,7 +138,7 @@ class Isentrope(GaussianModel):
         # end
 
         GaussianModel.__init__(self, None, name=name, def_opts=def_opts,
-                              *args, **kwargs)
+                               *args, **kwargs)
 
     def shape(self):
         """Overloaded class to get isentrope DOF's
@@ -190,11 +190,12 @@ class Isentrope(GaussianModel):
             v_min = eos.get_option('spline_max')**-1
             v_max = eos.get_option('spline_min')**-1
         else:
-            raise IOError('Unknown Isentrope basis, must be `vol` or `den`'
+            raise IOError('{0} Unknown Isentrope basis, must be `vol` or `den`'
                           .format(self.get_inform(1)))
 
         # R is Rayleigh line
         def rayl_line(vel, vol, vol_0, p_0):
+            r'''Return pressure on Rayleigh line'''
             # Pressure in Pa, vel in cm s-1 vol in cm3 g-1
             # Convert so output is in kg m-1 s-2
             return p_0 + (vel**2) * (vol_0 - vol) / (vol_0**2) * 0.1
@@ -202,30 +203,37 @@ class Isentrope(GaussianModel):
         if eos.get_option('basis').lower()[:3] == 'vol':
             # F is self - R
             def rayl_err(vel, vol, eos, vol_0, p_0):
+                r'''Calculate difference between isentrope and Rayleigh line.'''
                 return eos(vol) - rayl_line(vel, vol, vol_0, p_0)
 
             # d_F is derivative of F wrt vol
             def derr_dvol(vol, vel, eos, vol_0):
+                r'''Calculate derivative of error with respect to volume'''
                 return eos.derivative(1)(vol) * 1E3\
                     + (vel / vol_0)**2 * 1E2
 
         else:
             # Density based EOS
             def rayl_err(vel, vol, eos, vol_0, p_0):
+                r'''Pressure difference between isentrope and Rayleigh line.'''
                 return eos(vol**-1) - rayl_line(vel, vol, vol_0, p_0)
 
             # d_F is derivative of F wrt vol
             def derr_dvol(vol, vel, eos, vol_0):
+                r'''Calculate derivative of error with respect to volume'''
                 return -1E3 * eos.derivative(1)(vol**-1) / vol**2\
                     + 1E2 * (vel / vol_0)**2
         # end
         # arg_min(vel, self) finds volume that minimizes self(v) - R(v)
 
         def arg_min(vel, eos, vol_0):
+            r'''Solve for zero of derivative'''
             return brentq(derr_dvol, v_min, v_max,
                           args=(vel, eos, vol_0))
 
         def error(vel, eos, vol_0, p_0):
+            r'''Calculate difference between pressure on isentrope at solution
+            and on Rayleigh line'''
             return rayl_err(vel, arg_min(vel, eos, vol_0),
                             eos, vol_0, p_0)
 
@@ -251,8 +259,8 @@ class Isentrope(GaussianModel):
 
         return vel_cj, vol_cj, float(p_cj), rayl_line
 
-    def plot(self, axes=None, figure=None, linestyles=['-k'],
-             labels=['Isentrope'], vrange=None, *args, **kwargs):
+    def plot(self, axes=None, figure=None, linestyles=('-k',),
+             labels=('Isentrope',), vrange=None, *args, **kwargs):
         """Plots the EOS
 
         Overloads the :py:meth:`F_UNCLE.Utils.Struc.Struc.plot` method to plot
@@ -309,7 +317,7 @@ class Isentrope(GaussianModel):
         return fig
 
     def get_constraints(self, scale=False):
-        """Returns the G and h matricies corresponding to the model
+        r"""Returns the G and h matricies corresponding to the model
 
         Args:
            model(GaussianModel): The physics model subject to
@@ -358,7 +366,7 @@ class Isentrope(GaussianModel):
         and it is sufficient to check eq:star at the knots.
 
         """
-        
+
         c_model = copy.deepcopy(self)
         spline_end = c_model.get_option('spline_end')
         dim = c_model.shape()
@@ -375,7 +383,7 @@ class Isentrope(GaussianModel):
         else:
             last_idx = -1
         # end
-        
+
         for i in range(dim):
             c_tmp[i] = 1.0
             mod_tmp = c_model.update_dof(c_tmp)
@@ -663,12 +671,12 @@ class EOSModel(Spline, Isentrope):
                               self.get_option('spline_N'))
         elif spacing.lower() == 'lin':
             vol = np.linspace(self.get_option('spline_min'),
-                      self.get_option('spline_max'),
-                      self.get_option('spline_N'))
+                              self.get_option('spline_max'),
+                              self.get_option('spline_N'))
         else:
             raise KeyError("{:} only `lin`ear and `log` spacing are"
                            "accepted".format(self.get_inform(1)))
-        # end 
+        # end
         Spline.__init__(self, vol, p_fun(vol), ext=0)
         self.prior = copy.deepcopy(self)
         self = self._on_update_dof(self)
@@ -809,7 +817,7 @@ class EOSModel(Spline, Isentrope):
         for isen, lbl in zip(isentropes, labels):
             axes.plot(v_list, isen(v_list) - self.prior(v_list),
                       label=lbl,
-                      )
+                     )
         # end
 
         axes.legend(loc='best')
@@ -874,3 +882,9 @@ class EOSModel(Spline, Isentrope):
             ax3.plot(knots, np.zeros(knots.shape), 'xk')
 
         return fig
+
+#-------------------------
+# Local Variables:
+# eval: (python-mode)
+# eval: (flycheck-mode)
+# End:

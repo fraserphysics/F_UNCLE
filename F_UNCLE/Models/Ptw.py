@@ -65,7 +65,7 @@ class Ptw(PhysicsModel):
     """PTW Flow stress model
 
     **Usage**
-    
+
     1. Instantiate a Ptw object with desired options
     2. *optional* set the options as desired
     3. Call the Ptw object with a valid temperature, strain rate and material
@@ -92,7 +92,7 @@ class Ptw(PhysicsModel):
                           ['Cu', 'U', 'Ta', 'V', 'Mo', 'Be', 'SS_304',
                            'SS_21-6-9'],
                           None, None, 'None', 'List of available materials'
-                          ],
+                         ],
             'temp_check': [float, 300.0, 0.0, 2E3, 'K',
                            'Dummy option to check temp input'],
             'str_rt_chk': [float, 0.0, 0.0, 1E12, 's**-1',
@@ -223,7 +223,7 @@ class Ptw(PhysicsModel):
         return stress, strain
 
     def get_stress(self, strain, strain_rate, temp, material, **overrides):
-        """Returns the stress in the material aterial
+        """Returns the stress in the material material
 
         Args:
             strain(float or np.array): The strain in the material
@@ -233,7 +233,7 @@ class Ptw(PhysicsModel):
 
         Keyword Args:
             valid materials properties can be passed as kwargs to
-            ovveride default values
+            override default values
 
         Return:
             (float or np.array): The stress in the material
@@ -363,8 +363,8 @@ class Ptw(PhysicsModel):
              (0.43, 0.72, 0.48, np.nan, 0.41, np.nan, 0.66, 0.37),
              (8.933, 19.07, 16.75, np.nan, np.nan, np.nan, np.nan, np.nan),
              (64.54, 238.04, 180.948, np.nan, np.nan, np.nan, np.nan, np.nan)
-             ], dtype={'names': self.get_option('materials'),
-                       'formats': ['f8'] * 8})
+            ], dtype={'names': self.get_option('materials'),
+                      'formats': ['f8'] * 8})
 
         self.set_option('matname', material)
         self.set_option('theta', mat_data[material][0])
@@ -422,3 +422,9 @@ class Ptw(PhysicsModel):
 
         return melt_temp[self.get_option('matname')] + 273.15
 
+
+#-------------------------
+# Local Variables:
+# eval: (python-mode)
+# eval: (flycheck-mode)
+# End:
