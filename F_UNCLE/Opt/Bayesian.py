@@ -598,9 +598,25 @@ class Bayesian(Struc):
         analysis = copy.deepcopy(self)
         log_like = 0
         i = 0
+
+        exp_data = {}
+        for key in self.simulations:
+            exp_data[key] = self.simulations[key]['exp']()
+        # end
+        
+        with open('exp_data.pkl', 'wb') as fid:
+            pickle.dump(exp_data, fid)
+        # end
+        
         while not conv and i < maxiter:
             if verb and mpi_print:
                 print('Iter {} of {}'.format(i, maxiter))
+            with open('sim_data_iter{:02d}.pkl'.format(i), 'wb') as fid:
+                pickle.dump(initial_data, fid)
+            # end
+            with open('models_iter{:02d}.pkl'.format(i), 'wb') as fid:
+                pickle.dump(analysis.models, fid)
+            # end            
             analysis, log_like, initial_data, model_dof, conv =\
                 outer_loop_iteration(analysis, log_like, initial_data, i)
             history.append(log_like)
