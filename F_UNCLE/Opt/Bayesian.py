@@ -78,12 +78,14 @@ from cvxopt import matrix, solvers
 if __name__ == '__main__':
     sys.path.append(os.path.abspath('./../../'))
     sys.path.append(os.path.abspath('./../../../fit_9501'))
-    from F_UNCLE.Utils.Experiment import Experiment
+    from F_UNCLE.Utils.Experiment import Simulation
+    from F_UNCLE.Utils.DataExperiment import DataExperiment
     from F_UNCLE.Utils.PhysicsModel import PhysicsModel
     from F_UNCLE.Utils.Struc import Struc
 #    from fit_9501.Utils.DataExperiment import DataExperiment
 else:
-    from ..Utils.Experiment import Experiment
+    from ..Utils.Experiment import Simulation
+    from ..Utils.DataExperiment import DataExperiment
     from ..Utils.PhysicsModel import PhysicsModel
     from ..Utils.Struc import Struc
     sys.path.append(os.path.abspath('./../../../fit_9501'))    
@@ -237,11 +239,17 @@ class Bayesian(Struc):
                 raise TypeError('005 {:}, each list for simulation must be'
                                 'length 2'
                                 .format(self.get_inform(1)))
-            elif not np.all([[isinstance(sim, (Struc))
-                              for sim in simulations[key]]
+            elif not np.all([isinstance(simulations[key][0],
+                                        (Simulation))
                              for key in simulations]):
-                raise TypeError('006 {:}, each element in the simulation list'
-                                'must be an experiment type'
+                raise TypeError('006A {:}, each sim in the simulation list'
+                                'must be an Simulation type'
+                                .format(self.get_inform(1)))
+            elif not np.all([isinstance(simulations[key][1],
+                                        (DataExperiment))
+                             for key in simulations]):
+                raise TypeError('006B {:}, each experiemnt in the simulation'
+                                ' list must be a DataExperiment type'
                                 .format(self.get_inform(1)))
             else:
                 sim_out = {}
@@ -257,13 +265,19 @@ class Bayesian(Struc):
                           for key in simulations]):
                 raise TypeError('007 {:}Each dictionary must contain the keys'
                                 'sim and exp'.format(self.get_inform(1)))
-            elif not np.all([[isinstance(sim, Struc)
-                              for sim in [simulations[key]['sim'],
-                                          simulations[key]['exp']]]
+            elif not np.all([isinstance(simulations[key]['sim'],
+                                        Simulation)
                              for key in simulations]):
-                raise TypeError('008 {:}, each element in the simulation dict'
+                raise TypeError('008A {:}, each sim in the simulation dict'
                                 'must be an experiment type'
                                 .format(self.get_inform(1)))
+            elif not np.all([isinstance(simulations[key]['exp'],
+                                        DataExperiment)
+                             for key in simulations]):
+                raise TypeError('008B {:}, each exp in the simulation dict'
+                                'must be a DataExperiment type'
+                                .format(self.get_inform(1)))
+
             else:
                 sim_out = copy.deepcopy(simulations)
         else:
@@ -393,8 +407,8 @@ class Bayesian(Struc):
         sims = self.simulations
         log_like = 0
         for key in sims:
-            log_like += sims[key]['sim'].\
-                get_log_like(self.models, initial_data[key], sims[key]['exp'])
+            log_like += sims[key]['exp'].\
+                get_log_like(initial_data[key])
         # end
 
         return log_like
@@ -486,10 +500,10 @@ class Bayesian(Struc):
             if verb and mpi_print:
                 original_dof = opt_model.get_dof()
                 print('End of local optimization\nOptimalStep')
-                for i, dof in enumerate(d_hat):
-                    print("{:d}\t{:f}\t{:e}"
-                          .format(i, dof/original_dof[i], dof)
-                    )
+                # for i, dof in enumerate(d_hat):
+                #     print("{:d}\t{:f}\t{:e}"
+                #           .format(i, dof/original_dof[i], dof)
+                #     )
                 print('Start of line search')
             
             # Finds the optimal step in the d_hat direction 
@@ -516,7 +530,7 @@ class Bayesian(Struc):
                 )
             for i, x_i in enumerate(x_list):
                 dof_list.append(initial_dof + x_i * d_hat)
-                print(dof_list[-1])
+                # print(dof_list[-1])
 
                 model_dict[opt_key] = opt_model.update_dof(dof_list[-1])
 
@@ -606,20 +620,27 @@ class Bayesian(Struc):
         for key in self.simulations:
             exp_data[key] = self.simulations[key]['exp']()
         # end
-        
-        with open('exp_data.pkl', 'wb') as fid:
-            pickle.dump(exp_data, fid)
-        # end
+
+        if self.get_option('pickle_sens'):
+            with open('exp_data.pkl', 'wb') as fid:
+                pickle.dump(exp_data, fid)
+            # end
         
         while not conv and i < maxiter:
             if verb and mpi_print:
                 print('Iter {} of {}'.format(i, maxiter))
-            with open('sim_data_iter{:02d}.pkl'.format(i), 'wb') as fid:
-                pickle.dump(initial_data, fid)
             # end
-            with open('models_iter{:02d}.pkl'.format(i), 'wb') as fid:
-                pickle.dump(analysis.models, fid)
-            # end            
+            
+            if self.get_option('pickle_sens'):
+                with open('sim_data_iter{:02d}.pkl'.format(i), 'wb') as fid:
+                    pickle.dump(initial_data, fid)
+                # end
+
+                with open('models_iter{:02d}.pkl'.format(i), 'wb') as fid:
+                    pickle.dump(analysis.models, fid)
+                # end
+            # end
+            
             analysis, log_like, initial_data, model_dof, conv =\
                 outer_loop_iteration(analysis, log_like, initial_data, i)
             history.append(log_like)
@@ -796,11 +817,10 @@ class Bayesian(Struc):
 
         i = 0
         for key in sims:
-            p_tmp, q_tmp = sims[key]['sim'].get_pq(
+            p_tmp, q_tmp = sims[key]['exp'].get_pq(
                 self.models,
                 self.opt_key,
                 initial_data[key],
-                sims[key]['exp'],
                 sens_matrix[key],
                 scale=self.get_option('precondition'))
             p_mat += p_tmp

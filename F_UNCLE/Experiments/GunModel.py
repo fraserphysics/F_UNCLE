@@ -47,10 +47,12 @@ from scipy.integrate import odeint
 
 if __name__ == '__main__':
     sys.path.append(os.path.abspath('./../../'))
-    from F_UNCLE.Utils.Experiment import GausianExperiment
+    from F_UNCLE.Utils.DataExperiment import DataExperiment
+    from F_UNCLE.Utils.Experiment import Simulation
     from F_UNCLE.Models.Isentrope import EOSBump, EOSModel, Isentrope, Spline
 else:
-    from ..Utils.Experiment import GausianExperiment
+    from ..Utils.DataExperiment import DataExperiment
+    from ..Utils.Experiment import Simulation
     from ..Models.Isentrope import EOSBump, EOSModel, Isentrope, Spline
 # end
 
@@ -59,7 +61,7 @@ else:
 # =========================
 
 
-class Gun(GausianExperiment):
+class Gun(Simulation):
     """A toy physics model representing a gun type experiment
 
     The problem integrates the differential equation for a mass being
@@ -145,7 +147,7 @@ class Gun(GausianExperiment):
                     'Number of times for t2v spline']
         }
 
-        GausianExperiment.__init__(self, {'eos': Isentrope}, name=name,
+        Simulation.__init__(self, {'eos': Isentrope}, name=name,
                                    def_opts=def_opts, *args, **kwargs)
 
     def _on_check_models(self, models):
@@ -192,8 +194,12 @@ class Gun(GausianExperiment):
         mass_he = self.get_option('mass_he')
 
         # 1E-4 converts from area in cm**2 to m**2 so result is N
-        return eos(posn * area / mass_he) * area * 1E-4
-
+        if eos.get_option('basis') == 'dens':
+            return eos(mass_he / posn * area) * area * 1E-4
+        else:
+            return eos(posn * area / mass_he) * area * 1E-4
+        # end
+        
     def _shoot(self, eos):
         """ Run a simulation and return the results: t, [x,v]
 
@@ -296,7 +302,7 @@ class Gun(GausianExperiment):
 
         return self.get_option('n_t')
 
-    def compare(self, indep, dep, model_data):
+    def compare(self, simdata1, simdata2):
         """Compares a set of experimental data to the model
 
         Error is `dep` less the `model_data`
@@ -304,7 +310,7 @@ class Gun(GausianExperiment):
         See :py:meth:`F_UNCLE.Utils.Experiment.Experiment.compare`
         """
 
-        return dep - model_data[2](indep)
+        return simdata2[1][0] - simdata1[2]['mean_fn'](simdata2[0])
 
     def _on_call(self, eos, **kwargs):
         """Performs the simulation / experiment using the internal EOS
@@ -330,7 +336,8 @@ class Gun(GausianExperiment):
 
         vt_spline = self._fit_t2v(states[:, 1], time)
 
-        return time, (states[:, 1], states[:, 0]), vt_spline
+        return time, [states[:, 1], states[:, 0], ['Velocity', 'Position']],\
+            {'mean_fn': vt_spline}
 
     def plot(self, axes=None, fig=None, level=0, data=None,
              linestyles=['-k', '-r'], labels=['Model', 'Error'],
@@ -416,3 +423,29 @@ class Gun(GausianExperiment):
             ax2.set_ylabel("Projectile position / cm")
             ax3.set_xlabel("HE Specific volume / cm**3 g**-1")
             ax3.set_ylabel("Projectile position / cm s**-1")
+
+
+class GunExperiment(DataExperiment):
+    """A class representing pseudo experimental data for a gun show
+    """
+    def _get_data(self, model=None, *args, **kwargs):
+        """Creates a simulated set of experimental data from a user provided
+        model
+        """
+
+        sim = Gun(**kwargs)
+
+        simdata = sim({'eos': model})
+
+        return simdata[0], simdata[1][0],\
+            np.zeros(simdata[0].shape)
+    # end
+        
+    def get_sigma(self):
+        """Returns the co-variance matrix
+
+        see :py:meth:`F_UNCLE.Utils.Experiment.Experiment.get_sigma`
+        """
+
+        return np.diag(np.ones(self.shape())
+                       * self.get_option('exp_var'))

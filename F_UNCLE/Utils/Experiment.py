@@ -62,38 +62,35 @@ else:
 # =========================
 
 
-class Experiment(Struc):
+class Simulation(Struc):
     """Abstract class for experiments
 
     A child of the Struc class. This abstract class contains methods common to
-    all Experiment  objects. This class can be used to model two different cases
+    all Simulations.
 
     **Definitions**
 
     Simulation
-        Makes use of a single model or set of models internal to the object to
-        simulate some physical process
-
-    Experiment
-        Can be of two types
-
-        1. A "computational experiment" where a simulation is performed using a
-           nominal *true* model
-        2. A representation of a real experiment using tabulated values
+        A ananlysuis based on one or more physics
+        models which attempts to predict experimental data
 
     In order for an Experiment to work with the F_UNCLE framework, it must
-    implement **all** the inherited methods from `Experiment`, regardless if
-    it is a Simulation or Experiment
+    implement **all** the inherited methods from `Experiment`.
 
     **Attributes**
 
     None
 
     **Methods**
+
     """
-    def __init__(self, req_models, name='Experiment', model_attribute=None,
-                 *args, **kwargs):
+    def __init__(self, req_models, name='Experiment', *args, **kwargs):
         """Instantiates the object.
+        
+        Args: 
+            req_models(dict): A dictionary in the form {key: type} of the names
+                              and types of the mandatory physcis models this
+                              Experiment uses
 
         Options can be set by passing them as keyword arguments
 
@@ -120,7 +117,6 @@ class Experiment(Struc):
             self.req_models = req_models
         # end
 
-        self.model_attribute = model_attribute
 
     def get_sigma(self, models, *args, **kwargs):
         """Gets the co-variance matrix of the experiment
@@ -182,9 +178,10 @@ class Experiment(Struc):
                  most important quantity. By default, comparisons to other
                  data-sets are made to element zero. The length of each
                  element of this list must be equal to the length of the
-                 independent variable vector.
-              2. (list): A list of other attributes of the simulation result.
-                 The composition of this list is problem dependent
+                 independent variable vector. The last element of this list is 
+                 the labels for the previous elements
+              2. (dict): A dictionary of other attributes of the simulation result.
+                 The composition of this dictionary is problem dependent
         """
 
         return self._on_call(*self.check_models(models), **kwargs)
@@ -199,23 +196,10 @@ class Experiment(Struc):
         """Checks that the models passed to the Experiment are valid
         """
 
-        # In F_UNCLE some experiments have hard coded models to represent real
-        # experiments. This statement ignores the passed models and uses the
-        # built in model. This behavior is not physically meaningful so a
-        # warning is raised
-
-        if self.model_attribute is not None:
-            warnings.warn("{:} using the model attribute rather than a passed"
-                          " model".format(self.get_warn(0)), UserWarning)
-            if isinstance(self.model_attribute, PhysicsModel):
-                return (self.model_attribute,)
-            elif isinstance(self.model_attribute, (list, tuple)):
-                return self.model_attribute
-
         # Checks that the dictionary models contains all needed models
         if models is None:
-            raise TypeError("{:} if `model_attribute` is not set, must provide"
-                            "a dict of models".format(self.get_inform(1)))
+            raise TypeError("{:} must provide a dictionary of models"
+                            .format(self.get_inform(1)))
         elif not isinstance(models, dict):
             raise IOError("{:} Models must be a dictionary".
                           format(self.get_inform(1)))
@@ -233,23 +217,28 @@ class Experiment(Struc):
     def _on_check_models(self, models):
         return models
 
-    def compare(self, indep, dep, model_data):
-        """Compares a set of experimental data to the model
+    def compare(self, simdata1, simdata2):
+        """Compares a the results of two Experiments
+        
+        The comparison is made by comparing the results of simdata1
+        and simdata2 at each independant variable in simdata2. 
+        
+        The difference is evaluated as simdata2 **less** simdata1
 
         .. note::
 
            Abstract Method: Must be overloaded to work with `F_UNCLE`
 
         Args:
-           indep(list): The list of independent variables for comparison
-           dep(list): The list or array of dependent variables for comparison
-           model_data(tuple): Complete output of a `__call__` to an `Experiment`
-                              object  which `dep` is compared to at every point
-                              in `indep`
+           simdata1(tuple): Complete output of a `__call__` to an `Experiment`
+                            object.
+           simdata2(tuple): Complete output of a `__call__` to an `Experiment`
+                            object.
         Returns:
             (np.ndarray):
                 The error between the dependent variables
                 and the model for each value of independent variable
+
         """
 
         raise NotImplementedError('{} has not compare method instantiated'
@@ -594,14 +583,23 @@ class Experiment(Struc):
         .. math::
 
           H(f_i) = \begin{smallmatrix}
-            \frac{\partial^2 f_i}{\partial \mu_1^2} & \frac{\partial^2 f_i}{\partial \mu_1 \partial \mu_2} & \ldots & \frac{\partial^2 f_i}{\partial \mu_1 \partial \mu_n}\\
-            \frac{\partial^2 f_i}{\partial \mu_2 \partial \mu_1} & \frac{\partial^2 f_i}{\partial \mu_2^2} & \ldots & \frac{\partial^2 f_i}{\partial \mu_2 \partial \mu_n}\\
-            \frac{\partial^2 f_i}{\partial \mu_n \partial \mu_1} & \frac{\partial^2 f_i}{\partial \mu_n \partial \mu_2} & \ldots & \frac{\partial^2 f_i}{\partial \mu_n^2}
+            \frac{\partial^2 f_i}{\partial \mu_1^2} &
+            \frac{\partial^2 f_i}{\partial \mu_1 \partial \mu_2}&
+            \ldots & \frac{\partial^2 f_i}{\partial \mu_1 \partial \mu_n}\\
+            
+            \frac{\partial^2 f_i}{\partial \mu_2 \partial \mu_1}&
+            \frac{\partial^2 f_i}{\partial \mu_2^2}&
+            \ldots & \frac{\partial^2 f_i}{\partial \mu_2 \partial \mu_n}\\
+
+            \frac{\partial^2 f_i}{\partial \mu_n \partial \mu_1}&
+            \frac{\partial^2 f_i}{\partial \mu_n \partial \mu_2}&
+            \ldots & \frac{\partial^2 f_i}{\partial \mu_n^2}
+
             \end{smallmatrix}
 
         .. math::
 
-          H(f) = (H(f_1), H(f_2), \ldots , H(f_n))
+            H(f) = (H(f_1), H(f_2), \ldots , H(f_n))
 
         where
 
@@ -639,117 +637,5 @@ class Experiment(Struc):
 
         return hessian
 
-    def get_fisher_matrix(self, models, use_hessian=False, exp=None,
-                          sens_matrix=None, sigma=None):
-        """Returns the fisher information matrix of the simulation
-
-        Args:
-            models(dict): Dictionary of models
-
-        Keyword Args:
-            use_hessian(bool): Flag to toggle wheather or not to use the hessian
-            exp(Experiment): An experiment object, only used if use_hessian is
-                             true
-            sens_matrix(np.ndarray): the sensitivity matrix
-                                     *Default None*
-
-        Return:
-            (np.ndarray): The fisher information matrix, a nxn matrix where
-            `n` is the degrees of freedom of the model.
-        """
-
-        if sens_matrix is None:
-            sens_matrix = self._get_sens(models)
-        # end
-        
-        if sigma is None:
-            sigma = inv(self.get_sigma(models))
-        else:
-            sigma = inv(sigma)
-        # end
-        
-        if use_hessian:
-            hessian = self._get_hessian(models, self.req_models.keys()[0])
-            if exp is None:
-                raise ValueError('{:} Must provide an experiment object when'
-                                 'using the hessian'.
-                                 format(self.get_inform(1)))
-            else:
-                model_data = self(models)
-                exp_data = exp()
-                epsilon = self.compare(exp_data[0], exp_data[1][0], model_data)
-            # end
-        # end
-
-        if not use_hessian:
-            return np.dot(sens_matrix.T, np.dot(sigma, sens_matrix))
-        else:
-            tmp = np.dot(epsilon.T,
-                         np.sum([np.dot(sigma, hessian[i, :, :])
-                                 for i in range(hessian.shape[0])]))
-            return np.dot(sens_matrix.T, np.dot(sigma, sens_matrix)) + tmp
 
 
-class GausianExperiment(Experiment):
-    """An experiment class which can generate probability data assuming Gaussian
-    errors.
-
-    """
-
-    def get_pq(self, models, opt_key, sim_data, experiment, sens_matrix,
-               scale=False):
-        """Generates the P and q matrix for the Bayesian analysis
-
-        Args:
-           models(dict): The dictionary of models
-           opt_key(str): The key for the model being optimized
-           sim_data(list): Lengh three list corresponding to the `__call__` from
-                           a Experiment object
-           experiment(Experiment): A valid Experiment object
-           sens_matrix(np.ndarray): The sensitivity matrix
-
-        Keyword Arguments:
-           scale(bool): Flag to use the model scaling
-
-        Return:
-            (tuple): Elements are:
-                0. (np.ndarray): `P`, a nxn matrix where n is the model DOF
-                1. (np.ndarray): `q`, a nx1 matrix where n is the model DOF
-
-        """
-
-
-        epsilon = experiment.compare(sim_data)
-
-        p_mat = np.dot(np.dot(sens_matrix.T,
-                              inv(experiment.get_sigma(models))),
-                       sens_matrix)
-        q_mat = -np.dot(np.dot(epsilon,
-                               inv(experiment.get_sigma(models))),
-                        sens_matrix)
-
-        if scale:
-            prior_scale = models[opt_key].get_scaling()
-            p_mat = np.dot(prior_scale, np.dot(p_mat, prior_scale))
-            q_mat = np.dot(prior_scale, q_mat)
-        # end
-
-        return p_mat, q_mat
-
-    def get_log_like(self, models, sim_data, experiment):
-        """Gets the log likelihood of the current simulation
-
-        Args:
-           model(PhysicsModel): The model under investigation
-           sim_data(list): Lengh three list corresponding to the `__call__` from
-                           a Experiment object
-           experiment(Experiment): A valid Experiment object
-
-        Return:
-            (float): The log of the likelihood of the simulation
-        """
-
-        epsilon = experiment.compare(sim_data)
-        return -0.5 * np.dot(epsilon,
-                             np.dot(inv(experiment.get_sigma(models)),
-                                    epsilon))
