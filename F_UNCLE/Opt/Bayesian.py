@@ -516,7 +516,10 @@ class Bayesian(Struc):
                 )
             for i, x_i in enumerate(x_list):
                 dof_list.append(initial_dof + x_i * d_hat)
+                print(dof_list[-1])
+
                 model_dict[opt_key] = opt_model.update_dof(dof_list[-1])
+
                 model_dict[opt_key].plot(
                     axes=ax1,
                     labels=['Step {:02d}'.format(i)],
@@ -706,7 +709,7 @@ class Bayesian(Struc):
         """
         constrain = self.get_option('constrain')
         debug = self.get_option('debug')
-
+        precondition = self.get_option('precondition')
         # Get constraints
         g_mat, h_vec = self._get_constraints()
 
@@ -719,7 +722,7 @@ class Bayesian(Struc):
 
         p_mat *= 0.5
 
-        solvers.options['show_progress'] = False
+        solvers.options['show_progress'] = True
         solvers.options['debug'] = False
         solvers.options['maxiters'] = 100  # 100 default
         solvers.options['reltol'] = 1e-6   # 1e-6 default

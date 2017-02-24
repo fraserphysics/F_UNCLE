@@ -710,7 +710,7 @@ class EOSModel(Spline, Isentrope):
             (np.ndarray): A nxn matrix where n is the number of model DOFs.
 
         """
-        dev = self.prior.get_dof()  # * self.get_option('spline_sigma')
+        dev = self.prior.get_dof()  * self.get_option('spline_sigma')
         return np.diag(dev)
 
     def _on_str(self):
