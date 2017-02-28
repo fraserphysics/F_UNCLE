@@ -48,11 +48,11 @@ from scipy.integrate import odeint
 # =========================
 if __name__ == '__main__':
     sys.path.append(os.path.abspath('./../../'))
-    from F_UNCLE.Utils.Experiment import GausianExperiment
+    from F_UNCLE.Utils.Experiment import Simulation
     from F_UNCLE.Models.Isentrope import EOSBump, EOSModel, Isentrope, Spline
     from F_UNCLE.Models.Ptw import Ptw
 else:
-    from ..Utils.Experiment import GausianExperiment
+    from ..Utils.Experiment import Simulation
     from ..Models.Isentrope import EOSBump, EOSModel, Isentrope, Spline
     from ..Models.Ptw import Ptw
 # end
@@ -63,7 +63,7 @@ else:
 # =========================
 
 
-class Sphere(GausianExperiment):
+class Sphere(Simulation):
     """A toy physics model representing an expanding plastic sphere driven by HE
 
 

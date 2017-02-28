@@ -46,18 +46,19 @@ import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
     sys.path.append(os.path.abspath('./../../'))
-    from F_UNCLE.Utils.Experiment import GausianExperiment
-    from F_UNCLE.Models.Isentrope import EOSBump, EOSModel, Isentrope
+    from F_UNCLE.Utils.Experiment import Simulation
+    from F_UNCLE.Utils.DataExperiment import DataExperiment
+    from F_UNCLE.Models.Isentrope import EOSBump, EOSModel, Isentrope, Spline
 else:
-    from ..Utils.Experiment import GausianExperiment
-    from ..Models.Isentrope import EOSBump, EOSModel, Isentrope
-
+    from ..Utils.Experiment import Simulation
+    from ..Models.Isentrope import EOSBump, EOSModel, Isentrope, Spline
+    from ..Utils.DataExperiment import DataExperiment
 # =========================
 # Main Code
 # =========================
 
 
-class Stick(GausianExperiment):
+class Stick(Simulation):
     """A toy physics model representing a rate stick
     **TO DO**
 
@@ -91,10 +92,6 @@ class Stick(GausianExperiment):
 
         # 'Name': [Type, Default, Min, Max, Units, Description]
         def_opts = {
-            'sigma_t': [float, 1.0e-9, 0.0, None, 's',
-                        'Variance attributed to t measurements'],
-            'sigma_x': [float, 2e-3, 0.0, None, 'cm',
-                        'Variance attributed to x positions'],
             'd_min': [float, 1.0e5, 0.0, None, 'cm sec**-1',
                       'Lower search range for detonation velocity'],
             'd_max': [float, 1.0e6, 0.0, None, 'cm sec**-1',
@@ -109,7 +106,7 @@ class Stick(GausianExperiment):
                     'Number of sensor positions']
         }
 
-        GausianExperiment.__init__(self, {'eos': Isentrope}, name=name,
+        Simulation.__init__(self, {'eos': Isentrope}, name=name,
                                    def_opts=def_opts, *args, **kwargs)
 
     def _on_check_models(self, models):
@@ -158,14 +155,7 @@ class Stick(GausianExperiment):
 
         eos = self.check_models(models)[0]
 
-        vol_0 = self.get_option('vol_0')
-
-        vel_cj = eos._get_cj_point(vol_0)[0]
-
-        var = np.ones(self.get_option('n_x'))
-        var *= (self.get_option('sigma_t')**2 + (self.get_option('sigma_x') /
-                                                 vel_cj)**2)
-        return np.diag(var)
+        return np.diag(np.ones(self.shape()))
 
     def shape(self):
         """Returns the shape of the object
@@ -187,16 +177,18 @@ class Stick(GausianExperiment):
 
                 0. (np.ndarray): The independent variable, the `n` sensor
                    positions
-                1. (tuple): The dependent variables, elements are:
+                1. (list): The dependent variables, elements are:
 
-                   0. (None)
-                   1. (np.ndarray): The arrival `n` times at each sensor
-                2. (tuple): The other solution data
-
-                   0. the detonation velocity
-                   1. the specific volume at the CJ point
-                   2. the pressure at the CJ point
-                   3. a Rayleigh line function, see below
+                   0. (np.ndarray): The arrival `n` times at each sensor
+                   1. (list): The lables
+        
+                2. (dict): The other solution data
+                   - 'mean_fn'(Function): A function returning shock arrival 
+                                          time as a function of position
+                   - 'vel_CJ'(float): The detonation velocity
+                   - 'vol_CJ'(float): The specific volume at the_CJ point
+                   - 'pres_CJ'(float): The pressure at the_CJ point
+                   - 'Rayl_fn'(Function): A Rayleigh line function, see below
 
         *Rayleigh Line Function*
 
@@ -227,9 +219,14 @@ class Stick(GausianExperiment):
 
         t_list = x_list / cj_vel
 
-        return x_list, [t_list], (cj_vel, cj_vol, cj_p, ray_fun)
+        return x_list, [t_list, ['times']],\
+            {'mean_fn': Spline(x_list, t_list),
+             'vel_CJ': cj_vel,
+             'vol_CJ': cj_vol,
+             'pres_CJ': cj_p,
+             'Rayl_fn': ray_fun}
 
-    def compare(self, indep, dep, data):
+    def compare(self, simdata1, simdata2):
         """Compares the model instance to other data
 
         The error is the difference in arrival times, dep less data.
@@ -238,8 +235,8 @@ class Stick(GausianExperiment):
 
         """
 
-        det_vel = data[2][0]
-        err = dep - indep / det_vel
+
+        err = simdata2[1][0] - simdata1[2]['mean_fn'](simdata2[0])
 
         return np.where(np.fabs(err) > np.finfo(float).eps,
                         err,
@@ -324,3 +321,48 @@ class Stick(GausianExperiment):
         # end
 
         return fig
+
+class StickExperiment(DataExperiment):
+    """A class representing pseudo experimental data for a stick
+    """
+
+    def __init__(self, name="Stick pseudo experimental data", *args, **kwargs):
+        """Instantiates the stick experiment
+        """
+
+        def_opts = {
+            'sigma_t': [float, 1.0e-9, 0.0, None, 's',
+                        'Variance attributed to t measurements'],
+            'sigma_x': [float, 2e-3, 0.0, None, 'cm',
+                        'Variance attributed to x positions']
+        }
+
+        DataExperiment.__init__(self, name=name, def_opts=def_opts, *args, **kwargs)
+        
+    def _get_data(self, model=None, *args, **kwargs):
+        """Creates a simulated set of experimental data from a user provided
+        model
+        """
+
+        sim = Stick(**kwargs)
+
+        simdata = sim({'eos': model})
+        self.detvel = simdata[2]['vel_CJ']
+        return simdata[0], simdata[1][0],\
+            np.zeros(simdata[0].shape)
+    # end
+
+    def get_splines(self,*args, **kwargs):
+        return Spline(self.data[0], self.data[1]), None
+    
+    def get_sigma(self):
+        """Returns the co-variance matrix
+
+        see :py:meth:`F_UNCLE.Utils.Experiment.Experiment.get_sigma`
+        """
+
+        return np.diag(np.ones(self.shape())
+                       * (self.get_option('sigma_t')**2
+                          + (self.get_option('sigma_x') / self.detvel)**2)
+        )
+    
