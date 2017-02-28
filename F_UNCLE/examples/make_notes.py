@@ -100,7 +100,7 @@ if __name__ == '__main__':
         models={'eos': eos_model,
                 'strength': Ptw()},
         opt_key='eos',
-        constrain=True,
+        constrain=False,
         outer_reltol=1E-6,
         precondition=True,
         debug=False,

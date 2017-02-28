@@ -40,7 +40,7 @@ from __future__ import unicode_literals
 # =========================
 import sys
 import os
-import unittest
+import time
 import copy
 import math
 import pdb
@@ -450,29 +450,22 @@ class Bayesian(Struc):
                 (list): A list of the model DOFs
                 (bool): A flag, true of the log likelihood has converged
             """
-            precondition = self.get_option('precondition')
-            atol = self.get_option('outer_atol')
-            reltol = self.get_option('outer_rtol')
-            verb = self.get_option('verb')
-            if verb and mpi_print:
-                print('Begining sensitivities calculation')
-            sens_matrix = analysis._get_sens(initial_data)
-            if verb and mpi_print:
-                print('End of sensitivities calculation')
+            precondition = analysis.get_option('precondition')
+            atol = analysis.get_option('outer_atol')
+            reltol = analysis.get_option('outer_rtol')
+            verb = analysis.get_option('verb')
 
-            models = analysis.models
-            opt_key = analysis.opt_key
-            opt_model = models[opt_key]
             model_dict = analysis.models
+            opt_key = analysis.opt_key
+            opt_model = model_dict[opt_key]
             
-            if self.get_option('pickle_sens'):
-                with open("./sens_iter{:02d}.pkl".format(itn), 'wb') as fid:
-                    pickle.dump(sens_matrix, fid)
+
             # Solve all simulations with the current model
             if verb and mpi_print:
                 print('prior log like', -analysis.model_log_like())
             if verb and mpi_print:
                 print('sim log like', -analysis.sim_log_like(initial_data))
+
             new_log_like = analysis.model_log_like()\
                 + analysis.sim_log_like(initial_data)
 
@@ -486,17 +479,29 @@ class Bayesian(Struc):
                     opt_model.get_dof(),\
                     True
 
+            if verb and mpi_print:
+                print('Begining sensitivities calculation')
+            sens_matrix = analysis._get_sens(initial_data)
+            if verb and mpi_print:
+                print('End of sensitivities calculation')
+
+            if analysis.get_option('pickle_sens'):
+                with open("./sens_iter{:02d}.pkl".format(itn), 'wb') as fid:
+                    pickle.dump(sens_matrix, fid)
             # end
+            
             if verb and mpi_print:
                 print('Begining local optimization')
 
             local_sol = analysis._local_opt(initial_data,
                                             sens_matrix)
-
             d_hat = np.array(local_sol['x']).reshape(-1)
+            
             if precondition:
                 d_hat = np.dot(opt_model.get_scaling(), d_hat)
+                print('x scaled', d_hat)
             # end
+
             if verb and mpi_print:
                 original_dof = opt_model.get_dof()
                 print('End of local optimization\nOptimalStep')
@@ -553,18 +558,18 @@ class Bayesian(Struc):
             #       mpi or run_job.
             iter_data = {}
             for key in analysis.simulations:
-                if self.get_option('sens_mode') == 'mpi':
+                if analysis.get_option('sens_mode') == 'mpi':
                     sim_data = analysis.simulations[key]['sim']\
                                              .multi_solve_mpi(
-                                                 models, opt_key, dof_list)
-                elif self.get_option('sens_mode') == 'runjob':
+                                                 model_dict, opt_key, dof_list)
+                elif analysis.get_option('sens_mode') == 'runjob':
                     sim_data = analysis.simulations[key]['sim']\
                                              .multi_solve_runjob(
-                                                 models, opt_key, dof_list)
+                                                 model_dict, opt_key, dof_list)
                 else:
                     sim_data = analysis.simulations[key]['sim']\
                                              .multi_solve(
-                                                 models, opt_key, dof_list)
+                                                 model_dict, opt_key, dof_list)
                 # end
                 # Evaluate the simulation data to the same times as the exp
                 for i, data in enumerate(sim_data):
@@ -593,7 +598,7 @@ class Bayesian(Struc):
                 print('End of line search\n'
                       'Costs {:s}\n'
                       'Besti {:d}\n'
-                      'End of iteration {:02d}'.format(costs, besti, i))
+                      'End of iteration {:02d}'.format(costs, besti, itn))
 
             return (analysis.update(models=model_dict),
                     new_log_like,
@@ -616,12 +621,12 @@ class Bayesian(Struc):
         log_like = 0
         i = 0
 
-        exp_data = {}
-        for key in self.simulations:
-            exp_data[key] = self.simulations[key]['exp']()
-        # end
-
         if self.get_option('pickle_sens'):
+            exp_data = {}
+            for key in self.simulations:
+                exp_data[key] = self.simulations[key]['exp']()
+            # end
+
             with open('exp_data.pkl', 'wb') as fid:
                 pickle.dump(exp_data, fid)
             # end
@@ -707,7 +712,7 @@ class Bayesian(Struc):
         funcs = []
         for vec in vecs[:n_vecs]:
             new_model = self.models[self.opt_key].\
-                update_dof(vec * self.models[self.opt_key].get_dof())
+                set_c(vec * self.models[self.opt_key].get_dof())
             funcs.append(new_model(vol))
             if funcs[-1][np.argmax(np.fabs(funcs[-1]))] < 0:
                 funcs[-1] *= -1
@@ -731,6 +736,7 @@ class Bayesian(Struc):
         constrain = self.get_option('constrain')
         debug = self.get_option('debug')
         precondition = self.get_option('precondition')
+
         # Get constraints
         g_mat, h_vec = self._get_constraints()
 
@@ -750,24 +756,95 @@ class Bayesian(Struc):
         solvers.options['abstol'] = 1e-7   # 1e-7 default
         solvers.options['feastol'] = 1e-7  # 1e-7 default
 
+        # fig = plt.figure()
+        # ax1 = fig.add_subplot(121)
+        # ax2 = fig.add_subplot(122)        
+        # opt_model = self.models[self.opt_key]
+        # opt_model.plot(axes=ax1, labels=['EOS'], log=True)
+        # rho_unique = opt_model.get_t()[3:-3]
+        # n_unique = rho_unique.shape[0]
+        # ax1.semilogy(rho_unique, np.fabs(np.dot(g_mat, opt_model.get_dof())[:n_unique]), label='Convexity value')
+        # ax1.semilogy(rho_unique, np.fabs(np.dot(g_mat, opt_model.get_dof())[n_unique:]), label='Positivity value')       
+        # ax1.semilogy(rho_unique,  np.fabs(h_vec[n_unique:]), '--', label='Convexity limit')
+        # ax1.semilogy(rho_unique,  np.fabs(h_vec[:n_unique]), '--', label='Positivity limit')
+        # ax1.legend(loc='best')
+        # opt_model.plot(axes=ax2, labels=['EOS'], log=False)
+        # ax2.plot(rho_unique, np.dot(g_mat, opt_model.get_dof())[:n_unique], label='Convexity value')
+        # ax2.plot(rho_unique, np.dot(g_mat, opt_model.get_dof())[n_unique:], label='Positivity value')       
+        # ax2.plot(rho_unique, h_vec[n_unique:], '--', label='Convexity limit')
+        # ax2.plot(rho_unique, h_vec[:n_unique], '--', label='Positivity limit')
+        # ax2.legend(loc='best')
+
+        # fig.savefig('function_constraints{:f}.pdf'.format(time.time()))
         try:
             if constrain:
                 sol = solvers.qp(matrix(p_mat), matrix(q_vec),
                                  matrix(g_mat), matrix(h_vec))
             else:
                 sol = solvers.qp(matrix(p_mat), matrix(q_vec))
+
+            print('x scaled', sol['x'])
         except ValueError as inst:
             print(inst)
             print("G " + str(g_mat.shape))
             print("P " + str(p_mat.shape))
             print("h " + str(h_vec.shape))
-            print("q " + str(q_vec.shape))
+            print("q " + str(q_vec.shape))           
             pdb.post_mortem()
+            
+
+        fig = plt.figure()
+        # ax1 = fig.add_subplot(121)
+        ax2 = fig.add_subplot(111)        
+        opt_model = self.models[self.opt_key]
+        # opt_model.plot(axes=ax1, labels=['EOS'], log=True)
+        rho_unique = opt_model.get_t()[3:-3]
+        n_unique = rho_unique.shape[0]
+        d_hat = np.array(sol['x']).reshape(-1)
+        d_hat = np.ones(d_hat.shape)
+        #d_hat = np.dot(np.linalg.inv(opt_model.get_scaling()), opt_model.get_dof())
+        # ax1.semilogy(rho_unique,
+        #              np.fabs(np.dot(g_mat, d_hat)[:n_unique]),
+        #              label='Convexity value')
+        # ax1.semilogy(rho_unique,
+        #              np.fabs(np.dot(g_mat, d_hat)[n_unique:]),
+        #              label='Positivity value')       
+        # ax1.semilogy(rho_unique,
+        #              np.fabs(h_vec[n_unique:]),
+        #              '--',
+        #              label='Convexity limit')
+        # ax1.semilogy(rho_unique,
+        #              np.fabs(h_vec[:n_unique]),
+        #              '--',
+        #              label='Positivity limit')
+        # ax1.legend(loc='best')
+        # opt_model.plot(axes=ax2,
+        #                labels=['EOS'],
+        #                log=False)
+        ax2.plot(rho_unique,
+                 np.dot(g_mat, d_hat)[:n_unique],
+                 '-o',
+                 label='Convexity value')
+        ax2.plot(rho_unique,
+                 np.dot(g_mat, d_hat)[n_unique:],
+                 '-o',
+                 label='Positivity value')       
+        ax2.plot(rho_unique,
+                 h_vec[:n_unique],
+                 '--o',
+                 label='Convexity limit')
+        ax2.plot(rho_unique,
+                 h_vec[n_unique:],
+                 '--o',
+                 label='Positivity limit')
+        ax2.legend(loc='best')
+        fig.savefig('function_constraints{:f}.pdf'.format(time.time()))
+        
         if sol['status'] != 'optimal':
             for key, value in sol.items():
                 print(key, value)
             raise RuntimeError('{} The optimization algorithm could not locate'
-                               'an optimal point'.format(self.get_inform(1)))
+                               ' an optimal point'.format(self.get_inform(1)))
         return sol
 
     def _get_constraints(self):

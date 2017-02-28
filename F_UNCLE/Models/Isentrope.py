@@ -403,7 +403,7 @@ class Isentrope(GaussianModel):
         
         for i in range(dim):
             c_tmp[i] = 1.0
-            mod_tmp = c_model.update_dof(c_tmp)
+            mod_tmp = c_model.set_c(c_tmp)
             G_mat[:-2, i] = -mod_tmp.derivative(2)(v_unique)
             G_mat[-2, i] = slope * mod_tmp.derivative(1)(v_unique[-1])
             G_mat[-1, i] = -mod_tmp(v_unique[-1])
@@ -462,8 +462,8 @@ class Spline(IU_Spline):
             pass
         # end
 
-        return copy.deepcopy(self._eval_args[1][:-spline_end])
-
+        # return copy.deepcopy(self._eval_args[1][:-spline_end])
+        return copy.deepcopy(self._eval_args[1][spline_end:])
     def set_c(self, c_in, spline_end=None):
         """Updates the new spline with updated coefficients
 
@@ -489,7 +489,8 @@ class Spline(IU_Spline):
         # end
 
         c_new = np.zeros(self._eval_args[1].shape)
-        c_new[:-spline_end] = c_in
+        # c_new[:-spline_end] = c_in
+        c_new[spline_end:] = c_in
         new_spline = copy.deepcopy(self)
         new_spline._eval_args = (new_spline._eval_args[0],
                                  c_new,
@@ -710,7 +711,9 @@ class EOSModel(Spline, Isentrope):
             (np.ndarray): A nxn matrix where n is the number of model DOFs.
 
         """
-        dev = self.prior.get_dof()  * self.get_option('spline_sigma')
+        
+        dev = self.get_dof()# * self.get_option('spline_sigma')
+
         return np.diag(dev)
 
     def _on_str(self):
@@ -742,7 +745,7 @@ class EOSModel(Spline, Isentrope):
 
         sigma = self.get_option('spline_sigma')
 
-        return np.diag((sigma * self.get_c())**2)
+        return np.diag((sigma * self.get_dof())**2)
 
     def get_dof(self, *args, **kwargs):
         """Returns the spline coefficients as the model degrees of freedom
