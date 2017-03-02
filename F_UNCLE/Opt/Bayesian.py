@@ -750,42 +750,27 @@ class Bayesian(Struc):
 
         p_mat *= 0.5
 
-        solvers.options['show_progress'] = True
+        solvers.options['show_progress'] = False
         solvers.options['debug'] = False
         solvers.options['maxiters'] = 100  # 100 default
         solvers.options['reltol'] = 1e-6   # 1e-6 default
         solvers.options['abstol'] = 1e-7   # 1e-7 default
         solvers.options['feastol'] = 1e-7  # 1e-7 default
 
-        fig = plt.figure()
-        ax1 = fig.add_subplot(121)
-        ax2 = fig.add_subplot(122)        
-        opt_model = self.models[self.opt_key]
-        n_end = opt_model.get_option('spline_end')
-        rho_unique = opt_model.get_t()[n_end -1 : 1 - n_end]
-        n_rho = rho_unique.shape[0]
-        for i in xrange(opt_model.shape()):
-            ax1.plot(rho_unique, g_mat[:n_rho, i])
-            ax2.plot(rho_unique, g_mat[n_rho:, i])
-        fig.savefig('gmat.pdf')
+        # >>Supressed plotting routine to show the constraint matrix
+        # fig = plt.figure()
+        # ax1 = fig.add_subplot(121)
         # ax2 = fig.add_subplot(122)        
-
-        # opt_model.plot(axes=ax1, labels=['EOS'], log=True)
-        # rho_unique = opt_model.get_t()[3:-3]
-        # n_unique = rho_unique.shape[0]
-        # ax1.semilogy(rho_unique, np.fabs(np.dot(g_mat, opt_model.get_dof())[:n_unique]), label='Convexity value')
-        # ax1.semilogy(rho_unique, np.fabs(np.dot(g_mat, opt_model.get_dof())[n_unique:]), label='Positivity value')       
-        # ax1.semilogy(rho_unique,  np.fabs(h_vec[n_unique:]), '--', label='Convexity limit')
-        # ax1.semilogy(rho_unique,  np.fabs(h_vec[:n_unique]), '--', label='Positivity limit')
-        # ax1.legend(loc='best')
-        # opt_model.plot(axes=ax2, labels=['EOS'], log=False)
-        # ax2.plot(rho_unique, np.dot(g_mat, opt_model.get_dof())[:n_unique], label='Convexity value')
-        # ax2.plot(rho_unique, np.dot(g_mat, opt_model.get_dof())[n_unique:], label='Positivity value')       
-        # ax2.plot(rho_unique, h_vec[n_unique:], '--', label='Convexity limit')
-        # ax2.plot(rho_unique, h_vec[:n_unique], '--', label='Positivity limit')
-        # ax2.legend(loc='best')
+        # opt_model = self.models[self.opt_key]
+        # n_end = opt_model.get_option('spline_end')
+        # rho_unique = opt_model.get_t()[n_end -1 : 1 - n_end]
+        # n_rho = rho_unique.shape[0]
+        # for i in xrange(opt_model.shape()):
+        #     ax1.plot(rho_unique, g_mat[:n_rho, i])
+        #     ax2.plot(rho_unique, g_mat[n_rho:, i])
+        # fig.savefig('gmat.pdf')
+        # >>Supressed plotting routine to show the constraint matrix
         
-        # fig.savefig('function_constraints{:f}.pdf'.format(time.time()))
         try:
             if constrain:
                 sol = solvers.qp(matrix(p_mat), matrix(q_vec),
@@ -793,7 +778,7 @@ class Bayesian(Struc):
             else:
                 sol = solvers.qp(matrix(p_mat), matrix(q_vec))
 
-            print('x scaled', sol['x'])
+            # print('x scaled', sol['x'])
         except ValueError as inst:
             print(inst)
             print("G " + str(g_mat.shape))
@@ -802,53 +787,32 @@ class Bayesian(Struc):
             print("q " + str(q_vec.shape))           
             pdb.post_mortem()
             
-
-        fig = plt.figure()
-        # ax1 = fig.add_subplot(121)
-        ax2 = fig.add_subplot(111)        
-        opt_model = self.models[self.opt_key]
-        # opt_model.plot(axes=ax1, labels=['EOS'], log=True)
-        rho_unique = opt_model.get_t()[3:-3]
-        n_unique = rho_unique.shape[0]
-        d_hat = np.array(sol['x']).reshape(-1)
-        #d_hat = np.dot(np.linalg.inv(opt_model.get_scaling()), opt_model.prior.get_dof())
-        # d_hat = np.dot(np.linalg.inv(opt_model.get_scaling()), opt_model.get_dof())
-        # ax1.semilogy(rho_unique,
-        #              np.fabs(np.dot(g_mat, d_hat)[:n_unique]),
-        #              label='Convexity value')
-        # ax1.semilogy(rho_unique,
-        #              np.fabs(np.dot(g_mat, d_hat)[n_unique:]),
-        #              label='Positivity value')       
-        # ax1.semilogy(rho_unique,
-        #              np.fabs(h_vec[n_unique:]),
-        #              '--',
-        #              label='Convexity limit')
-        # ax1.semilogy(rho_unique,
-        #              np.fabs(h_vec[:n_unique]),
-        #              '--',
-        #              label='Positivity limit')
-        # ax1.legend(loc='best')
-        # opt_model.plot(axes=ax2,
-        #                labels=['EOS'],
-        #                log=False)
-        ax2.plot(rho_unique,
-                 np.dot(g_mat, d_hat)[:n_unique],
-                 '-o',
-                 label='Convexity value')
+        # >>Supressed plotting routine to show the constraints and their values
+        #   at the optimal point
+        # fig = plt.figure()
+        # ax2 = fig.add_subplot(111)        
+        # opt_model = self.models[self.opt_key]
+        # rho_unique = opt_model.get_t()[3:-3]
+        # n_unique = rho_unique.shape[0]
+        # d_hat = np.array(sol['x']).reshape(-1)
+        # ax2.plot(rho_unique,
+        #          np.dot(g_mat, d_hat)[:n_unique],
+        #          '-o',
+        #          label='Convexity value')
         # ax2.plot(rho_unique,
         #          np.dot(g_mat, d_hat)[n_unique:],
         #          '-o',
         #          label='Positivity value')       
-        ax2.plot(rho_unique,
-                 h_vec[:n_unique],
-                 '--o',
-                 label='Convexity limit')
+        # ax2.plot(rho_unique,
+        #          h_vec[:n_unique],
+        #          '--o',
+        #          label='Convexity limit')
         # ax2.plot(rho_unique,
         #          h_vec[n_unique:],
         #          '--o',
         #          label='Positivity limit')
-        ax2.legend(loc='best')
-        fig.savefig('function_constraints{:f}.pdf'.format(time.time()))
+        # ax2.legend(loc='best')
+        # fig.savefig('function_constraints{:f}.pdf'.format(time.time()))
         
         if sol['status'] != 'optimal':
             for key, value in sol.items():
