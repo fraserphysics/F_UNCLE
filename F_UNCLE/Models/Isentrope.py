@@ -186,7 +186,7 @@ class Isentrope(GaussianModel):
         # Search for det velocity between 1 and 10 km/sec
         d_min = eos.get_option('vcj_lower')  # cm s**-1
         d_max = eos.get_option('vcj_upper')  # cm s**-1
-<<<<<<< HEAD
+
         if eos.get_option('basis').lower()[:3] == 'vol':
             v_min = eos.get_option('spline_min')
             v_max = eos.get_option('spline_max')
@@ -197,21 +197,6 @@ class Isentrope(GaussianModel):
             raise IOError('{0} Unknown Isentrope basis, must be `vol` or `den`'
                           .format(self.get_inform(1)))
 
-=======
-        # if eos.get_option('basis').lower()[:3] == 'vol':
-        #     v_min = eos.get_option('spline_min')
-        #     v_max = eos.get_option('spline_max')
-        # elif eos.get_option('basis').lower()[:3] == 'den':
-        #     v_min = eos.get_option('spline_max')**-1
-        #     v_max = eos.get_option('spline_min')**-1
-        # else:
-        #     raise IOError('Unknown Isentrope basis, must be `vol` or `den`'
-        #                   .format(self.get_inform(1)))
-        # v_min = 1.0
-        # v_min = 3.5**-1
-        v_min, v_max = self.get_option('cj_vol_range')
-        
->>>>>>> dev
         # R is Rayleigh line
         def rayl_line(vel, vol, vol_0, p_0):
             r'''Return pressure on Rayleigh line'''
@@ -246,19 +231,10 @@ class Isentrope(GaussianModel):
         # arg_min(vel, self) finds volume that minimizes self(v) - R(v)
 
         def arg_min(vel, eos, vol_0):
-<<<<<<< HEAD
             r'''Solve for zero of derivative'''
             return brentq(derr_dvol, v_min, v_max,
                           args=(vel, eos, vol_0))
 
-=======
-            try:
-                return brentq(derr_dvol, v_min, v_max,
-                              args=(vel, eos, vol_0))
-            except Exception as inst:
-                # print ("Argmin failed, vel {:f} km/s".format(vel/1E5))
-                raise inst
->>>>>>> dev
         def error(vel, eos, vol_0, p_0):
             r'''Calculate difference between pressure on isentrope at solution
             and on Rayleigh line'''
@@ -288,13 +264,8 @@ class Isentrope(GaussianModel):
 
         return vel_cj, vol_cj, float(p_cj), rayl_line
 
-<<<<<<< HEAD
-    def plot(self, axes=None, figure=None, linestyles=('-k',),
-             labels=('Isentrope',), vrange=None, *args, **kwargs):
-=======
     def plot(self, axes=None, figure=None, linestyles=['-k'],
              labels=['Isentrope'], vrange=None, log=False, *args, **kwargs):
->>>>>>> dev
         """Plots the EOS
 
         Overloads the :py:meth:`F_UNCLE.Utils.Struc.Struc.plot` method to plot
@@ -494,8 +465,8 @@ class Spline(IU_Spline):
             pass
         # end
 
-        # return copy.deepcopy(self._eval_args[1][:-spline_end])
-        return copy.deepcopy(self._eval_args[1][spline_end:])
+        return copy.deepcopy(self._eval_args[1][:-spline_end])
+        #return copy.deepcopy(self._eval_args[1][spline_end:])
     def set_c(self, c_in, spline_end=None):
         """Updates the new spline with updated coefficients
 
@@ -521,8 +492,8 @@ class Spline(IU_Spline):
         # end
 
         c_new = np.zeros(self._eval_args[1].shape)
-        # c_new[:-spline_end] = c_in
-        c_new[spline_end:] = c_in
+        c_new[:-spline_end] = c_in
+        #c_new[spline_end:] = c_in
         new_spline = copy.deepcopy(self)
         new_spline._eval_args = (new_spline._eval_args[0],
                                  c_new,
@@ -681,7 +652,7 @@ class EOSModel(Spline, Isentrope):
    +--------------+---------+------+-----+-----+-----+-------------------------+
     """
 
-    def __init__(self, p_fun, name=u'Equation of State Spline', spacing='log',
+    def __init__(self, p_fun, name=u'Equation of State Spline',
                  *args, **kwargs):
         """Instantiates the object
 
@@ -696,6 +667,8 @@ class EOSModel(Spline, Isentrope):
         """
 
         def_opts = {
+            'spacing': [str, 'log', None, None, '-', "Knot spacing, can be"
+                        " linear or log"],
             'spline_sigma': [float, 5e-3, 0.0, None, '??',
                              "Multiplicative uncertainty of the prior (1/2%)"],
             'precondition': [bool, False, None, None, '',
@@ -715,11 +688,21 @@ class EOSModel(Spline, Isentrope):
                             .format(self.get_inform(0)))
         # end
 
-        if spacing.lower() == 'log':
+        knots = self._get_knot_spacing()
+        Spline.__init__(self, knots, p_fun(knots), ext=0)
+
+        self = self._on_update_dof(self)
+        self.prior = copy.deepcopy(self)
+
+    def _get_knot_spacing(self):
+        """Returns a list of knot locations based on the spline parameters
+        """
+        
+        if self.get_option('spacing').lower() == 'log':
             vol = np.logspace(np.log10(self.get_option('spline_min')),
                               np.log10(self.get_option('spline_max')),
                               self.get_option('spline_N'))
-        elif spacing.lower() == 'lin':
+        elif self.get_option('spacing').lower() == 'lin':
             vol = np.linspace(self.get_option('spline_min'),
                               self.get_option('spline_max'),
                               self.get_option('spline_N'))
@@ -727,11 +710,7 @@ class EOSModel(Spline, Isentrope):
             raise KeyError("{:} only `lin`ear and `log` spacing are"
                            "accepted".format(self.get_inform(1)))
         # end
-        Spline.__init__(self, vol, p_fun(vol), ext=0)
-
-        self = self._on_update_dof(self)
-        self.prior = copy.deepcopy(self)
-
+        return vol
     def get_scaling(self):
         """Returns a scaling matrix to make the dofs of the same scale
 
@@ -926,13 +905,13 @@ class EOSModel(Spline, Isentrope):
         knots = tmp_spline.get_t()
 
         for i in range(basis.shape[0]):
-            ax1.plot(v_list, basis[i, :])
+            ax1.plot(v_list, basis[i, :], label='dof{:02d}'.format(i))
             ax1.plot(knots, np.zeros(knots.shape), 'xk')
             ax2.plot(v_list, dbasis[i, :])
             ax2.plot(knots, np.zeros(knots.shape), 'xk')
             ax3.plot(v_list, ddbasis[i, :])
             ax3.plot(knots, np.zeros(knots.shape), 'xk')
-
+        ax1.legend(loc='best')
         return fig
 
 #-------------------------

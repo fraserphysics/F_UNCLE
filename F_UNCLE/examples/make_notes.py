@@ -75,7 +75,7 @@ if __name__ == '__main__':
     init_prior = np.vectorize(lambda v: 2.56e9 / v**3)
 
     # 2. Create the model and *true* EOS
-    eos_model = EOSModel(init_prior, Spline_sigma=0.005)
+    eos_model = EOSModel(init_prior, Spline_sigma=0.005, spacing='lin')
     eos_true = EOSBump()
 
     # 3. Create the objects to generate simulations and pseudo experimental data
@@ -100,7 +100,7 @@ if __name__ == '__main__':
         models={'eos': eos_model,
                 'strength': Ptw()},
         opt_key='eos',
-        constrain=False,
+        constrain=True,
         outer_reltol=1E-6,
         precondition=True,
         debug=False,

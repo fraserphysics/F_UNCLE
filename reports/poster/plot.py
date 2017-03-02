@@ -22,7 +22,7 @@ def basis(plt, sim):
     sys.path.append(os.path.abspath('./../../'))
     from F_UNCLE.Models.Isentrope import EOSModel, EOSBump
     fig = plt.figure()
-    EOSModel(lambda x: 1/x**3, spline_N=10).plot_basis(fig=fig)
+    EOSModel(lambda x: 1/x**3, spline_N=10, spacing='lin').plot_basis(fig=fig)
     return fig
 plot_dict['basis'] = basis
 
@@ -193,8 +193,8 @@ class Sim():
         '''
         import sys, os
         sys.path.append(os.path.abspath('./../../'))
-        from F_UNCLE.Experiments.GunModel import Gun
-        from F_UNCLE.Experiments.Stick import Stick
+        from F_UNCLE.Experiments.GunModel import Gun, GunExperiment
+        from F_UNCLE.Experiments.Stick import Stick, StickExperiment
         from F_UNCLE.Models.Isentrope import EOSModel, EOSBump
         from F_UNCLE.Opt.Bayesian import Bayesian
 
@@ -207,12 +207,15 @@ class Sim():
 
         # 3. Create the objects to generate simulations and pseudo
         #    experimental data
-        self.gun_experiment = Gun(model_attribute=self.eos_true, mass_he=1.0)
         self.gun_simulation = Gun(mass_he=1.0, sigma=1.0)
-
-        self.stick_experiment = Stick(model_attribute=self.eos_true)
-        self.stick_simulation = Stick(sigma_t=1E-9, sigma_x=2E-3)
-
+        self.gun_experiment = GunExperiment(model=self.eos_true, mass_he=1.0)
+        self.stick_simulation = Stick()
+        self.stick_experiment = StickExperiment(
+            model=self.eos_true,
+            sigma_t=1E-9,
+            sigma_x=2E-3
+        )
+    
         # 4. Create the analysis object
         analysis = Bayesian(
             simulations={
@@ -241,14 +244,14 @@ class Sim():
 
 
         # 7. Update the simulations and get new data
-        self.g_time_s, (self.g_vel_s, self.g_pos_s), self.g_spline_s =\
+        self.g_time_s, (self.g_vel_s, self.g_pos_s, tmp), self.g_spline_s =\
             self.opt_model.simulations['Gun']['sim'](self.opt_model.models)
-        self.g_time_e, (self.g_vel_e, self.g_pos_e), self.g_spline_e =\
+        self.g_time_e, (self.g_vel_e, self.g_pos_e, tmp, tmp), self.g_spline_e =\
             self.opt_model.simulations['Gun']['exp']()
 
-        self.s_pos_s, (self.s_time_s), self.s_data_s =\
+        self.s_pos_s, (self.s_time_s, tmp), self.s_data_s =\
             self.opt_model.simulations['Stick']['sim'](self.opt_model.models)
-        self.s_pos_e, (self.s_time_e), self.s_data_e =\
+        self.s_pos_e, (self.s_time_e, tmp, tmp, tmp), self.s_data_e =\
             self.opt_model.simulations['Stick']['exp']()
 
         

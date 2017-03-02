@@ -524,14 +524,14 @@ class Bayesian(Struc):
             fig = plt.figure()
             ax1 = fig.gca()
             
-            ax1.semilogy(opt_model.get_t()[:-4],
+            ax1.plot(opt_model.get_t()[:-4],
                          np.fabs(d_hat),
                          label='Total Step')
             opt_model.prior.plot(
                 axes=ax1,
                 labels=['Prior'],
                 linestyles=['-'],
-                log=True
+                log=False
                 )
             for i, x_i in enumerate(x_list):
                 dof_list.append(initial_dof + x_i * d_hat)
@@ -543,8 +543,9 @@ class Bayesian(Struc):
                     axes=ax1,
                     labels=['Step {:02d}'.format(i)],
                     linestyles=['-'],
-                    log=True
+                    log=False
                 )
+                fig.savefig('lineSearch_itn{:02d}.pdf'.format(itn))
                 new_analysis = analysis.update(models=model_dict)
                 costs[i] = new_analysis.model_log_like()
             # end
@@ -756,10 +757,19 @@ class Bayesian(Struc):
         solvers.options['abstol'] = 1e-7   # 1e-7 default
         solvers.options['feastol'] = 1e-7  # 1e-7 default
 
-        # fig = plt.figure()
-        # ax1 = fig.add_subplot(121)
+        fig = plt.figure()
+        ax1 = fig.add_subplot(121)
+        ax2 = fig.add_subplot(122)        
+        opt_model = self.models[self.opt_key]
+        n_end = opt_model.get_option('spline_end')
+        rho_unique = opt_model.get_t()[n_end -1 : 1 - n_end]
+        n_rho = rho_unique.shape[0]
+        for i in xrange(opt_model.shape()):
+            ax1.plot(rho_unique, g_mat[:n_rho, i])
+            ax2.plot(rho_unique, g_mat[n_rho:, i])
+        fig.savefig('gmat.pdf')
         # ax2 = fig.add_subplot(122)        
-        # opt_model = self.models[self.opt_key]
+
         # opt_model.plot(axes=ax1, labels=['EOS'], log=True)
         # rho_unique = opt_model.get_t()[3:-3]
         # n_unique = rho_unique.shape[0]
@@ -774,7 +784,7 @@ class Bayesian(Struc):
         # ax2.plot(rho_unique, h_vec[n_unique:], '--', label='Convexity limit')
         # ax2.plot(rho_unique, h_vec[:n_unique], '--', label='Positivity limit')
         # ax2.legend(loc='best')
-
+        
         # fig.savefig('function_constraints{:f}.pdf'.format(time.time()))
         try:
             if constrain:
@@ -801,8 +811,8 @@ class Bayesian(Struc):
         rho_unique = opt_model.get_t()[3:-3]
         n_unique = rho_unique.shape[0]
         d_hat = np.array(sol['x']).reshape(-1)
-        d_hat = np.ones(d_hat.shape)
-        #d_hat = np.dot(np.linalg.inv(opt_model.get_scaling()), opt_model.get_dof())
+        #d_hat = np.dot(np.linalg.inv(opt_model.get_scaling()), opt_model.prior.get_dof())
+        # d_hat = np.dot(np.linalg.inv(opt_model.get_scaling()), opt_model.get_dof())
         # ax1.semilogy(rho_unique,
         #              np.fabs(np.dot(g_mat, d_hat)[:n_unique]),
         #              label='Convexity value')
@@ -825,18 +835,18 @@ class Bayesian(Struc):
                  np.dot(g_mat, d_hat)[:n_unique],
                  '-o',
                  label='Convexity value')
-        ax2.plot(rho_unique,
-                 np.dot(g_mat, d_hat)[n_unique:],
-                 '-o',
-                 label='Positivity value')       
+        # ax2.plot(rho_unique,
+        #          np.dot(g_mat, d_hat)[n_unique:],
+        #          '-o',
+        #          label='Positivity value')       
         ax2.plot(rho_unique,
                  h_vec[:n_unique],
                  '--o',
                  label='Convexity limit')
-        ax2.plot(rho_unique,
-                 h_vec[n_unique:],
-                 '--o',
-                 label='Positivity limit')
+        # ax2.plot(rho_unique,
+        #          h_vec[n_unique:],
+        #          '--o',
+        #          label='Positivity limit')
         ax2.legend(loc='best')
         fig.savefig('function_constraints{:f}.pdf'.format(time.time()))
         
