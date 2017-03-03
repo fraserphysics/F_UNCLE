@@ -500,7 +500,7 @@ class Bayesian(Struc):
             local_sol = analysis._local_opt(initial_data,
                                             sens_matrix)
             d_hat = np.array(local_sol['x']).reshape(-1)
-            
+            print('x unscaled', d_hat)
             if precondition:
                 d_hat = np.dot(opt_model.get_scaling(), d_hat)
                 print('x scaled', d_hat)
