@@ -46,16 +46,19 @@ from scipy.integrate import odeint
 # =========================
 # Custom Packages
 # =========================
-if __name__ == '__main__':
-    sys.path.append(os.path.abspath('./../../'))
-    from F_UNCLE.Utils.Experiment import Simulation
-    from F_UNCLE.Models.Isentrope import EOSBump, EOSModel, Isentrope, Spline
-    from F_UNCLE.Models.Ptw import Ptw
-else:
-    from ..Utils.Experiment import Simulation
-    from ..Models.Isentrope import EOSBump, EOSModel, Isentrope, Spline
-    from ..Models.Ptw import Ptw
-# end
+from ..Utils.Simulation import Simulation
+from ..Models.Isentrope import EOSBump, EOSModel, Isentrope, Spline
+from ..Models.Ptw import Ptw
+# if __name__ == '__main__':
+#     sys.path.append(os.path.abspath('./../../'))
+#     from F_UNCLE.Utils.Experiment import Simulation
+#     from F_UNCLE.Models.Isentrope import EOSBump, EOSModel, Isentrope, Spline
+#     from F_UNCLE.Models.Ptw import Ptw
+# else:
+#     from ..Utils.Experiment import Simulation
+#     from ..Models.Isentrope import EOSBump, EOSModel, Isentrope, Spline
+#     from ..Models.Ptw import Ptw
+# # end
 
 
 # =========================

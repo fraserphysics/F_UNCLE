@@ -75,22 +75,26 @@ from cvxopt import matrix, solvers
 # Custom Packages
 # =========================
 
-if __name__ == '__main__':
-    sys.path.append(os.path.abspath('./../../'))
-    sys.path.append(os.path.abspath('./../../../fit_9501'))
-    from F_UNCLE.Utils.Experiment import Simulation
-    from F_UNCLE.Utils.DataExperiment import DataExperiment
-    from F_UNCLE.Utils.PhysicsModel import PhysicsModel
-    from F_UNCLE.Utils.Struc import Struc
-#    from fit_9501.Utils.DataExperiment import DataExperiment
-else:
-    from ..Utils.Experiment import Simulation
-    from ..Utils.DataExperiment import DataExperiment
-    from ..Utils.PhysicsModel import PhysicsModel
-    from ..Utils.Struc import Struc
-    sys.path.append(os.path.abspath('./../../../fit_9501'))    
-#    from fit_9501.Utils.DataExeriment import DataExperiment
-# end
+# if __name__ == '__main__':
+#     sys.path.append(os.path.abspath('./../../'))
+#     sys.path.append(os.path.abspath('./../../../fit_9501'))
+#     from F_UNCLE.Utils.Simulation import Simulation
+#     from F_UNCLE.Utils.Experiment import Experiment
+#     from F_UNCLE.Utils.PhysicsModel import PhysicsModel
+#     from F_UNCLE.Utils.Struc import Struc
+# #    from fit_9501.Utils.Experiment import Experiment
+# else:
+#     from ..Utils.Simulation import Simulation
+#     from ..Utils.Experiment import Experiment
+#     from ..Utils.PhysicsModel import PhysicsModel
+#     from ..Utils.Struc import Struc
+#     sys.path.append(os.path.abspath('./../../../fit_9501'))    
+# #    from fit_9501.Utils.DataExeriment import Experiment
+# # end
+from ..Utils.Simulation import Simulation
+from ..Utils.Experiment import Experiment
+from ..Utils.PhysicsModel import PhysicsModel
+from ..Utils.Struc import Struc
 
 # =========================
 # Main Code
@@ -246,10 +250,10 @@ class Bayesian(Struc):
                                 'must be an Simulation type'
                                 .format(self.get_inform(1)))
             elif not np.all([isinstance(simulations[key][1],
-                                        (DataExperiment))
+                                        (Experiment))
                              for key in simulations]):
                 raise TypeError('006B {:}, each experiemnt in the simulation'
-                                ' list must be a DataExperiment type'
+                                ' list must be a Experiment type'
                                 .format(self.get_inform(1)))
             else:
                 sim_out = {}
@@ -272,10 +276,10 @@ class Bayesian(Struc):
                                 'must be an experiment type'
                                 .format(self.get_inform(1)))
             elif not np.all([isinstance(simulations[key]['exp'],
-                                        DataExperiment)
+                                        Experiment)
                              for key in simulations]):
                 raise TypeError('008B {:}, each exp in the simulation dict'
-                                'must be a DataExperiment type'
+                                'must be a Experiment type'
                                 .format(self.get_inform(1)))
 
             else:

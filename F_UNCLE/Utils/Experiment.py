@@ -1,273 +1,392 @@
-#!/usr/bin/pyton
-"""
-
-pyExperiment
-
-Abstract class for experiments, both physical and computational
-
-Authors
--------
-
-- Stephen Andrews (SA)
-- Andrew M. Fraiser (AMF)
-
-Revisions
----------
-
-0 -> Initial class creation (03-16-2016)
-
-ToDo
-----
-
-None
-
-
-"""
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
-# =========================
-# Python Standard Libraries
-# =========================
-
+# Core Python modules
 import sys
 import os
 import copy
-import warnings
 
-# =========================
-# Python Packages
-# =========================
+# External python modules 
 import numpy as np
-from numpy.linalg import inv
+from numpy.linalg import inv 
+import matplotlib.pyplot as plt
 
-# =========================
-# Custom Packages
-# =========================
-if __name__ == '__main__':
-    sys.path.append(os.path.abspath('./../../'))
-    from F_UNCLE.Utils.Struc import Struc
-    from F_UNCLE.Utils.PhysicsModel import PhysicsModel
-#    from F_UNCLE.Utils.mpi_loop import pll_loop
-else:
-    from .Struc import Struc
-    from .PhysicsModel import PhysicsModel
-#    from .mpi_loop import pll_loop
-# end
+from scipy.interpolate import InterpolatedUnivariateSpline as IUSpline
+from scipy.interpolate import UnivariateSpline as USpline
+from scipy.interpolate import LSQUnivariateSpline as LSQSpline
+from scipy import stats as stats
 
-# =========================
-# Main Code
-# =========================
+# Custom python modules
+from ..Utils.Struc import Struc
+# if __name__ == '__main__':
+#     sys.path.append(os.path.abspath('./../../'))
+#     from F_UNCLE.Utils import Struc
+# else:
+#     from ..Utils.Struc import Struc
+# # end
 
+class Experiment(Struc):
+    """Abstract class to represent true experimental data
+    DataExperiments are immutable and load data on instantiation
 
-class Simulation(Struc):
-    """Abstract class for experiments
+    The following pre-processing activities occur on the data
 
-    A child of the Struc class. This abstract class contains methods common to
-    all Simulations.
+    1. The data is loaded from file
+    2. The data is checked for missing values and Nan's
+    3. A smoothing spline is passed through the data along regularly
+       spaced knots
+    4. Other pre-processing activities are carried out by `_on_init`
 
-    **Definitions**
+    Attributes:
 
-    Simulation
-        A ananlysuis based on one or more physics
-        models which attempts to predict experimental data
+        data(list): A list of the data
 
-    In order for an Experiment to work with the F_UNCLE framework, it must
-    implement **all** the inherited methods from `Experiment`.
+            [0]. The independent variable, typically time
+            [1]. The dependent variable
+            [2]. The variance of the dependent variable
 
-    **Attributes**
+        mean_fn(scipy.interpolate.LSQSpline): A smoothing spline passing
+            through the data
 
-    None
+        var_fn(scipy.interpolate.IUSpline): An interpolated spline for the
+            difference between the data and mean_fn
 
-    **Methods**
+        trigger(None): An object to align experiments to the data.
+                       Is None for basic case
 
     """
-    def __init__(self, req_models, name='Experiment', *args, **kwargs):
-        """Instantiates the object.
-        
-        Args: 
-            req_models(dict): A dictionary in the form {key: type} of the names
-                              and types of the mandatory physcis models this
-                              Experiment uses
+    data = None
+    mean_fn = None
+    var_fn = None
 
-        Options can be set by passing them as keyword arguments
 
+    def __init__(self, name="Data Experiment", *args, **kwargs):
+        """Loads the data and performs pre-processing activities
         """
 
-        def_opts = {}
+        # name: type, default, min, max, units, note
+        def_opts = {
+            'spline_bounds': [tuple, (0, 1), None, None, '-',
+                              'The bounds for the spline to represent the '
+                              'data'],
+            'n_knots': [int, 200, 5, None, '-',
+                        'The number of knots to represent the data'],
+            'exp_var': [float, 1E-2, 0.0, 1.0, '-',
+                        'Percent variance in the data']
+        }
 
         if 'def_opts' in kwargs:
             def_opts.update(kwargs.pop('def_opts'))
         # end
 
-        Struc.__init__(self, name=name, def_opts=def_opts, *args, **kwargs)
+        Struc.__init__(self, name, def_opts=def_opts,
+                       *args, **kwargs)
 
-        if not isinstance(req_models, dict):
-            raise IOError("{:} `req_models` must be a dict".
-                          format(self.get_inform(1)))
-        elif not all([isinstance(req_models[key], type)
-                      for key in req_models]):
-            raise IOError("{:} each value in req_models muse be a PhysicsModel")
-        elif not all([issubclass(req_models[key], PhysicsModel)
-                      for key in req_models]):
-            raise IOError("{:} each value in req_models muse be a PhysicsModel")
-        else:
-            self.req_models = req_models
-        # end
+        data = self._get_data(*args, **kwargs)
+        self.data = self._check_finite(data)
 
+        self.mean_fn, self.var_fn = self.get_splines()
 
-    def get_sigma(self, models, *args, **kwargs):
-        """Gets the co-variance matrix of the experiment
+        self._on_init(*args, **kwargs)
 
-        .. note::
+    def simple_trigger(self, x, y):
+        """This is the most basic trigger object for data which does not need
+        to be aling. Returns a shift if zerofor all values of trial
+        data
+        """
+        return 0.0
 
-           Abstract Method: Must be overloaded to work with `F_UNCLE`
+    def _on_init(self, *args, **kwargs):
+        """Experiment specific instantiation tasks
+
+        Creates the trigger object, In the base case it is a function which
+        always returns zero
+        """
+
+        
+        self.trigger = self.simple_trigger
+
+        return
+
+    def get_splines(self):
+        """Returns a spline representing the mean and variance of the data
 
         Args:
-            *args: Variable length argument list.
-            **kwargs: Arbitrary keyword arguments.
+
+            None
 
         Return:
-            (np.ndarray):
-                A nxn array of the co-variance matrix of the simulation.
-                Where n is the length of the independent variable vector, given
-                by :py:meth:`PhysicsModel.shape`
+
+            (tuple): Elements
+
+                0. (scipy.interpolate.LSQSpline): A smoothing spline
+                   representing the data
+                1. (scipy.interpolate.IUSpline): An interpolated spline for the
+                   difference between the data and mean_fn
         """
 
-        raise NotImplementedError('{} has not defined a co-variance matrix'
-                                  .format(self.get_inform(1)))
+        x_data = self.data[0]
+        y_data = self.data[1]
+        var_data = self.data[2]
 
-    def shape(self, *args, **kwargs):
-        """Gives the length of the independent variable vector
+        # bounds = self.get_option('bounds')
+        bounds = (x_data[1], x_data[-2])
+        knotlist = np.linspace(
+            bounds[0],
+            bounds[1],
+            self.get_option('n_knots')
+        )
+        mean_fn = LSQSpline(
+            x_data,
+            y_data,
+            knotlist,
+            ext=3
+        )
 
-        .. note::
-
-           Abstract Method: Must be overloaded to work with `F_UNCLE`
-
-        Return:
-            (int): The number of independent variables in the experiment
-        """
-
-        raise NotImplementedError('{} has no shape specified'
-                                  .format(self.get_inform(1)))
-
-    def __call__(self, models=None, *args,  **kwargs):
-        """Runs the simulation.
-
-        .. note::
-
-           Abstract Method: Must be overloaded to work with `F_UNCLE`
-
-        The simulation instance should be structured so that the necessary
-        attributes, options and initial conditions are instantiated before
-        calling the object.
-
-        Args:
-            *args: Variable length list of models.
-            **kwargs: Arbitrary keyword arguments.
-
-        Returns:
-           (tuple): length 3 tuple with components
-
-              0. (np.ndarray): The single vector of the simulation
-                 independent variable
-              1. (list): A list of np.ndarray objects representing the various
-                 dependent variables for the problem. Element zero is the
-                 most important quantity. By default, comparisons to other
-                 data-sets are made to element zero. The length of each
-                 element of this list must be equal to the length of the
-                 independent variable vector. The last element of this list is 
-                 the labels for the previous elements
-              2. (dict): A dictionary of other attributes of the simulation result.
-                 The composition of this dictionary is problem dependent
-        """
-
-        return self._on_call(*self.check_models(models), **kwargs)
-
-    def _on_call(self, *models):
-        """The overloaded method where the Experiment does its work
-        """
-
-        return NotImplemented
-
-    def check_models(self, models):
-        """Checks that the models passed to the Experiment are valid
-        """
-
-        # Checks that the dictionary models contains all needed models
-        if models is None:
-            raise TypeError("{:} must provide a dictionary of models"
-                            .format(self.get_inform(1)))
-        elif not isinstance(models, dict):
-            raise IOError("{:} Models must be a dictionary".
-                          format(self.get_inform(1)))
-        elif not all([key in models for key in self.req_models]):
-            raise KeyError("{:} models dict missing a required model".
-                           format(self.get_inform(1)))
-        elif not all([isinstance(models[key], self.req_models[key])
-                      for key in self.req_models]):
-            raise IOError("{:} Incorrect model types passed".
-                          format(self.get_inform(1)))
-        else:
-            return self._on_check_models(models)
+        #mask = np.where(x_data < (x_data[0]+25E-6))[0]
+        #x_data = x_data[mask]
+        var_fn = IUSpline(
+            x_data,
+            (mean_fn(x_data) - y_data)**2,
+            ext=3
+        )
         # end
 
-    def _on_check_models(self, models):
-        return models
+        return mean_fn, var_fn
 
-    def compare(self, simdata1, simdata2):
-        """Compares a the results of two Experiments
-        
-        The comparison is made by comparing the results of simdata1
-        and simdata2 at each independant variable in simdata2. 
-        
-        The difference is evaluated as simdata2 **less** simdata1
-
-        .. note::
-
-           Abstract Method: Must be overloaded to work with `F_UNCLE`
+    def __call__(self):
+        """Returns the experimental data
 
         Args:
-           simdata1(tuple): Complete output of a `__call__` to an `Experiment`
-                            object.
-           simdata2(tuple): Complete output of a `__call__` to an `Experiment`
-                            object.
+            None
+
         Returns:
-            (np.ndarray):
-                The error between the dependent variables
-                and the model for each value of independent variable
+            (tuple): Values are
+
+                [0]. (np.ndarray): The independent data from the experiment
+                [1]. (list): Dependent data
+
+                    [0]. (np.ndarray): The raw data form the experiment
+                    [1]. (np.ndarray): The mean_fn evaluated at the independent
+                        data points
+                    [2]. (np.ndarray): The raw variance from the experiment
+                    [3]. (list): labels
+
+                [2]. (dict): Auxiliary information
+
+                    - `mean_fn` (function): The smoothed function representing
+                        the dependent variable
+                    - `var_fn` (function): The interpolated function
+                        representing the difference between mean_fn and the
+                        measured data
+                    - `trigger` (Trigger): An object to align
+                                           simulations to the data
+        """
+
+        return\
+            self.data[0],\
+            [self.data[1], self.mean_fn(self.data[0]), self.data[2],
+             ['vel data', 'vel fn', 'variance']],\
+            {'mean_fn': self.mean_fn, 'var_fn': self.var_fn,
+             'trigger': self.trigger}
+
+    def compare(self, sim_data, plot=False, fig=None):
+        """Compares the results of a simulation to this these data
+
+        Performs the following actions
+
+        1. Calculates the time shift required to align the simulation data
+           with the experiment
+        2. Evaluates the simulation data at the experimental time-stamps
+        3. Calculates the difference between the simulation and the experiment
+           for every experimental time step. Experiment **less** simulation
+
+        Args:
+
+            sim_data(list): The output from a call to a F_UNCLE Experiment
+
+        Keyword Args:
+
+            plot(bool): Flag to plot the comparison
+            fig(plt.Figure): If not none, the figure object on which to plot
+
+        Return:
+
+            (np.ndarray): The difference between sim_data and this experiment
+                at each experimental time-stamp
+
+        """
+        tau = self.trigger(sim_data[0], sim_data[1][0])
+        epsilon = self.data[1]\
+                  - sim_data[2]['mean_fn'](self.data[0] - tau)
+        return epsilon
+
+    def align(self, sim_data, plot=False, fig=None):
+        """Updates the simulation data so it is aligned with the experiments
+
+        Method
+        ------
+
+        1. Obtains the time-steps of the experiment
+        2. Calculates the time shift to align the simulation with the experiment
+        3. Evaluates the function representing the simulation output at the
+           experimental time steps
+        4. Updates the simulation `trigger` and `tau` values with the
+           experimental Trigger object and the calculated `tau`
+        5. Shifts the knot positions in the `mean_fn` spline for the simulation
+           so subsequent calls to this function will be aligned with the
+           experiment
+        6. Returns the simulation data aligned with the experiments
+
+        Args:
+
+            sim_data(list): A list returned by a F_UNCLE experiment
+
+        Keyword Args:
+
+            plot(bool): Flag to plot the comparison
+            fig(plt.Figure): If not none, the figure object on which to plot
+
+        Returns:
+
+             (list): The updated simulation data
+
+                 0. (np.ndarray): The experimental time steps
+                 1. (list): The simulation dependent results
+
+                     0. (np.ndarray): The simulation `mean_fn` shifted and
+                        evaluated at the experimental times
+                     1. The remaining elements are unchanged
+
+                 2. (dict): The simulation summary data
+
+                     - 'tau': Updated to show the time shift, in seconds,
+                       required to bring the simulations and experiments
+                       inline
+                     - 'trigger': The Trigger object used by the DataExperiment
+        """
+
+        raw_data = sim_data[1][0]
+        tau = self.trigger(sim_data[0], sim_data[1][0])
+        sim_data[2]['tau'] = tau
+        sim_data[2]['trigger'] = copy.deepcopy(self.trigger)
+        sim_data[1][0] = sim_data[2]['mean_fn'](self.data[0] - tau)
+
+        mean_knots = sim_data[2]['mean_fn']._eval_args
+        sim_data[2]['mean_fn']._eval_args = (
+            mean_knots[0] + tau,
+            mean_knots[1],
+            mean_knots[2]
+        )
+
+        return self.data[0], sim_data[1], sim_data[2]
+
+    def shape(self):
+        """Returns the number of independent data for the experiment
+
+        Args:
+
+            None
+
+        Return:
+
+           (int): The number of data
+        """
+        return self.data[0].shape[0]
+
+    def get_sigma(self):
+        """Returns the variance matrix.
+
+        Variance is given as:
+
+            self.data[1] * `exp_var`
+
+        Args:
+
+            tmp(dict): The physics models - not used
+
+        Returns:
+
+            (np.ndarray): nxn variance matrix where n is the number of data
+
+        .. warning::
+
+            This is a work in progress. The true variance should
+            be calculated from the data.
 
         """
 
-        raise NotImplementedError('{} has not compare method instantiated'
-                                  .format(self.get_inform(1)))
+        return np.diag(self.data[1] * self.get_option('exp_var'))
 
-    def get_pq(self, model, sim_data, experiment, sens_matrix, scale=False):
+
+    def _check_finite(self, data):
+        """Removes Nan from data
+        """
+        data_out = []
+        for trend in data:
+            data_out.append(
+                trend[np.where(np.isfinite(trend))[0]]
+            )
+        # end
+
+        for i, trend1 in enumerate(data):
+            for j, trend2 in enumerate(data):
+                if not trend1.shape[0] == trend2.shape[0]:
+                    raise ValueError(
+                        "{:} Shape of data trends {:d} and {:d}"
+                        " do not agree"
+                        .format(self.get_inform(1), i, j)
+                    )
+                # end
+            # end
+        # end
+
+        return data_out
+
+    def _get_data(self, *args, **kwargs):
+        raise NotImplementedError
+
+
+    def get_pq(self, models, opt_key, sim_data, sens_matrix,
+               scale=False):
         """Generates the P and q matrix for the Bayesian analysis
 
         Args:
-           model(PhysicsModel): The model being analysed
+           models(dict): The dictionary of models
+           opt_key(str): The key for the model being optimized
            sim_data(list): Lengh three list corresponding to the `__call__` from
                            a Experiment object
-           experiment(Experiment): A valid Experiment object
            sens_matrix(np.ndarray): The sensitivity matrix
 
+        Keyword Arguments:
+           scale(bool): Flag to use the model scaling
+
         Return:
-            (tuple):
+            (tuple): Elements are:
                 0. (np.ndarray): `P`, a nxn matrix where n is the model DOF
                 1. (np.ndarray): `q`, a nx1 matrix where n is the model DOF
 
         """
 
-        return NotImplemented
 
-    def get_log_like(self, model, sim_data, experiment):
+        epsilon = self.compare(sim_data)
+
+        p_mat = np.dot(np.dot(sens_matrix.T,
+                              inv(self.get_sigma())),
+                       sens_matrix)
+        q_mat = -np.dot(np.dot(epsilon,
+                               inv(self.get_sigma())),
+                        sens_matrix)
+
+        if scale:
+            prior_scale = models[opt_key].get_scaling()
+            p_mat = np.dot(prior_scale, np.dot(p_mat, prior_scale))
+            q_mat = np.dot(prior_scale, q_mat)
+        # end
+
+        return p_mat, q_mat
+
+    def get_log_like(self, sim_data):
         """Gets the log likelihood of the current simulation
 
         Args:
-           model(PhysicsModel): The model under investigation
            sim_data(list): Lengh three list corresponding to the `__call__` from
                            a Experiment object
            experiment(Experiment): A valid Experiment object
@@ -276,366 +395,59 @@ class Simulation(Struc):
             (float): The log of the likelihood of the simulation
         """
 
-        return NotImplemented
+        epsilon = self.compare(sim_data)
+        return -0.5 * np.dot(epsilon,
+                             np.dot(inv(self.get_sigma()),
+                                    epsilon))
+
+    def get_fisher_matrix(self, models, sens_matrix):
+        """Returns the fisher information matrix of the simulation
+
+        Args:
+            models(dict): Dictionary of models
+            sens_matrix(np.ndarray): the sensitivity matrix
+
+        Keyword Args:
+            use_hessian(bool): Flag to toggle wheather or not to use the hessian
+
+        Return:
+            (np.ndarray): The fisher information matrix, a nxn matrix where
+            `n` is the degrees of freedom of the model.
+        """
+
+        sigma = inv(self.get_sigma())
+        
+        return np.dot(sens_matrix.T, np.dot(sigma, sens_matrix))
     
-    def multi_solve(self, models, model_key, dof_list):
-        """Returns the results from calling the Experiment object for each 
-        element of dof_list
+    def parse_datafile(self, folder, filename, root_dir, header_lines, delimiter,
+                       indepcol, depcols, varcols):
+        """Parser to read experimental datafiles
 
         Args:
-            models(dict): Dictionary of models
-            model_key(str): The key for the model in the models to be used
-            dof_list(list): A list of numpy array's defininf the model DOFs
-
-        Returns:
-            (list): A list of outputs to __call___ for the experiment 
-                    corresponding to the elements of dof_list
-        """
-
-        models = copy.deepcopy(models)
-        
-        ret_list = []
-        for dof in dof_list:
-            models[model_key] = models[model_key].update_dof(dof)
-            ret_list.append(self(models))
-        # end
-
-        return ret_list
-
-    def multi_solve_mpi(self, models, model_key, dof_list):
-        """Returns the results from calling the Experiment object for each 
-        element of dof_list using mpi
-
-        Args:
-            models(dict): Dictionary of models
-            model_key(str): The key for the model in the models to be used
-            dof_list(list): A list of numpy array's defininf the model DOFs
-
-        Returns:
-            (list): A list of outputs to __call___ for the experiment 
-                    corresponding to the elements of dof_list
-        """
-
-        models = copy.deepcopy(models)
-        
-        ret_list = []
-        
-        raise NotImplementedError('{:} multi solve using MPI has not been implemented'
-                                  .format(self.get_inform(0)))
-
-        return ret_list
-
-    def multi_solve_runjob(self, models, model_key, dof_list):
-        """Returns the results from calling the Experiment object for each 
-        element of dof_list using the runjob script
-
-        .. note::
-        
-             runjob is an internal LANL code
-
-        Args:
-            models(dict): Dictionary of models
-            model_key(str): The key for the model in the models to be used
-            dof_list(list): A list of numpy array's defininf the model DOFs
-
-        Returns:
-            (list): A list of outputs to __call___ for the experiment 
-                    corresponding to the elements of dof_list
-        """
-
-        models = copy.deepcopy(models)
-        
-        ret_list = []
-        
-        raise NotImplementedError('{:} multi solve using runjob is not availible'
-                                  .format(self.get_inform(0)))
-
-        return ret_list
-
-    def get_sens_runjob(self, models, model_key, initial_data=None):
-        """Uses runjob for  evaluation of the model gradients
-        
-        .. note::
-
-            runjob is an internal LANL code
-
-        Args:
-            models(dict): The dictionary of models
-            model_key(str): The key of the model for which the sensitivity is
-                            desired
-        Keyword Args:
-            initial_data(np.ndarray): The response for the nominal model DOF, if
-                it is `None`, it is calculated when this method is called
-            comm(): A MPI communicator
+            folder(str): The folder within fit_9501/Data where the experimental
+                         data are located
+            filename(str): The name of the datafile
+            root_dir(str): The path of the file caling this method
+            header_lines(int): The number of header lines to skip
+            delimiter(str): The delimiter for the file
+            indepcol(int): The index of the independent variable column
+            depcols(list): The indicies of the dependant variables
+            varcols(list): The indicies of the variance of the dep var
 
         """
+        fname = os.path.abspath(os.path.normcase(os.path.join(
+            root_dir,
+            './../Data/',
+            folder,
+            filename)))
 
-        raise NotImplementedError('{:} multi solve using runjob is not availible'
-                                  .format(self.get_inform(0)))
-
-
-    def get_sens_mpi(self, models, model_key, initial_data=None, comm=None):
-        """MPI evaluation of the model gradients
-
-        Args:
-            models(dict): The dictionary of models
-            model_key(str): The key of the model for which the sensitivity is
-                            desired
-        Keyword Args:
-            initial_data(np.ndarray): The response for the nominal model DOF, if
-                it is `None`, it is calculated when this method is called
-            comm(): A MPI communicator
-
-        """
-        models = copy.deepcopy(models)
-        model = models[model_key]
-
-        step_frac = 2E-2
-
-        if initial_data is None:
-            initial_data = self(models)
+        with open(fname, 'r') as fid:
+            data = np.genfromtxt(fid,
+                                 skip_header=header_lines,
+                                 delimiter=delimiter,
+                                 missing_values=np.nan)
         # end
 
-        resp_mat = np.zeros((initial_data[0].shape[0],
-                             model.shape()))
-        inp_mat = np.zeros((model.shape(),
-                            model.shape()))
-        new_dof_mat = []
-        new_dofs = np.array(copy.deepcopy(model.get_dof()),
-                            dtype=np.float64)
-        # Build the input matrix and a lift of dof's to test
-        for i, coeff in enumerate(model.get_dof()):
-            new_dofs[i] += float(coeff * step_frac)
-            inp_mat[:, i] = (new_dofs - model.get_dof())
-            new_dof_mat.append(copy.deepcopy(new_dofs))
-            new_dofs[i] -= float(coeff * step_frac)
-        # end
-
-        # The function to be evaluated in parallel
-        def get_resp(new_dofi, exp, model_dct, mkey, init_dat):
-            """Class method used in the parallel map function
-            """
-            model_dct[mkey] = model_dct[mkey].update_dof(new_dofi)                
-            return -exp.compare(init_dat[0], init_dat[1][0],
-                                exp(model_dct))
-
-        pll_out = pll_loop(new_dof_mat, get_resp,
-                           shape=self.shape(),
-                           comm=comm,
-                           exp=self,
-                           model_dct=models,
-                           mkey=model_key,
-                           init_dat=initial_data)
-
-        for key in pll_out:
-            resp_mat[:,int(key)] = pll_out[key]
-        #end
-        
-        sens_matrix = np.linalg.lstsq(inp_mat, resp_mat.T)[0].T
-        return np.where(np.fabs(sens_matrix) > 1E-21,
-                        sens_matrix,
-                        np.zeros(sens_matrix.shape))
-
-    def get_sens_pll(self, models, model_key, initial_data=None):
-        """Parallel evaluation of each model's sensitivities
-
-        Args:
-            models(dict): The dictionary of models
-            model_key(str): The key of the model for which the sensitivity is
-                            desired
-        Keyword Args:
-            initial_data(np.ndarray): The response for the nominal model DOF, if
-                it is `None`, it is calculated when this method is called
-        """
-
-        import concurrent.futures
-
-        models = copy.deepcopy(models)
-        model = models[model_key]
-
-        step_frac = 2E-2
-
-        if initial_data is None:
-            initial_data = self(models)
-        # end
-
-        resp_mat = np.zeros((initial_data[0].shape[0],
-                             model.shape()))
-        inp_mat = np.zeros((model.shape(),
-                            model.shape()))
-        new_dof_mat = []
-        new_dofs = np.array(copy.deepcopy(model.get_dof()),
-                            dtype=np.float64)
-
-        for i, coeff in enumerate(model.get_dof()):
-            new_dofs[i] += float(coeff * step_frac)
-            inp_mat[:, i] = (new_dofs - model.get_dof())
-            new_dof_mat.append(copy.deepcopy(new_dofs))
-            new_dofs[i] -= float(coeff * step_frac)
-        # end
-            
-        # with concurrent.futures.ThreadPoolExecutor(max_workers=50)\
-        #      as executor:
-        #     for i, resp in enumerate(executor.map(
-        #             Experiment._get_resp,
-        #             new_dof_mat,
-        #             [copy.deepcopy(self) for i in range(len(new_dof_mat))],
-        #             [copy.deepcopy(models) for i in range(len(new_dof_mat))],
-        #             [copy.deepcopy(model_key) for i in range(len(new_dof_mat))],
-        #             [copy.deepcopy(initial_data) for i in range(len(new_dof_mat))],
-        #             )):
-        #         resp_mat[:, i] = resp
-        #     # end                
-        # # end
-        def _get_resp(new_dofi, exp, model_dct, mkey, init_dat):
-            """Class method used in the parallel map function
-            """
-            model_dct[mkey] = model_dct[mkey].update_dof(new_dofi)   
-            return -exp.compare(init_dat[0], init_dat[1][0],
-                                exp(model_dct))
-        # end
-        
-        with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
-            futures = {}
-            for i, coeff in enumerate(model.get_dof()):
-                new_dofs[i] += float(coeff * step_frac)
-                inp_mat[:, i] = (new_dofs - model.get_dof())
-                futures[executor.submit(
-                    _get_resp,
-                    new_dofs,
-                    copy.deepcopy(self),
-                    copy.deepcopy(models),
-                    copy.deepcopy(model_key),
-                    copy.deepcopy(initial_data))] = i
-
-                new_dofs[i] -= float(coeff * step_frac)
-            # end
-
-            for ftr in concurrent.futures.as_completed(futures):
-                i = futures[ftr]
-
-                try:
-                    resp = ftr.result()
-                except Exception as exc:
-                    raise RuntimeError('{:s} sensitivities generated an'
-                                       ' exception {:s}'.
-                                       format(self.get_inform(1), exc))
-                else:
-                    resp_mat[:, i] = resp
-                # end
-            # end
-        # end
- 
-        sens_matrix = np.linalg.lstsq(inp_mat, resp_mat.T)[0].T
-        return np.where(np.fabs(sens_matrix) > 1E-21,
-                        sens_matrix,
-                        np.zeros(sens_matrix.shape))
-
-        
-    def get_sens(self, models, model_key, initial_data=None):
-        """Gets the sensitivity of the experiment response to the model DOF
-
-        Args:
-            models(dict): The dictionary of models
-            model_key(str): The key of the model for which the sensitivity is
-                            desired
-        Keyword Args:
-            initial_data(np.ndarray): The response for the nominal model DOF, if
-                it is `None`, it is calculated when this method is called
-
-        """
-
-        models = copy.deepcopy(models)
-        model = models[model_key]
-
-        step_frac = 2E-2
-
-        if initial_data is None:
-            initial_data = self(models)
-        # end
-
-        resp_mat = np.zeros((initial_data[0].shape[0],
-                             model.shape()))
-        inp_mat = np.zeros((model.shape(),
-                            model.shape()))
-        new_dofs = np.array(copy.deepcopy(model.get_dof()),
-                            dtype=np.float64)
-
-        for i, coeff in enumerate(model.get_dof()):
-            new_dofs[i] += float(coeff * step_frac)
-            models[model_key] = model.update_dof(new_dofs)
-            inp_mat[:, i] = (new_dofs - model.get_dof())
-            resp_mat[:, i] = -self.compare(
-                self(models),                
-                initial_data)
-            new_dofs[i] -= float(coeff * step_frac)
-        # end
-   
-        sens_matrix = np.linalg.lstsq(inp_mat, resp_mat.T)[0].T
-        return np.where(np.fabs(sens_matrix) > 1E-21,
-                        sens_matrix,
-                        np.zeros(sens_matrix.shape))
-
-    def _get_hessian(self, models, model_key, initial_data=None):
-        """Gets the Hessian (matrix of second derrivatives) of the simulated
-        experiments to the EOS
-
-        .. math::
-
-          H(f_i) = \begin{smallmatrix}
-            \frac{\partial^2 f_i}{\partial \mu_1^2} &
-            \frac{\partial^2 f_i}{\partial \mu_1 \partial \mu_2}&
-            \ldots & \frac{\partial^2 f_i}{\partial \mu_1 \partial \mu_n}\\
-            
-            \frac{\partial^2 f_i}{\partial \mu_2 \partial \mu_1}&
-            \frac{\partial^2 f_i}{\partial \mu_2^2}&
-            \ldots & \frac{\partial^2 f_i}{\partial \mu_2 \partial \mu_n}\\
-
-            \frac{\partial^2 f_i}{\partial \mu_n \partial \mu_1}&
-            \frac{\partial^2 f_i}{\partial \mu_n \partial \mu_2}&
-            \ldots & \frac{\partial^2 f_i}{\partial \mu_n^2}
-
-            \end{smallmatrix}
-
-        .. math::
-
-            H(f) = (H(f_1), H(f_2), \ldots , H(f_n))
-
-        where
-
-        .. math::
-
-          f \in \mathcal{R}^m \\
-          \mu \in \mathcal{R}^m
-        """
-
-        model_dict = copy.deepcopy(models)
-        model = model_dict[model_key]
-
-        if initial_data is None:
-            initial_data = self(models)
-        # end
-
-        fd_step = 2E-2
-        hessian = np.zeros((model.shape(),
-                            self.shape(),
-                            model.shape()))
-
-        initial_sens = self.get_sens(model_dict, model_key)
-        initial_dof = model.get_dof()
-        for i, dof in enumerate(initial_dof):
-            initial_dof[i] += fd_step * dof
-            model_dict[model_key] = model.update_dof(
-                initial_dof)
-            step_sens = self.get_sens(model_dict, model_key)
-            hessian[i] = (step_sens - initial_sens) / (fd_step * dof)
-            # hessian[i, :, :] = np.linalg.lstsq(delta_mat,
-            #                                    (step_sens - initial_sens).T
-            #                                    )[0].T
-            initial_dof[i] -= fd_step * dof
-        # end
-
-        return hessian
-
-
-
+        return data[:, indepcol],\
+            data[:, depcols][:,0],\
+            data[:, varcols][:,0]

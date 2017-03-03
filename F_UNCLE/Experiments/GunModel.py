@@ -44,17 +44,20 @@ from scipy.integrate import odeint
 # =========================
 # Custom Packages
 # =========================
+from ..Utils.Experiment import Experiment
+from ..Utils.Simulation import Simulation
+from ..Models.Isentrope import EOSBump, EOSModel, Isentrope, Spline
 
-if __name__ == '__main__':
-    sys.path.append(os.path.abspath('./../../'))
-    from F_UNCLE.Utils.DataExperiment import DataExperiment
-    from F_UNCLE.Utils.Experiment import Simulation
-    from F_UNCLE.Models.Isentrope import EOSBump, EOSModel, Isentrope, Spline
-else:
-    from ..Utils.DataExperiment import DataExperiment
-    from ..Utils.Experiment import Simulation
-    from ..Models.Isentrope import EOSBump, EOSModel, Isentrope, Spline
-# end
+# if __name__ == '__main__':
+#     sys.path.append(os.path.abspath('./../../'))
+#     from F_UNCLE.Utils.DataExperiment import DataExperiment
+#     from F_UNCLE.Utils.Experiment import Simulation
+#     from F_UNCLE.Models.Isentrope import EOSBump, EOSModel, Isentrope, Spline
+# else:
+#     from ..Utils.DataExperiment import DataExperiment
+#     from ..Utils.Experiment import Simulation
+#     from ..Models.Isentrope import EOSBump, EOSModel, Isentrope, Spline
+# # end
 
 # =========================
 # Main Code
@@ -425,7 +428,7 @@ class Gun(Simulation):
             ax3.set_ylabel("Projectile position / cm s**-1")
 
 
-class GunExperiment(DataExperiment):
+class GunExperiment(Experiment):
     """A class representing pseudo experimental data for a gun show
     """
     def _get_data(self, model=None, *args, **kwargs):

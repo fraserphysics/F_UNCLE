@@ -43,16 +43,19 @@ import matplotlib.pyplot as plt
 # =========================
 # Custom Packages
 # =========================
+from ..Utils.Simulation import Simulation
+from ..Models.Isentrope import EOSBump, EOSModel, Isentrope, Spline
+from ..Utils.Experiment import Experiment
 
-if __name__ == '__main__':
-    sys.path.append(os.path.abspath('./../../'))
-    from F_UNCLE.Utils.Experiment import Simulation
-    from F_UNCLE.Utils.DataExperiment import DataExperiment
-    from F_UNCLE.Models.Isentrope import EOSBump, EOSModel, Isentrope, Spline
-else:
-    from ..Utils.Experiment import Simulation
-    from ..Models.Isentrope import EOSBump, EOSModel, Isentrope, Spline
-    from ..Utils.DataExperiment import DataExperiment
+# if __name__ == '__main__':
+#     sys.path.append(os.path.abspath('./../../'))
+#     from F_UNCLE.Utils.Experiment import Simulation
+#     from F_UNCLE.Utils.DataExperiment import DataExperiment
+#     from F_UNCLE.Models.Isentrope import EOSBump, EOSModel, Isentrope, Spline
+# else:
+#     from ..Utils.Experiment import Simulation
+#     from ..Models.Isentrope import EOSBump, EOSModel, Isentrope, Spline
+#     from ..Utils.DataExperiment import DataExperiment
 # =========================
 # Main Code
 # =========================
@@ -322,7 +325,7 @@ class Stick(Simulation):
 
         return fig
 
-class StickExperiment(DataExperiment):
+class StickExperiment(Experiment):
     """A class representing pseudo experimental data for a stick
     """
 
@@ -337,7 +340,7 @@ class StickExperiment(DataExperiment):
                         'Variance attributed to x positions']
         }
 
-        DataExperiment.__init__(self, name=name, def_opts=def_opts, *args, **kwargs)
+        Experiment.__init__(self, name=name, def_opts=def_opts, *args, **kwargs)
         
     def _get_data(self, model=None, *args, **kwargs):
         """Creates a simulated set of experimental data from a user provided
