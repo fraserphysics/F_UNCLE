@@ -671,8 +671,6 @@ class EOSModel(Spline, Isentrope):
                         " linear or log"],
             'spline_sigma': [float, 5e-3, 0.0, None, '??',
                              "Multiplicative uncertainty of the prior (1/2%)"],
-            'precondition': [bool, False, None, None, '',
-                             "Precondition flag"]
         }
 
         if 'def_opts' in kwargs:
@@ -846,7 +844,7 @@ class EOSModel(Spline, Isentrope):
                             "isentropes".format(self.get_inform(1)))
         # end
         for isen, lbl in zip(isentropes, labels):
-            axes.plot(v_list, isen(v_list) - self.prior(v_list),
+            axes.plot(v_list, isen(v_list**-1) - self.prior(v_list),
                       label=lbl,
                      )
         # end

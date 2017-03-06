@@ -296,8 +296,12 @@ class Simulation(Struc):
         
         ret_list = []
         for dof in dof_list:
-            models[model_key] = models[model_key].update_dof(dof)
-            ret_list.append(self(models))
+            if dof is not None:
+                models[model_key] = models[model_key].update_dof(dof)
+                ret_list.append(self(models))
+            else:
+                ret_list.append(None)
+            #end
         # end
 
         return ret_list

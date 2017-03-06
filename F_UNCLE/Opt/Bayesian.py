@@ -525,37 +525,43 @@ class Bayesian(Struc):
             dof_list = []
             
             # Builds the list of dof values to test and gets the prior cost
-            fig = plt.figure()
-            ax1 = fig.gca()
+            plot_lsearch=False
+            if plot_lsearch:
+                fig = plt.figure()
+                ax1 = fig.gca()            
+                ax1.plot(opt_model.get_t()[:-4],
+                             np.fabs(d_hat),
+                             label='Total Step')
+                opt_model.prior.plot(
+                    axes=ax1,
+                    labels=['Prior'],
+                    linestyles=['-'],
+                    log=False
+                    )
+            # end
             
-            ax1.plot(opt_model.get_t()[:-4],
-                         np.fabs(d_hat),
-                         label='Total Step')
-            opt_model.prior.plot(
-                axes=ax1,
-                labels=['Prior'],
-                linestyles=['-'],
-                log=False
-                )
             for i, x_i in enumerate(x_list):
                 dof_list.append(initial_dof + x_i * d_hat)
-                # print(dof_list[-1])
 
                 model_dict[opt_key] = opt_model.update_dof(dof_list[-1])
 
-                model_dict[opt_key].plot(
-                    axes=ax1,
-                    labels=['Step {:02d}'.format(i)],
-                    linestyles=['-'],
-                    log=False
-                )
-                fig.savefig('lineSearch_itn{:02d}.pdf'.format(itn))
+                if plot_lsearch:
+                    model_dict[opt_key].plot(
+                        axes=ax1,
+                        labels=['Step {:02d}'.format(i)],
+                        linestyles=['-'],
+                        log=False
+                    )
+                    fig.savefig('lineSearch_itn{:02d}.pdf'.format(itn))
+                
                 new_analysis = analysis.update(models=model_dict)
                 costs[i] = new_analysis.model_log_like()
             # end
-            ax1.legend(loc='best')
 
-            fig.savefig('lineSearch_itn{:02d}.pdf'.format(itn))
+            if plot_lsearch:
+                ax1.legend(loc='best')
+                fig.savefig('lineSearch_itn{:02d}.pdf'.format(itn))
+            # end
             
             # Evaluates each simulation at each dof step
             # Note: This approach makes use of the multi_solve method
@@ -592,7 +598,11 @@ class Bayesian(Struc):
                 for key in analysis.simulations:
                     sorted_data[-1][key] = iter_data[key][i]
                 # end
-                costs[i] += new_analysis.sim_log_like(sorted_data[-1])
+                if sorted_data[-1] is not None:
+                    costs[i] += new_analysis.sim_log_like(sorted_data[-1])
+                else:
+                    costs[i] -= 1E21
+                # end
             # end
             
             # Updates the model dof to the optimal value
@@ -617,13 +627,12 @@ class Bayesian(Struc):
         verb = self.get_option('verb')
         history = []
         dof_hist = []
-        log_like = 0.0
 
         initial_data = self.get_data()
 
         conv = False
         analysis = copy.deepcopy(self)
-        log_like = 0
+        log_like = 0.0
         i = 0
 
         if self.get_option('pickle_sens'):
@@ -763,26 +772,28 @@ class Bayesian(Struc):
 
         # >>Supressed plotting routine to show the constraint matrix
         # fig = plt.figure()
-        # ax1 = fig.add_subplot(121)
-        # ax2 = fig.add_subplot(122)        
+        # ax9 = fig.add_subplot(121)
+        # ax8 = fig.add_subplot(122)        
         # opt_model = self.models[self.opt_key]
         # n_end = opt_model.get_option('spline_end')
         # rho_unique = opt_model.get_t()[n_end -1 : 1 - n_end]
         # n_rho = rho_unique.shape[0]
         # for i in xrange(opt_model.shape()):
-        #     ax1.plot(rho_unique, g_mat[:n_rho, i])
-        #     ax2.plot(rho_unique, g_mat[n_rho:, i])
-        # fig.savefig('gmat.pdf')
+        #     ax9.plot(rho_unique, g_mat[:n_rho, i])
+        #     ax8.plot(rho_unique, g_mat[n_rho:2*n_rho, i])
+        #     ax9.plot(rho_unique, g_mat[2 * n_rho:, i])            
+        # fig.savefig('gmat{:f}.pdf'.format(time.time()))
         # >>Supressed plotting routine to show the constraint matrix
         
         try:
             if constrain:
                 sol = solvers.qp(matrix(p_mat), matrix(q_vec),
-                                 matrix(g_mat), matrix(h_vec))
+                                 matrix(g_mat), matrix(h_vec),
+                                 intervals={'x':np.zeros(g_mat.shape[1])})
             else:
                 sol = solvers.qp(matrix(p_mat), matrix(q_vec))
 
-            # print('x scaled', sol['x'])
+            print('x scaled', np.array(sol['x']).reshape(-1))
         except ValueError as inst:
             print(inst)
             print("G " + str(g_mat.shape))
@@ -793,30 +804,35 @@ class Bayesian(Struc):
             
         # >>Supressed plotting routine to show the constraints and their values
         #   at the optimal point
-        # fig = plt.figure()
-        # ax2 = fig.add_subplot(111)        
-        # opt_model = self.models[self.opt_key]
-        # rho_unique = opt_model.get_t()[3:-3]
-        # n_unique = rho_unique.shape[0]
-        # d_hat = np.array(sol['x']).reshape(-1)
-        # ax2.plot(rho_unique,
-        #          np.dot(g_mat, d_hat)[:n_unique],
-        #          '-o',
-        #          label='Convexity value')
-        # ax2.plot(rho_unique,
-        #          np.dot(g_mat, d_hat)[n_unique:],
-        #          '-o',
-        #          label='Positivity value')       
-        # ax2.plot(rho_unique,
-        #          h_vec[:n_unique],
-        #          '--o',
-        #          label='Convexity limit')
-        # ax2.plot(rho_unique,
-        #          h_vec[n_unique:],
-        #          '--o',
-        #          label='Positivity limit')
-        # ax2.legend(loc='best')
-        # fig.savefig('function_constraints{:f}.pdf'.format(time.time()))
+#         fig = plt.figure()
+#         ax2 = fig.add_subplot(111)        
+#         opt_model = self.models[self.opt_key]
+#         rho_unique = opt_model.get_t()[3:-3]
+#         n_unique = rho_unique.shape[0]
+#         d_hat = np.array(sol['x']).reshape(-1)
+# #        d_hat = np.ones(opt_model.shape())
+#         ax2.plot(rho_unique,
+#                  np.dot(g_mat, d_hat)[:n_unique],
+#                  '-o',
+#                  label='Volume Convexity value')
+#         ax2.plot(rho_unique,
+#                  np.dot(g_mat, d_hat)[n_unique: 2 * n_unique],
+#                  '-o',
+#                  label='Positivity value')       
+#         ax2.plot(rho_unique,
+#                  np.dot(g_mat, d_hat)[2 * n_unique:],
+#                  '-o',
+#                  label='Density Convecity value')       
+#         ax2.plot(rho_unique,
+#                  h_vec[:n_unique],
+#                  '--o',
+#                  label='Convexity limit')
+#         ax2.plot(rho_unique,
+#                  h_vec[n_unique:2*n_unique],
+#                  '--o',
+#                  label='Positivity limit')
+#         ax2.legend(loc='best')
+#         fig.savefig('function_constraints{:f}.pdf'.format(time.time()))
         
         if sol['status'] != 'optimal':
             for key, value in sol.items():
