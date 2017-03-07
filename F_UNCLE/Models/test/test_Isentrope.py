@@ -51,14 +51,8 @@ from scipy.interpolate import InterpolatedUnivariateSpline as IU_Spline
 # =========================
 # Custom Packages
 # =========================
-if __name__ == '__main__':
-    sys.path.append(os.path.abspath('./../../'))
-    from F_UNCLE.Utils.PhysicsModel import GaussianModel
-    from F_UNCLE.Models.Isentrope import EOSModel, EOSBump, Isentrope
-else:
-    from ..Utils.PhysicsModel import GaussianModel
-    from .Isentrope import EOSModel, EOSBump, Isentrope
-# end
+from ...Utils.PhysicsModel import GaussianModel
+from ..Isentrope import EOSModel, EOSBump, Isentrope
 
 
 class TestIsentrope(unittest.TestCase):
@@ -107,7 +101,6 @@ class TestEosModel(unittest.TestCase):
         print(eos)
 
         self.assertEqual(eos.get_option('spline_sigma'), 5e-3)
-        self.assertEqual(eos.get_option('precondition'), False)
     # end
 
     def test_bad_instantiation(self):

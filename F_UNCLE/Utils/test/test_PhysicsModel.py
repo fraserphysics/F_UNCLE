@@ -34,13 +34,8 @@ import numpy.testing as npt
 # =========================
 # Custom Packages
 # =========================
-if __name__ == '__main__':
-    sys.path.append(os.path.abspath('./../../'))
-    from F_UNCLE.Utils.Struc import Struc
-    from F_UNCLE.Utils.PhysicsModel import PhysicsModel, GaussianModel
-else:
-    from .Struc import Struc
-    from .PhysicsModel import PhysicsModel, GaussianModel
+from ..Struc import Struc
+from ..PhysicsModel import PhysicsModel, GaussianModel
 
 
 class SimpleModel(GaussianModel):

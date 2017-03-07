@@ -46,22 +46,12 @@ from scipy.optimize import brentq
 # Custom Packages
 # =========================
 
-if __name__ == '__main__':
-    sys.path.append(os.path.abspath('./../../'))
-    from F_UNCLE.Utils.Experiment import Simulation
-    from F_UNCLE.Models.Isentrope import EOSBump, EOSModel, Isentrope, Spline
-    from F_UNCLE.Models.Ptw import Ptw
-    from F_UNCLE.Experiments.GunModel import Gun, GunExperiment
-    from F_UNCLE.Experiments.Stick import Stick, StickExperiment
-    from F_UNCLE.Experiments.Sphere import Sphere
-else:
-    from ..Utils.Experiment import Simulation
-    from ..Models.Isentrope import EOSBump, EOSModel, Isentrope, Spline
-    from ..Models.Ptw import Ptw
-    from .GunModel import Gun, GunExperiment
-    from .Stick import Stick, StickExperiment
-    from .Sphere import Sphere
-
+from ...Utils.Simulation import Simulation
+from ...Models.Isentrope import EOSBump, EOSModel, Isentrope, Spline
+from ...Models.Ptw import Ptw
+from ..GunModel import Gun, GunExperiment
+from ..Stick import Stick, StickExperiment
+from ..Sphere import Sphere
 
 class TestGun(unittest.TestCase):
     """Test of the Gun experiment

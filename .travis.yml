@@ -24,4 +24,4 @@ install:
    - source activate test-environment
    
 # command to run tests
-script: nosetests
+script: pytest F_UNCLE

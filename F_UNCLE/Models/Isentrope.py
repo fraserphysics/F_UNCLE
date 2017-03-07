@@ -50,11 +50,7 @@ from scipy.optimize import brentq
 # =========================
 # Custom Packages
 # =========================
-if __name__ == '__main__':
-    sys.path.append(os.path.abspath('./../../'))
-    from F_UNCLE.Utils.PhysicsModel import GaussianModel
-else:
-    from ..Utils.PhysicsModel import GaussianModel
+from ..Utils.PhysicsModel import GaussianModel
 
 
 # =========================

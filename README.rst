@@ -43,7 +43,7 @@ Testing
 
 From the root directory of `F_UNCLE` run::
 
-   nosetests
+   pytest F_UNCLE
 
 This will discover, run and report on all test in the F_UNCLE module
 

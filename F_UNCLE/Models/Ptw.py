@@ -45,17 +45,8 @@ import matplotlib.pyplot as plt
 # Module Packages
 # =========================
 
-if __name__ == '__main__':
-    sys.path.append(os.path.abspath('./../../'))
-    from F_UNCLE.Utils.Struc import Struc
-    from F_UNCLE.Utils.PhysicsModel import PhysicsModel
-
-else:
-    from ..Utils.Struc import Struc
-    from ..Utils.PhysicsModel import PhysicsModel
-
-# end
-
+from ..Utils.Struc import Struc
+from ..Utils.PhysicsModel import PhysicsModel
 
 # =========================
 # Main Code

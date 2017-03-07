@@ -108,7 +108,7 @@ if __name__ == '__main__':
     eos_model = AugmentedIsentrope(
 #        jwl_isentrope,
         lambda r: 2.56E9 * r**3,
-        spline_min=1.0,
+        spline_min=0.1,
         spline_max=4.0,
 #        vcj_lower=5E5,
 #        vcj_upper=11.0E5,
@@ -211,7 +211,8 @@ if __name__ == '__main__':
     out_dir = options.fig_dir
     square = (figwidth, figwidth)
     tall = (figwidth, 1.25 * figwidth)
-    vrange=(0.2,0.9)
+    vrange=(0.1,4.0)
+    
     def eos_diff():
         ''' Compare EOS functions
         '''
@@ -250,14 +251,19 @@ if __name__ == '__main__':
         '''
         fig = plt.figure(figsize=square)
         ax = fig.gca()
-        eos_model.prior.plot(axes=ax,
+        opt_model.models['eos'].prior.plot(axes=ax,
                              linestyles=['--b'],
                              labels=['Prior EOS'],
                              vrange=vrange)
-        eos_true.plot(axes=ax,
-                      linestyles=['-.g'],
-                      labels=['True EOS'],
-                      vrange=vrange)
+        opt_model.models['eos'].plot(axes=ax,
+                       linestyles=['--b'],
+                       labels=['Prior EOS'],
+                       vrange=vrange)
+        
+        # eos_true.plot(axes=ax,
+        #               linestyles=['-.g'],
+        #               labels=['True EOS'],
+        #               vrange=vrange)
         ax.legend(loc='best')
         fig.tight_layout()
         return fig
@@ -363,10 +369,10 @@ if __name__ == '__main__':
                              linestyles=['--b'],
                              labels=['Prior EOS'],
                              vrange=vrange)
-        eos_true.plot(axes=ax1,
-                      linestyles=['-.g'],
-                      labels=['True EOS'],
-                      vrange=vrange)
+        # eos_true.plot(axes=ax1,
+        #               linestyles=['-.g'],
+        #               labels=['True EOS'],
+        #               vrange=vrange)
         
         ax1.legend(loc='best')
 

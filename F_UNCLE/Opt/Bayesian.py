@@ -75,22 +75,6 @@ from cvxopt import matrix, solvers
 # Custom Packages
 # =========================
 
-# if __name__ == '__main__':
-#     sys.path.append(os.path.abspath('./../../'))
-#     sys.path.append(os.path.abspath('./../../../fit_9501'))
-#     from F_UNCLE.Utils.Simulation import Simulation
-#     from F_UNCLE.Utils.Experiment import Experiment
-#     from F_UNCLE.Utils.PhysicsModel import PhysicsModel
-#     from F_UNCLE.Utils.Struc import Struc
-# #    from fit_9501.Utils.Experiment import Experiment
-# else:
-#     from ..Utils.Simulation import Simulation
-#     from ..Utils.Experiment import Experiment
-#     from ..Utils.PhysicsModel import PhysicsModel
-#     from ..Utils.Struc import Struc
-#     sys.path.append(os.path.abspath('./../../../fit_9501'))    
-# #    from fit_9501.Utils.DataExeriment import Experiment
-# # end
 from ..Utils.Simulation import Simulation
 from ..Utils.Experiment import Experiment
 from ..Utils.PhysicsModel import PhysicsModel
@@ -99,8 +83,6 @@ from ..Utils.Struc import Struc
 # =========================
 # Main Code
 # =========================
-#TODO
-# - fix check _inputs to test class type 
 
 class Bayesian(Struc):
     """A class for performing Bayesian inference on a model given data

@@ -44,7 +44,7 @@ from scipy.integrate import odeint
 # =========================
 # Custom Packages
 # =========================
-from ..Utils.Experiment import Experiment
+from ..Utils.Experiment import GaussianExperiment
 from ..Utils.Simulation import Simulation
 from ..Models.Isentrope import EOSBump, EOSModel, Isentrope, Spline
 
@@ -428,7 +428,7 @@ class Gun(Simulation):
             ax3.set_ylabel("Projectile position / cm s**-1")
 
 
-class GunExperiment(Experiment):
+class GunExperiment(GaussianExperiment):
     """A class representing pseudo experimental data for a gun show
     """
     def _get_data(self, model=None, *args, **kwargs):

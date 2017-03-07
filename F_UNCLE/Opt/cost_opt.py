@@ -31,19 +31,10 @@ documentations without it.''')
 # Custom Packages
 # =========================
 
-if __name__ == '__main__':
-    sys.path.append(os.path.abspath('./../../'))
-    from F_UNCLE.Utils.Experiment import Experiment
-    from F_UNCLE.Utils.PhysicsModel import PhysicsModel
-    from F_UNCLE.Utils.Struc import Struc
-    from F_UNCLE.Opt.Bayesian import Bayesian
-else:
-    from ..Utils.Experiment import Experiment
-    from ..Utils.PhysicsModel import PhysicsModel
-    from ..Utils.Struc import Struc
-    from .Bayesian import Bayesian
-# end
-
+from ..Utils.Experiment import Experiment
+from ..Utils.PhysicsModel import PhysicsModel
+from ..Utils.Struc import Struc
+from .Bayesian import Bayesian
 
 class CostOpt(Bayesian):
     '''Code for experimenting with alternative optimization algorithms

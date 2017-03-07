@@ -29,6 +29,7 @@ import unittest
 import copy
 import math
 import pdb
+
 # =========================
 # Python Packages
 # =========================
@@ -40,40 +41,23 @@ from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 import matplotlib.gridspec as gridspec
 from matplotlib import rcParams
 
-
-if __name__ == '__main__':
-    sys.path.append(os.path.abspath('./../../'))
-    from F_UNCLE.Utils.Experiment import Experiment
-    from F_UNCLE.Utils.test_Experiment import SimpleExperiment
-    from F_UNCLE.Utils.PhysicsModel import PhysicsModel
-    from F_UNCLE.Utils.test_PhysicsModel import SimpleModel
-    from F_UNCLE.Utils.Struc import Struc
-    from F_UNCLE.Opt.Bayesian import Bayesian
-
-else:
-    from ..Utils.Experiment import Experiment
-    from ..Utils.test_Experiment import SimpleExperiment
-    from ..Utils.PhysicsModel import PhysicsModel
-    from ..Utils.test_PhysicsModel import SimpleModel
-    from ..Utils.Struc import Struc
-    from .Bayesian import Bayesian
-
-# end
-
+# =========================
+# Custon Packages
+# =========================
+from ...Utils.Experiment import Experiment
+from ...Utils.PhysicsModel import PhysicsModel
+from ...Utils.Struc import Struc
+from ..Bayesian import Bayesian
 
 # ================
 # Testing Packages
 # ================
-if __name__ == '__main__':
-    sys.path.append(os.path.abspath('./../../'))
-    from F_UNCLE.Experiments.GunModel import Gun
-    from F_UNCLE.Experiments.Stick import Stick
-    from F_UNCLE.Models.Isentrope import EOSModel, EOSBump
-else:
-    from ..Experiments.GunModel import Gun
-    from ..Experiments.Stick import Stick
-    from ..Models.Isentrope import EOSModel, EOSBump
-# end
+from ...Experiments.GunModel import Gun
+from ...Experiments.Stick import Stick
+from ...Models.Isentrope import EOSModel, EOSBump
+from ...Utils.test.test_PhysicsModel import SimpleModel
+from ...Utils.test.test_Experiment import SimpleExperiment
+from ...Utils.test.test_Simulation import SimpleSimulation
 
 
 # @unittest.skip('skipped long tests')

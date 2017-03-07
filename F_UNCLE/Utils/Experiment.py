@@ -1,11 +1,41 @@
-# Core Python modules
+# /usr/bin/pyton
+"""
+
+Experiment
+
+Abstract class for experimental data
+
+Authors
+-------
+
+- Stephen Andrews (SA)
+- Andrew M. Fraiser (AMF)
+
+Revisions
+---------
+
+0 -> Initial class creation (03-07-2017)
+
+ToDo
+----
+
+None
+
+
+"""
+
+# =========================
+# Python Standard Libraries
+# =========================
 import sys
 import os
 import copy
 
-# External python modules 
+# =========================
+# Python Packages
+# =========================
 import numpy as np
-from numpy.linalg import inv 
+from numpy.linalg import inv
 import matplotlib.pyplot as plt
 
 from scipy.interpolate import InterpolatedUnivariateSpline as IUSpline
@@ -13,14 +43,11 @@ from scipy.interpolate import UnivariateSpline as USpline
 from scipy.interpolate import LSQUnivariateSpline as LSQSpline
 from scipy import stats as stats
 
-# Custom python modules
-from ..Utils.Struc import Struc
-# if __name__ == '__main__':
-#     sys.path.append(os.path.abspath('./../../'))
-#     from F_UNCLE.Utils import Struc
-# else:
-#     from ..Utils.Struc import Struc
-# # end
+# =========================
+# Custom Packages
+# =========================
+from .Struc import Struc
+
 
 class Experiment(Struc):
     """Abstract class to represent true experimental data
@@ -365,23 +392,10 @@ class Experiment(Struc):
 
         """
 
-
-        epsilon = self.compare(sim_data)
-
-        p_mat = np.dot(np.dot(sens_matrix.T,
-                              inv(self.get_sigma())),
-                       sens_matrix)
-        q_mat = -np.dot(np.dot(epsilon,
-                               inv(self.get_sigma())),
-                        sens_matrix)
-
-        if scale:
-            prior_scale = models[opt_key].get_scaling()
-            p_mat = np.dot(prior_scale, np.dot(p_mat, prior_scale))
-            q_mat = np.dot(prior_scale, q_mat)
-        # end
-
-        return p_mat, q_mat
+        raise NotImplementedError('{:} cannot compute likelyhoods without a'
+                                  ' statistical model for the data. Use a child'
+                                  ' of Experiment which has implemented a model'
+                                  .format(self.get_inform(1)))
 
     def get_log_like(self, sim_data):
         """Gets the log likelihood of the current simulation
@@ -395,11 +409,11 @@ class Experiment(Struc):
             (float): The log of the likelihood of the simulation
         """
 
-        epsilon = self.compare(sim_data)
-        return -0.5 * np.dot(epsilon,
-                             np.dot(inv(self.get_sigma()),
-                                    epsilon))
-
+        raise NotImplementedError('{:} cannot compute likelyhoods without a'
+                                  ' statistical model for the data. Use a child'
+                                  ' of Experiment which has implemented a model'
+                                  .format(self.get_inform(1)))
+    
     def get_fisher_matrix(self, models, sens_matrix):
         """Returns the fisher information matrix of the simulation
 
@@ -451,3 +465,65 @@ class Experiment(Struc):
         return data[:, indepcol],\
             data[:, depcols][:,0],\
             data[:, varcols][:,0]
+
+    
+class GaussianExperiment(Experiment):
+    """Class to represent experimental data which is modelled as being
+    normally distributed
+    """
+    
+    def get_pq(self, models, opt_key, sim_data, sens_matrix,
+           scale=False):
+        """Generates the P and q matrix for the Bayesian analysis
+
+        Args:
+           models(dict): The dictionary of models
+           opt_key(str): The key for the model being optimized
+           sim_data(list): Lengh three list corresponding to the `__call__` from
+                           a Experiment object
+           sens_matrix(np.ndarray): The sensitivity matrix
+
+        Keyword Arguments:
+           scale(bool): Flag to use the model scaling
+
+        Return:
+            (tuple): Elements are:
+                0. (np.ndarray): `P`, a nxn matrix where n is the model DOF
+                1. (np.ndarray): `q`, a nx1 matrix where n is the model DOF
+
+        """
+
+
+        epsilon = self.compare(sim_data)
+
+        p_mat = np.dot(np.dot(sens_matrix.T,
+                              inv(self.get_sigma())),
+                       sens_matrix)
+        q_mat = -np.dot(np.dot(epsilon,
+                               inv(self.get_sigma())),
+                        sens_matrix)
+
+        if scale:
+            prior_scale = models[opt_key].get_scaling()
+            p_mat = np.dot(prior_scale, np.dot(p_mat, prior_scale))
+            q_mat = np.dot(prior_scale, q_mat)
+        # end
+
+        return p_mat, q_mat
+
+    def get_log_like(self, sim_data):
+        """Gets the log likelihood of the current simulation
+
+        Args:
+           sim_data(list): Lengh three list corresponding to the `__call__` from
+                           a Experiment object
+           experiment(Experiment): A valid Experiment object
+
+        Return:
+            (float): The log of the likelihood of the simulation
+        """
+
+        epsilon = self.compare(sim_data)
+        return -0.5 * np.dot(epsilon,
+                             np.dot(inv(self.get_sigma()),
+                                    epsilon))

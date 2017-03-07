@@ -1,9 +1,9 @@
 #!/usr/bin/pyton
 """
 
-pyExperiment
+Simulation
 
-Abstract class for experiments, both physical and computational
+Abstract class for simulations
 
 Authors
 -------
@@ -46,15 +46,13 @@ from numpy.linalg import inv
 # =========================
 # Custom Packages
 # =========================
-if __name__ == '__main__':
-    sys.path.append(os.path.abspath('./../../'))
-    from F_UNCLE.Utils.Struc import Struc
-    from F_UNCLE.Utils.PhysicsModel import PhysicsModel
-#    from F_UNCLE.Utils.mpi_loop import pll_loop
-else:
-    from .Struc import Struc
-    from .PhysicsModel import PhysicsModel
-#    from .mpi_loop import pll_loop
+from .Struc import Struc
+from .PhysicsModel import PhysicsModel
+
+try:
+    from .mpi_loop import pll_loop
+except Exception:
+    pass
 # end
 
 # =========================
@@ -491,12 +489,12 @@ class Simulation(Struc):
         #         resp_mat[:, i] = resp
         #     # end                
         # # end
-        def _get_resp(new_dofi, exp, model_dct, mkey, init_dat):
+        def _get_resp(new_dofi, sim, model_dct, mkey, init_dat):
             """Class method used in the parallel map function
             """
             model_dct[mkey] = model_dct[mkey].update_dof(new_dofi)   
-            return -exp.compare(init_dat[0], init_dat[1][0],
-                                exp(model_dct))
+            return -sim.compare(sim(model_dct),
+                                init_dat)
         # end
         
         with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
