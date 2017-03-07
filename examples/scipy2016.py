@@ -66,18 +66,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # F_UNLCE packages
-if __name__ == '__main__':
-    sys.path.append(os.path.abspath('./../../'))
-    from F_UNCLE.Experiments.GunModel import Gun
-    from F_UNCLE.Experiments.Stick import Stick
-    from F_UNCLE.Models.Isentrope import EOSModel, EOSBump
-    from F_UNCLE.Opt.Bayesian import Bayesian
-else:
-    from ..Experiments.GunModel import Gun
-    from ..Experiments.Stick import Stick
-    from ..Models.Isentrope import EOSModel, EOSBump
-    from ..Opt.Bayesian import Bayesian
-#end
+sys.path.append(os.path.abspath('./../'))
+from F_UNCLE.Experiments.GunModel import Gun
+from F_UNCLE.Experiments.Stick import Stick
+from F_UNCLE.Models.Isentrope import EOSModel, EOSBump
+from F_UNCLE.Opt.Bayesian import Bayesian
 
 if __name__ == '__main__':
     #################

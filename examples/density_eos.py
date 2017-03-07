@@ -16,8 +16,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # F_UNLCE packages
-sys.path.append(os.path.abspath('./../../../fit_9501'))    
-sys.path.append(os.path.abspath('./../../'))
+sys.path.append(os.path.abspath('./../../fit_9501'))    
+sys.path.append(os.path.abspath('./../'))
 from F_UNCLE.Experiments.GunModel import Gun, GunExperiment
 from F_UNCLE.Experiments.Stick import Stick, StickExperiment
 from F_UNCLE.Experiments.Sphere import Sphere

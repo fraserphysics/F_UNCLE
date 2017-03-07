@@ -331,7 +331,7 @@ class StickExperiment(GaussianExperiment):
                         'Variance attributed to x positions']
         }
 
-        Experiment.__init__(self, name=name, def_opts=def_opts, *args, **kwargs)
+        GaussianExperiment.__init__(self, name=name, def_opts=def_opts, *args, **kwargs)
         
     def _get_data(self, model=None, *args, **kwargs):
         """Creates a simulated set of experimental data from a user provided
