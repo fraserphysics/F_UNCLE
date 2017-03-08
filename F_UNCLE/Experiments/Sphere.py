@@ -1,6 +1,6 @@
 """
 
-Stick: A simplified model of a rate stick
+Spherer: A simplified model of an exploding sphere
 
 Authors
 -------
@@ -42,11 +42,12 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import odeint
-
+from scipy.interpolate import InterpolatedUnivariateSpline as IUSpline
 # =========================
 # Custom Packages
 # =========================
 from ..Utils.Simulation import Simulation
+from ..Utils.Experiment import GaussianExperiment
 from ..Models.Isentrope import EOSBump, EOSModel, Isentrope, Spline
 from ..Models.Ptw import Ptw
 
@@ -91,7 +92,7 @@ class Sphere(Simulation):
                     'Number of time steps']
         }
 
-        GausianExperiment.__init__(self, {'eos': Isentrope, 'strength': Ptw},
+        Simulation.__init__(self, {'eos': Isentrope, 'strength': Ptw},
                                    name=name, def_opts=def_opts,
                                    *args, **kwargs)
 
@@ -180,10 +181,10 @@ class Sphere(Simulation):
         mass_he = self.get_option('mass_he')
         mat = self.get_option('case_mat')
 
-        t_list = np.linspace(0, self.get_option('t_sim'),
+        t_list = np.linspace(1E-7, self.get_option('t_sim'),
                              self.get_option('n_t'))
         data, infodict = odeint(dfunc,
-                                [self.get_option('ri'), 0, tho],
+                                [self.get_option('ri'), 1E-9, tho],
                                 t_list,
                                 full_output=True)
 
@@ -204,34 +205,20 @@ class Sphere(Simulation):
         # end
 
         return t_list,\
-            (data[:, 1], data[:, 0], data[:, 2], v_spec, pres, stress, strain),\
-            None
+            [data[:, 1], data[:, 0], data[:, 2], v_spec, pres, stress, strain],\
+            {'mean_fn': IUSpline(t_list, data[:,1])}
 
-    def compare(self, indep, dep, model_data):
+    def compare(self, data1, data2):
         """Compares a set of experimental data to the model
 
-        Error is `dep` less the `model_data`
+        Error is `data2` less the `data1`
 
         See :py:meth:`F_UNCLE.Utils.Experiment.Experiment.compare`
 
         """
 
-        spline = Spline(model_data[0], model_data[1][0])
-        return dep - spline(indep)
-    # end
-
-    def get_sigma(self, eos, *args, **kwargs):
-        """Gets the co-variance matrix of the experiment
-
-        Args:
-            eos(GaussianModel): The model under investigation
-
-        see :py:meth:`F_UNCLE.Utils.Experiment.Experiment.get_sigma`
-
-        """
-
-        return np.diag(np.ones(self.shape()) * self.get_option('sigma')**2)
-
+        return data2[1][0] - data1[2]['mean_fn'](data2[0] + data2[2]['tau'])
+    
     def shape(self, *args, **kwargs):
         """Gives the length of the independent variable vector
 
@@ -336,3 +323,23 @@ class Sphere(Simulation):
         out_str = ''
 
         return out_str
+
+class SphereExperiment(GaussianExperiment):
+    """A class representing pseudo experimental data for a stick
+    """
+       
+    def _get_data(self, model=None, ptw=None, *args, **kwargs):
+        """Creates a simulated set of experimental data from a user provided
+        model
+        """
+
+        sim = Sphere(**kwargs)
+
+        simdata = sim({'eos': model, 'strength': ptw})
+
+        return simdata[0], simdata[1][0],\
+            np.zeros(simdata[0].shape)
+    # end
+
+    
+    

@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 sys.path.append(os.path.abspath('./../'))
 from F_UNCLE.Experiments.GunModel import Gun, GunExperiment
 from F_UNCLE.Experiments.Stick import Stick, StickExperiment
-from F_UNCLE.Experiments.Sphere import Sphere
+from F_UNCLE.Experiments.Sphere import Sphere, SphereExperiment
 from F_UNCLE.Models.Isentrope import EOSModel, EOSBump
 from F_UNCLE.Opt.Bayesian import Bayesian
 from F_UNCLE.Models.Ptw import Ptw
@@ -77,8 +77,8 @@ if __name__ == '__main__':
                                        sigma_t=1E-9,
                                        sigma_x=2E-3)
 
-    # sphere_experiment = Sphere(model_attribute=(eos_true, Ptw()))
-    # sphere_simulation = Sphere()
+    sphere_experiment = SphereExperiment(model=eos_true, ptw=Ptw())
+    sphere_simulation = Sphere()
 
     # 4. Create the analysis object
 
@@ -86,7 +86,7 @@ if __name__ == '__main__':
         simulations={
             'Gun': [gun_simulation, gun_experiment],
             'Stick': [stick_simulation, stick_experiment],
-            # 'Sphere': [sphere_simulation, sphere_experiment]
+            'Sphere': [sphere_simulation, sphere_experiment]
         },
         models={'eos': eos_model,
                 'strength': Ptw()},
@@ -119,8 +119,8 @@ if __name__ == '__main__':
         opt_model.simulations['Stick']['sim'](opt_model.models)
     s_pos_e, (s_time_e, tmp, tmp, lables), s_data_e = opt_model.simulations['Stick']['exp']()
 
-    # sp_res_s = opt_model.simulations['Sphere']['sim'](opt_model.models)
-    # sp_res_e = opt_model.simulations['Sphere']['exp']()
+    sp_res_s = opt_model.simulations['Sphere']['sim'](opt_model.models)
+    sp_res_e = opt_model.simulations['Sphere']['exp']()
 
     ####################
     # Generate Figures #
@@ -194,15 +194,15 @@ if __name__ == '__main__':
         return fig
 
     def info_all():
-        fisher = opt_model.simulations['Gun']['sim'].\
+        fisher = opt_model.simulations['Gun']['exp'].\
             get_fisher_matrix(opt_model.models,
                               use_hessian=False,
                               exp=opt_model.simulations['Gun']['exp'],
                               sens_matrix=sens_matrix['Gun'])
-        fisher += opt_model.simulations['Sphere']['sim'].\
+        fisher += opt_model.simulations['Sphere']['exp'].\
             get_fisher_matrix(opt_model.models,
                               sens_matrix=sens_matrix['Sphere'])
-        fisher += opt_model.simulations['Stick']['sim'].\
+        fisher += opt_model.simulations['Stick']['exp'].\
             get_fisher_matrix(opt_model.models,
                               sens_matrix=sens_matrix['Stick'])
 
@@ -351,9 +351,9 @@ if __name__ == '__main__':
         fig=plt.figure(figsize=square))    # EOS basis functions
 
     L = locals()
-    # for name in '''eos_diff rayl_line eos info_all info_gun info_stick info_sphere stick_results gun_results sphere_results conv gun_sens stick_sens sphere_sens eos_basis '''.split():
+    for name in '''eos_diff rayl_line eos info_gun info_stick info_sphere stick_results gun_results sphere_results conv gun_sens stick_sens sphere_sens eos_basis '''.split():
 #    for name in """gun_results gun_sens eos_diff info_gun stick_results stick_sens info_stick""".split():
-    for name in """gun_results gun_sens eos_diff info_gun stick_results stick_sens info_stick eos""".split():
+    #for name in """gun_results gun_sens eos_diff info_gun stick_results stick_sens info_stick eos""".split():
         # for name in '''eos_diff rayl_line eos info_stick conv stick_sens
         # stick_results eos_basis '''.split():    
         # if name in options:     
