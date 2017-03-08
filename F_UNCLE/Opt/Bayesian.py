@@ -194,7 +194,7 @@ class Bayesian(Struc):
                 self.opt_key = opt_key
             # end
         elif len(self.models.keys()) == 1:
-            self.opt_key = self.models.keys()[0]
+            self.opt_key = list(self.models.keys())[0]
         else:
             raise IOError("{:} Must define opt key if more than one model"
                           "used".format(self.get_inform(1)))
@@ -595,7 +595,7 @@ class Bayesian(Struc):
                 print('End of line search\n'
                       'Costs {:s}\n'
                       'Besti {:d}\n'
-                      'End of iteration {:02d}'.format(costs, besti, itn))
+                      'End of iteration {:02d}'.format(str(costs), besti, itn))
 
             return (analysis.update(models=model_dict),
                     new_log_like,
