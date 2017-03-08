@@ -24,8 +24,17 @@ Experiment
 
 .. autoclass:: F_UNCLE.Utils.Experiment.Experiment
    :members:
+   :private-members:      
    :special-members:
-      
+
+Simulation
+..........
+
+.. autoclass:: F_UNCLE.Utils.Simulation.Simulation
+   :members:
+   :private-members:      
+   :special-members:
+   
 Spline
 ......
 

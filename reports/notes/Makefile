@@ -21,7 +21,7 @@ python
 SIM_FIGS = eos_diff eos eos_basis info_gun info_stick info_sphere gun_sens \
 stick_sens sphere_sens conv stick_results gun_results sphere_results rayl_line
 
-sim_figs_made: ${FUNCLE_ROOT}/F_UNCLE/examples/make_notes.py
+sim_figs_made: ${FUNCLE_ROOT}/examples/make_notes.py
 	mkdir -p figs
 	${PYTHON} $< --fig_dir $(PWD)/figs/  $(patsubst %, --%, $(SIM_FIGS))
 	touch $@

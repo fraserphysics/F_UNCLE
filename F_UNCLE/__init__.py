@@ -62,70 +62,115 @@ F_UNCLE classes
 Physics Model
 .............
 
-:pyclass:`F_UNCLE.Utils.PhysicsModel.PhysicsModel`. This class
+:py:class:`F_UNCLE.Utils.PhysicsModel.PhysicsModel`. This class
 represents a physics model. The degrees of freedom of a `PhysicsModel`
 are immutable. Setting the degrees of freedom of a `PhysicsModel` will
 return a independent copy of itself with updated DOF.
 
- - :pymethod:`F_UNCLE.Utils.PhysicsModel.PhysicsModel.get_dof`. Returns
-   a list of the model degrees of freedom
+    - :py:func:`F_UNCLE.Utils.PhysicsModel.PhysicsModel.get_dof`: Returns
+      a list of the model degrees of freedom
 
- - :pymethod:`F_UNCLE.Utils.PhysicsModel.PhysicsModel.set_dof`. Generates
-   a new Physics Model with the specified degrees of freedom
+    - :py:func:`F_UNCLE.Utils.PhysicsModel.PhysicsModel.set_dof`: Generates
+      a new Physics Model with the specified degrees of freedom
 
- - :pymethod:`F_UNCLE.Utils.PhyscisModel.PhysicsModel.get_sigma`. Returns
-   a square matrix representingthe covariance of the model degrees of
-   freedom
+    - :py:func:`F_UNCLE.Utils.PhyscisModel.PhysicsModel.get_sigma`: Returns
+      a square matrix representingthe covariance of the model degrees of
+      freedom
 
- - :pymethod:`F_UNCLE.Utils.PhyscisModel.PhysicsModel.shape`. Returns
-   an integer representing the number of model degrees of freedom
+    - :py:func:`F_UNCLE.Utils.PhyscisModel.PhysicsModel.shape`: Returns
+      an integer representing the number of model degrees of freedom
 
 Experiment
 ..........
 
-:pyclass:`F_UNCLE.Utils.Experiment.Experiment`. This class represents
+:py:class:`F_UNCLE.Utils.Experiment.Experiment`. This class represents
 the results for a single experiment performed under a single set of
 conditions.
 
-- :pymethod:`F_UNCLE.Utils.Experiment.Experiment.__call__`: Returns
-  the 
+   - :py:func:`F_UNCLE.Utils.Experiment.Experiment.__call__`: Returns
+     a tuple with the folliwing elements: 
 
-  0. The independent varialbe of the simulation (i.e. time)
+      0. The independent varialbe of the simulation (i.e. time)
 
-  1. List of arrays of dependant variables. Element zero is the
-     element for comparisson, the last element is the labels for the
-     previous elements
+      1. List of arrays of dependant variables. Element zero is the
+         element for comparisson, the last element is the labels for
+         the previous elements
 
-  2. Dictionary of additonal simulation result attribures. Contains at
-     least the key `mean_fn` which is a functional representation of
-     the relationship between the independant variable and the
-     dependent variable for comparisson
+      2. Dictionary of additonal simulation result
+         attribures. Contains at least the key `mean_fn` which is a
+         functional representation of the relationship between the
+         independant variable and the dependent variable for
+         comparisson
 
+    - :py:func:`F_UNCLE.Utils.Experiment.Experiment.get_sigma`:
+      Returns an nxn covariance matrix for the experimental data
+
+    - :py:func:`F_UNCLE.Utils.Experiment.Experiment.shape`: Returns an
+      integer representing the number of experimental datapoints
+
+    - :py:func:`F_UNCLE.Utils.Experiment.Experiment.get_fisher_matrix`:
+      This returns the fisher information matrix of the experiment given
+      the simulation's sensitivity matrix
+      
+The `Experiment` object provides some internal routines to ease
+comparisson of simulations and experiments
+
+   - :py:func:`F_UNCLE.Utils.Experiment.Experiment.align`: This takes
+     a set of simulation data and returns a copy of it with the
+     simulation data aligned so it is evaluated at each independent
+     data value of the experiment. This 'aligned' tuple of simulation
+     data has a new key `tau` which is the shift in independant
+     variable (likely time) required to align the simulation to the
+     experiment. In adition, the `mean_fn` attribute has been modified
+     so it returns values aligned to the experimental data.
+
+  - :py:func:`F_UNCLE.Utils.Experiment.Experiment.compare`: This takes
+    a set of simulation data and returns the error between the
+    experiment and the simulation. The simulation can either be
+    aligned or not. The return value is the experimental value *less*
+    the aligned simulation value
 
 Sumulation
 ..........
 
-:pyclass:`F_UNCLE.Utils.Simulation.Simulation`. This class wraps some
+:py:class:`F_UNCLE.Utils.Simulation.Simulation`. This class wraps some
 computer simulatin which is dependent on a PhysicsModel
 
-- :pymethod:`F_UNCLE.Utils.Simulation.Simulation.compare`: Compares
-  two simulations results and returns the difference
+    - :py:func:`F_UNCLE.Utils.Simulation.Simulation.compare`: Compares
+      two simulations results and returns the difference
 
-- :pymethod:`F_UNCLE.Utils.Simulations.Simulations.__call__`: Returns
-  the results of the simulation as a tuple
+    - :py:func:`F_UNCLE.Utils.Simulations.Simulations.__call__`: Returns
+      the results of the simulation as a tuple
 
-   0. The independent varialbe of the simulation (i.e. time)
+        0. The independent varialbe of the simulation (i.e. time)
 
-  1. List of arrays of dependant variables. Element zero is the
-     element for comparisson, the last element is the labels for the
-     previous elements
+        1. List of arrays of dependant variables. Element zero is the
+           element for comparisson, the last element is the labels for
+           the previous elements
 
-  2. Dictionary of additonal simulation result attribures. Contains at
-     least the key `mean_fn` which is a functional representation of
-     the relationship between the independant variable and the
-     dependent variable for comparisson
+        2. Dictionary of additonal simulation result
+           attributes. Contains at least the key `mean_fn` which is a
+           functional representation of the relationship between the
+           independant variable and the dependent variable for
+           comparisson
 
-     
+    - :py:func:`F_UNCLE.Utils.Simulations.Simulations.get_sens`: This
+      returns a sensitvity matrix of the simulation response to
+      changes in the required model degrees of freedom. The response
+      is evaluated at the independent data points of the provided
+      `initial_data` and the deltas for each finite difference step
+      are evaluated using the `compare` method.
+      
+Optimizaiton Methods
+....................
+
+The goal of F_UNCLE is to determine the set of model degrees of
+freedom which minimizes the error between a set of Experiments and
+associated Simulations.
+
+:py:class:`F_UNCLE.Opt.Bayesian.Bayesian`:
+
+    
 
 """
 

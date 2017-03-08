@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 
 # F_UNLCE packages
 sys.path.append(os.path.abspath('./../../fit_9501'))    
-sys.path.append(os.path.abspath('./../'))
+sys.path.append(os.path.abspath('./..'))
 from F_UNCLE.Experiments.GunModel import Gun, GunExperiment
 from F_UNCLE.Experiments.Stick import Stick, StickExperiment
 from F_UNCLE.Experiments.Sphere import Sphere
@@ -251,15 +251,23 @@ if __name__ == '__main__':
         '''
         fig = plt.figure(figsize=square)
         ax = fig.gca()
-        opt_model.models['eos'].prior.plot(axes=ax,
-                             linestyles=['--b'],
-                             labels=['Prior EOS'],
-                             vrange=vrange)
-        opt_model.models['eos'].plot(axes=ax,
-                       linestyles=['--b'],
-                       labels=['Prior EOS'],
-                       vrange=vrange)
-        
+        # opt_model.models['eos'].prior.plot(axes=ax,
+        #                      linestyles=['--b'],
+        #                      labels=['Prior EOS'],
+        #                      vrange=vrange)
+        # opt_model.models['eos'].plot(axes=ax,
+        #                linestyles=['--b'],
+        #                labels=['Prior EOS'],
+        #                vrange=vrange)
+        rho_list = np.linspace(0.5, 3.5, 200)
+        ax.plot(rho_list**-1, opt_model.models['eos'].prior(rho_list),
+                label='prior')
+        ax.plot(rho_list**-1, opt_model.models['eos'](rho_list),
+                label='result')
+        # ax.plot(rho_list**-1, eos_true(rho_list**-1),
+        #         label='true')
+        ax.set_xlabel("Specific volume / cm3 g-1")
+        ax.set_ylabel("Pressure / Pa")
         # eos_true.plot(axes=ax,
         #               linestyles=['-.g'],
         #               labels=['True EOS'],
@@ -427,7 +435,7 @@ if __name__ == '__main__':
 
     L = locals()
     # for name in '''eos_diff rayl_line eos info_all info_gun info_stick info_sphere stick_results gun_results sphere_results conv gun_sens stick_sens sphere_sens eos_basis '''.split():
-    for name in """gun_results gun_sens eos_diff info_gun stick_results stick_sens info_stick""".split():
+    for name in """gun_results gun_sens eos_diff info_gun stick_results stick_sens info_stick eos""".split():
     # for name in '''eos_diff rayl_line eos info_stick conv stick_sens
     # stick_results eos_basis '''.split():    
         # if name in options:     

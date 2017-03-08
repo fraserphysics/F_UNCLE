@@ -579,12 +579,12 @@ class Simulation(Struc):
                         np.zeros(sens_matrix.shape))
 
     def _get_hessian(self, models, model_key, initial_data=None):
-        """Gets the Hessian (matrix of second derrivatives) of the simulated
+        r"""Gets the Hessian (matrix of second derrivatives) of the simulated
         experiments to the EOS
 
         .. math::
 
-          H(f_i) = \begin{smallmatrix}
+            H(f_i) = \begin{smallmatrix}
             \frac{\partial^2 f_i}{\partial \mu_1^2} &
             \frac{\partial^2 f_i}{\partial \mu_1 \partial \mu_2}&
             \ldots & \frac{\partial^2 f_i}{\partial \mu_1 \partial \mu_n}\\

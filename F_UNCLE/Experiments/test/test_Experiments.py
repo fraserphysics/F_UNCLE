@@ -153,7 +153,10 @@ class TestStick(unittest.TestCase):
         self.assertEqual(len(dep[0]), n_data)
 
         # Check the summary data
-        self.assertEqual(len(smry), 4)
+        self.assertTrue('vel_CJ' in smry)
+        self.assertTrue('vol_CJ' in smry)
+        self.assertTrue('pres_CJ' in smry)
+        self.assertTrue('Rayl_fn' in smry)        
         self.assertIsInstance(smry['vel_CJ'], float)
         self.assertIsInstance(smry['vol_CJ'], float)
         self.assertIsInstance(smry['pres_CJ'], float)
@@ -196,7 +199,7 @@ class TestStick(unittest.TestCase):
         """
 
         sim_stick = Stick()
-        true_stick = Stick(model_attribute=self.true_eos)
+        true_stick = StickExperiment(model=self.true_eos)
 
         n_true = sim_stick.get_option('n_x')
         true_data = true_stick()
@@ -209,7 +212,7 @@ class TestStick(unittest.TestCase):
         self.assertEqual(len(true_data[0]), n_true)
         self.assertEqual(len(sim_data[0]), n_sim)
 
-        epsilon = sim_stick.compare(true_data[0], true_data[1][0], sim_data)
+        epsilon = sim_stick.compare(sim_data, true_data)
 
         self.assertEqual(len(epsilon), n_true)
 
@@ -230,7 +233,7 @@ class TestStick(unittest.TestCase):
         var = stick.get_sigma({'eos': self.model_eos})
         self.assertEqual(var.shape, (dim, dim))
 
-@unittest.skip('skipped stick, not updated')
+@unittest.skip('skipped Sphere, not updated')
 class TestSphere(unittest.TestCase):
     def setUp(self):
         init_prior = np.vectorize(lambda v: 2.56e9 / v**3)

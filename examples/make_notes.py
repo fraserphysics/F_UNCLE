@@ -352,9 +352,10 @@ if __name__ == '__main__':
 
     L = locals()
     # for name in '''eos_diff rayl_line eos info_all info_gun info_stick info_sphere stick_results gun_results sphere_results conv gun_sens stick_sens sphere_sens eos_basis '''.split():
-    for name in """gun_results gun_sens eos_diff info_gun stick_results stick_sens info_stick""".split():
-    # for name in '''eos_diff rayl_line eos info_stick conv stick_sens
-    # stick_results eos_basis '''.split():    
+#    for name in """gun_results gun_sens eos_diff info_gun stick_results stick_sens info_stick""".split():
+    for name in """gun_results gun_sens eos_diff info_gun stick_results stick_sens info_stick eos""".split():
+        # for name in '''eos_diff rayl_line eos info_stick conv stick_sens
+        # stick_results eos_basis '''.split():    
         # if name in options:     
         L[name]().savefig(out_dir + name + figtype, dpi=1000)
     if options.show:

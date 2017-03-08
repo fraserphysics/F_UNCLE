@@ -45,6 +45,7 @@ import time
 import numpy as np
 from numpy.linalg import inv
 import numpy.testing as npt
+from scipy.interpolate import InterpolatedUnivariateSpline as IUSpline
 
 # =========================
 # Custom Packages
@@ -82,12 +83,14 @@ class SimpleSimulation(Simulation):
         """
         sim_model = models
         x_list = np.arange(self.get_option('nDOF'))
-        return x_list, [np.array(sim_model(x_list))], None
+        mean_fn = IUSpline(x_list, np.array(sim_model(x_list)))
+        return x_list, [np.array(sim_model(x_list))],\
+            {'mean_fn': mean_fn, 'tau': 0}
 
     def compare(self, data1, data2):
         """Comparison of data
         """
-        return data2[1][0] - data1[1][0]
+        return data2[1][0] - data1[2]['mean_fn'](data2[0] - data2[2]['tau'])
 
     def shape(self):
         """Shape
@@ -205,7 +208,9 @@ class TestSimpleSimulation(unittest.TestCase):
         self.assertIsInstance(data[0], np.ndarray)
         self.assertEqual(len(data[1]), 1)
         self.assertIsInstance(data[1][0], np.ndarray)
-        self.assertTrue(data[2] is None)
+        self.assertIsInstance(data[2], dict)
+        self.assertTrue('mean_fn' in data[2])
+        self.assertIsInstance(data[2]['mean_fn'], IUSpline)
 
         xx = np.arange(10)
         npt.assert_equal(data[0], xx)
@@ -215,16 +220,18 @@ class TestSimpleSimulation(unittest.TestCase):
         """Test the compare function
         """
         xx = np.arange(10)
-        yy = (2 * xx)**2
+        yy = (3 * xx)**2 + xx
 
         models = {'simp': SimpleModel([2, 1])}
         model_data = self.simSimp(models)
+        print(model_data)
+        print(yy)
 
-        res = self.simSimp.compare(model_data, (xx, (yy), None))
+        res = self.simSimp.compare(model_data, (xx, (yy,), {'tau': 0}))
 
         self.assertIsInstance(res, np.ndarray)
         self.assertEqual(len(res), 10)
-        npt.assert_equal(-xx, res)
+        npt.assert_array_almost_equal(5 * xx**2, res)
 
     def test_sens(self):
         """Test sensitivity calculation
@@ -249,6 +256,7 @@ class TestSimpleSimulation(unittest.TestCase):
         true_sens = np.linalg.lstsq(inp_mat, resp_mat)[0].T
         npt.assert_array_almost_equal(sens, true_sens, decimal=8)
 
+    @unittest.expectedFailure
     def test_pll_sens(self):
         """Test sensitivity calculation
         """

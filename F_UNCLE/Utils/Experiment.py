@@ -348,14 +348,19 @@ class Experiment(Struc):
         """
         data_out = []
         for trend in data:
-            data_out.append(
-                trend[np.where(np.isfinite(trend))[0]]
-            )
+            if trend is not None:
+                data_out.append(
+                    trend[np.where(np.isfinite(trend))[0]]
+                )
+            else:
+                data_out.append(None)
+            # end
         # end
 
         for i, trend1 in enumerate(data):
             for j, trend2 in enumerate(data):
-                if not trend1.shape[0] == trend2.shape[0]:
+                if trend1 is not None and trend2 is not None\
+                   and not trend1.shape[0] == trend2.shape[0]:
                     raise ValueError(
                         "{:} Shape of data trends {:d} and {:d}"
                         " do not agree"
@@ -368,7 +373,25 @@ class Experiment(Struc):
         return data_out
 
     def _get_data(self, *args, **kwargs):
-        raise NotImplementedError
+        """Abstract class for parsing datafiles or generating synthetic data
+
+        Args:
+            *args(list): Variable length list of arguments passed from
+                         __init__
+            *kwargs(list): Variable length list of keyword args passed from
+                         __init__
+        
+        Return:
+            (tuple): The data, elements are 
+         
+                0. (np.ndarray): The independent variable
+                1. (np.ndarray): The **single** dependent variable
+                2. (np.ndarray or None): The variance of the dependent
+                   variable if availible 
+        """
+        
+        raise NotImplementedError("Must be implemented in a child of the"
+                                  "Experiment class")
 
 
     def get_pq(self, models, opt_key, sim_data, sens_matrix,

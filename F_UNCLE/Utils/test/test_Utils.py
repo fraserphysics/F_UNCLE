@@ -26,8 +26,8 @@ import os
 # =========================
 # External Packages
 # =========================
-from .Struc import Struc
-from .Container import Container
+from ..Struc import Struc
+from ..Container import Container
 
 
 class TestObject(unittest.TestCase):
