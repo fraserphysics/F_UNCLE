@@ -177,9 +177,9 @@ class Bayesian(Struc):
                       'Flag to print debug information'],
             'verb': [bool, True, None, None, '-',
                      'Flag to print stats during optimization'],
-            'sens_mode': [str, 'ser', None, None, '-',
-                          'Flag for how to evaluate sensitivities, `ser`'
-                          'serial, `pll` parallel']
+            # 'sens_mode': [str, 'ser', None, None, '-',
+            #               'Flag for how to evaluate sensitivities, `ser`'
+            #               'serial, `pll` parallel']
         }
 
         Struc.__init__(self, name=name, def_opts=def_opts, *args, **kwargs)
@@ -448,16 +448,16 @@ class Bayesian(Struc):
 
             # Solve all simulations with the current model
             if verb and mpi_print:
-                print('prior log like', -analysis.model_log_like())
+                print('prior log like', analysis.model_log_like())
             if verb and mpi_print:
-                print('sim log like', -analysis.sim_log_like(initial_data))
+                print('sim log like', analysis.sim_log_like(initial_data))
 
             new_log_like = analysis.model_log_like()\
                 + analysis.sim_log_like(initial_data)
 
             if verb and mpi_print:
                 print('total log like', new_log_like)
-
+                print('error', np.fabs((log_like - new_log_like) / new_log_like))
             if np.fabs((log_like - new_log_like) / new_log_like) < reltol:
                 return copy.deepcopy(analysis),\
                     new_log_like,\
@@ -505,9 +505,10 @@ class Bayesian(Struc):
             max_step = 1.0
             x_list = np.linspace(0, max_step, n_steps)
             dof_list = []
+            analysis_list = []
             
             # Builds the list of dof values to test and gets the prior cost
-            plot_lsearch=False
+            plot_lsearch=True
             if plot_lsearch:
                 fig = plt.figure()
                 ax1 = fig.gca()            
@@ -521,12 +522,11 @@ class Bayesian(Struc):
                     log=False
                     )
             # end
+
             
             for i, x_i in enumerate(x_list):
                 dof_list.append(initial_dof + x_i * d_hat)
-
                 model_dict[opt_key] = opt_model.update_dof(dof_list[-1])
-
                 if plot_lsearch:
                     model_dict[opt_key].plot(
                         axes=ax1,
@@ -534,10 +534,9 @@ class Bayesian(Struc):
                         linestyles=['-'],
                         log=False
                     )
-                    fig.savefig('lineSearch_itn{:02d}.pdf'.format(itn))
-                
-                new_analysis = analysis.update(models=model_dict)
-                costs[i] = new_analysis.model_log_like()
+                    fig.savefig('lineSearch_itn{:02d}.pdf'.format(itn))               
+                analysis_list.append(analysis.update(models=model_dict))
+                costs[i] = analysis_list[-1].model_log_like()
             # end
 
             if plot_lsearch:
@@ -551,18 +550,16 @@ class Bayesian(Struc):
             #       mpi or run_job.
             iter_data = {}
             for key in analysis.simulations:
-                if analysis.get_option('sens_mode') == 'mpi':
-                    sim_data = analysis.simulations[key]['sim']\
-                                             .multi_solve_mpi(
-                                                 model_dict, opt_key, dof_list)
-                elif analysis.get_option('sens_mode') == 'runjob':
-                    sim_data = analysis.simulations[key]['sim']\
-                                             .multi_solve_runjob(
-                                                 model_dict, opt_key, dof_list)
+                sim_i = analysis.simulations[key]['sim']
+                if sim_i.get_option('sens_mode') == 'mpi':
+                    sim_data = sim_i.multi_solve_mpi(
+                        model_dict, opt_key, dof_list)
+                elif sim_i.get_option('sens_mode') == 'runjob':
+                    sim_data = sim_i.multi_solve_runjob(
+                        model_dict, opt_key, dof_list)
                 else:
-                    sim_data = analysis.simulations[key]['sim']\
-                                             .multi_solve(
-                                                 model_dict, opt_key, dof_list)
+                    sim_data = sim_i.multi_solve(
+                        model_dict, opt_key, dof_list)
                 # end
                 # Evaluate the simulation data to the same times as the exp
                 for i, data in enumerate(sim_data):
@@ -580,16 +577,11 @@ class Bayesian(Struc):
                 for key in analysis.simulations:
                     sorted_data[-1][key] = iter_data[key][i]
                 # end
-                if sorted_data[-1] is not None:
-                    costs[i] += new_analysis.sim_log_like(sorted_data[-1])
-                else:
-                    costs[i] -= 1E21
-                # end
+                costs[i] += analysis_list[i].sim_log_like(sorted_data[-1])
             # end
             
             # Updates the model dof to the optimal value
             besti = np.argmax(costs)
-            model_dict[opt_key] = opt_model.update_dof(dof_list[besti])
 
             if verb and mpi_print:
                 print('End of line search\n'
@@ -597,8 +589,8 @@ class Bayesian(Struc):
                       'Besti {:d}\n'
                       'End of iteration {:02d}'.format(str(costs), besti, itn))
 
-            return (analysis.update(models=model_dict),
-                    new_log_like,
+            return (analysis_list[besti],
+                    costs[besti],
                     sorted_data[besti],
                     model_dict[opt_key].get_dof(),
                     False)
@@ -609,7 +601,7 @@ class Bayesian(Struc):
         verb = self.get_option('verb')
         history = []
         dof_hist = []
-
+        data_hist = []
         initial_data = self.get_data()
 
         conv = False
@@ -631,7 +623,12 @@ class Bayesian(Struc):
             if verb and mpi_print:
                 print('Iter {} of {}'.format(i, maxiter))
             # end
-            
+                       
+            analysis, log_like, initial_data, model_dof, conv =\
+                outer_loop_iteration(analysis, log_like, initial_data, i)
+            history.append(log_like)
+            dof_hist.append(model_dof)
+            data_hist.append(initial_data)
             if self.get_option('pickle_sens'):
                 with open('sim_data_iter{:02d}.pkl'.format(i), 'wb') as fid:
                     pickle.dump(initial_data, fid)
@@ -640,12 +637,7 @@ class Bayesian(Struc):
                 with open('models_iter{:02d}.pkl'.format(i), 'wb') as fid:
                     pickle.dump(analysis.models, fid)
                 # end
-            # end
-            
-            analysis, log_like, initial_data, model_dof, conv =\
-                outer_loop_iteration(analysis, log_like, initial_data, i)
-            history.append(log_like)
-            dof_hist.append(model_dof)
+            # end            
             i += 1
         # end
 
@@ -660,7 +652,7 @@ class Bayesian(Struc):
         dof_hist = np.array(dof_hist)
         history = np.array(history)
 
-        return analysis, (history, dof_hist), sens_matrix
+        return analysis, (history, dof_hist, data_hist), sens_matrix
 
     def fisher_decomposition(self, fisher, tol=1E-3):
         """Calculate a spectral decomposition of the fisher information matrix
@@ -771,7 +763,8 @@ class Bayesian(Struc):
             if constrain:
                 sol = solvers.qp(matrix(p_mat), matrix(q_vec),
                                  matrix(g_mat), matrix(h_vec),
-                                 intervals={'x':np.zeros(g_mat.shape[1])})
+                #                 intervals={'x':np.zeros(g_mat.shape[1])}
+                )
             else:
                 sol = solvers.qp(matrix(p_mat), matrix(q_vec))
 
@@ -946,24 +939,21 @@ class Bayesian(Struc):
             if self.get_option('verb') and mpi_print:
                 print('Getting sens for {:}'.format(key))
             # end
-            
-            if self.get_option('sens_mode') == 'pll':
-                sens_matrix[key] = sims[key]['sim'].\
-                    get_sens_pll(models, opt_key, initial_data[key])
-            elif self.get_option('sens_mode') == 'mpi':
-                sens_matrix[key] = sims[key]['sim'].\
-                    get_sens_mpi(models,
-                                 opt_key,
-                                 initial_data[key],
-                                 comm=mpi_comm)
-            elif self.get_option('sens_mode') == 'runjob':
-                sens_matrix[key] = sims[key]['sim'].\
-                    get_sens_runjob(models,
-                                 opt_key,
-                                 initial_data[key])
+
+            sim_i = sims[key]['sim']
+            if sim_i.get_option('sens_mode') == 'pll':
+                sens_matrix[key] = sim_i.get_sens_pll(
+                    models, opt_key, initial_data[key])
+            elif sim_i.get_option('sens_mode') == 'mpi':
+                sens_matrix[key] = sim_i.get_sens_mpi(
+                    models, opt_key, initial_data[key],
+                    comm=mpi_comm)
+            elif sim_i.get_option('sens_mode') == 'runjob':
+                sens_matrix[key] = sim_i.get_sens_runjob(
+                    models, opt_key, initial_data[key])
             else:
-                sens_matrix[key] = sims[key]['sim'].\
-                    get_sens(models, opt_key, initial_data[key])
+                sens_matrix[key] = sim_i.get_sens(
+                    models, opt_key, initial_data[key])
         # end
 
         return sens_matrix

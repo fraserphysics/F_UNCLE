@@ -240,7 +240,8 @@ class Experiment(Struc):
                 at each experimental time-stamp
 
         """
-        tau = self.trigger(sim_data[0], sim_data[1][0])
+        #tau = self.trigger(sim_data[0], sim_data[1][0])
+        tau = sim_data[2]['tau']
         epsilon = self.data[1]\
                   - sim_data[2]['mean_fn'](self.data[0] - tau)
         return epsilon
@@ -296,12 +297,12 @@ class Experiment(Struc):
         sim_data[2]['trigger'] = copy.deepcopy(self.trigger)
         sim_data[1][0] = sim_data[2]['mean_fn'](self.data[0] - tau)
 
-        mean_knots = sim_data[2]['mean_fn']._eval_args
-        sim_data[2]['mean_fn']._eval_args = (
-            mean_knots[0] + tau,
-            mean_knots[1],
-            mean_knots[2]
-        )
+        # mean_knots = sim_data[2]['mean_fn']._eval_args
+        # sim_data[2]['mean_fn']._eval_args = (
+        #     mean_knots[0] + tau,
+        #     mean_knots[1],
+        #     mean_knots[2]
+        # )
 
         return self.data[0], sim_data[1], sim_data[2]
 

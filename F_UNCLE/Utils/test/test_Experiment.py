@@ -149,6 +149,7 @@ class TestSimpleExperiment(unittest.TestCase):
 
         # Generate some simulation data
         sim_data = self.simSimp(self.models)
+        sim_data = exp.align(sim_data)
         stored_data = copy.deepcopy(sim_data)
         epsilon = exp.compare(sim_data)
 
