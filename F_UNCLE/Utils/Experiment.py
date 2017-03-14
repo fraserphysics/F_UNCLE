@@ -258,10 +258,7 @@ class Experiment(Struc):
            experimental time steps
         4. Updates the simulation `trigger` and `tau` values with the
            experimental Trigger object and the calculated `tau`
-        5. Shifts the knot positions in the `mean_fn` spline for the simulation
-           so subsequent calls to this function will be aligned with the
-           experiment
-        6. Returns the simulation data aligned with the experiments
+        5. Returns the simulation data aligned with the experiments
 
         Args:
 
