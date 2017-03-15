@@ -482,10 +482,10 @@ class Bayesian(Struc):
             local_sol = analysis._local_opt(initial_data,
                                             sens_matrix)
             d_hat = np.array(local_sol['x']).reshape(-1)
-            print('x unscaled', d_hat)
+            #print('x unscaled', d_hat)
             if precondition:
                 d_hat = np.dot(opt_model.get_scaling(), d_hat)
-                print('x scaled', d_hat)
+                #print('x scaled', d_hat)
             # end
 
             if verb and mpi_print:
@@ -775,7 +775,7 @@ class Bayesian(Struc):
             else:
                 sol = solvers.qp(matrix(p_mat), matrix(q_vec))
 
-            print('x scaled', np.array(sol['x']).reshape(-1))
+            #print('x scaled', np.array(sol['x']).reshape(-1))
         except ValueError as inst:
             print(inst)
             print("G " + str(g_mat.shape))

@@ -16,13 +16,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # F_UNLCE packages
-sys.path.append(os.path.abspath('./../../fit_9501'))    
 sys.path.append(os.path.abspath('./..'))
 from F_UNCLE.Experiments.GunModel import Gun, GunExperiment
 from F_UNCLE.Experiments.Stick import Stick, StickExperiment
 from F_UNCLE.Experiments.Sphere import Sphere
-from F_UNCLE.Models.Isentrope import EOSModel, EOSBump
-from fit_9501.Models.equation_of_state import AugmentedIsentrope
+from F_UNCLE.Models.Isentrope import DensityEOS, EOSBump, EOSModel
 from F_UNCLE.Opt.Bayesian import Bayesian
 from F_UNCLE.Models.Ptw import Ptw
 
@@ -105,11 +103,11 @@ if __name__ == '__main__':
     # end
 
 
-    eos_model = AugmentedIsentrope(
+    eos_model = DensityEOS(
 #        jwl_isentrope,
         lambda r: 2.56E9 * r**3,
         spline_min=0.1,
-        spline_max=4.0,
+        spline_max=0.15**-1,
 #        vcj_lower=5E5,
 #        vcj_upper=11.0E5,
         cj_vol_range=(3.5**-1, 1.7**-1),
@@ -117,23 +115,20 @@ if __name__ == '__main__':
         pres_0=101325,
         spline_sigma=0.05,
         basis='dens',
-        spacing='lin'
+        spacing='log'
     )
 
-    # eos_model = AugmentedIsentrope(
-    #     lambda r: 2.56E9 / r**3,
-    #     spline_min=0.1,
-    #     spline_max=1.0,
-    #     vcj_lower=5E5,
-    #     vcj_upper=11.0E5,
-    #     cj_vol_range=(0.1, 1.0),
+    # eos_model = EOSModel(
+    #     lambda r: 2.56E9 * r**-3,
+    #     spline_min=0.25,
+    #     spline_max=10,
     #     rho_0=1.844,
     #     pres_0=101325,
-    #     spline_sigma=0.005,
+    #     spline_sigma=0.05,
     #     basis='vol',
-    #     spacing='lin'
+    #     spacing='log'
     # )
-
+    
     # 2. Create the model and *true* EOS
     eos_true = EOSBump()
 
@@ -259,11 +254,21 @@ if __name__ == '__main__':
         #                linestyles=['--b'],
         #                labels=['Prior EOS'],
         #                vrange=vrange)
-        rho_list = np.linspace(0.5, 3.5, 200)
-        ax.plot(rho_list**-1, opt_model.models['eos'].prior(rho_list),
+        if opt_model.models['eos'].get_option('basis') == 'dens':
+            pwr = -1
+        else:
+            pwr = 1
+        
+        rho_list = np.linspace(0.5, 10.0, 200)
+        ax.plot(rho_list**-1, opt_model.models['eos'].prior(rho_list**-pwr),
                 label='prior')
-        ax.plot(rho_list**-1, opt_model.models['eos'](rho_list),
+        ax.plot(rho_list**-1, opt_model.models['eos'](rho_list**-pwr),
                 label='result')
+
+        n_end = opt_model.models['eos'].get_option('spline_end')
+        rho_unique = opt_model.models['eos'].get_t()[n_end - 1 : 1 - n_end]
+        rho_unique = rho_unique[np.where(rho_unique > 0.5)]
+        ax.plot(rho_unique**-1, opt_model.models['eos'](rho_unique**-pwr), 'x')
         # ax.plot(rho_list**-1, eos_true(rho_list**-1),
         #         label='true')
         ax.set_xlabel("Specific volume / cm3 g-1")

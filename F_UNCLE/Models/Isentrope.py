@@ -693,9 +693,20 @@ class EOSModel(Spline, Isentrope):
         """
         
         if self.get_option('spacing').lower() == 'log':
+            # if self.get_option('basis') == 'dens':
+            #     vol = np.logspace(np.log10(self.get_option('spline_max')**-1),
+            #                       np.log10(self.get_option('spline_min')**-1),
+            #                       self.get_option('spline_N'))
+            #     vol = vol[::-1]**-1
+            # else:
+            #     vol = np.logspace(np.log10(self.get_option('spline_min')),
+            #                       np.log10(self.get_option('spline_max')),
+            #                       self.get_option('spline_N'))
+            # # end
             vol = np.logspace(np.log10(self.get_option('spline_min')),
                               np.log10(self.get_option('spline_max')),
                               self.get_option('spline_N'))
+            
         elif self.get_option('spacing').lower() == 'lin':
             vol = np.linspace(self.get_option('spline_min'),
                               self.get_option('spline_max'),
@@ -907,6 +918,120 @@ class EOSModel(Spline, Isentrope):
             ax3.plot(knots, np.zeros(knots.shape), 'xk')
         ax1.legend(loc='best')
         return fig
+
+class DensityEOS(EOSModel):
+    """An density based EOSModel
+    """
+
+    def get_constraints(self, scale=False):
+        """Returns the G and h matrices corresponding to the model
+        
+        This overloads the constraints from the base isentrope
+        to allow the off-isentrope behavior to be considered
+
+        Args:
+            scale(bool): Flag for scaling of the data
+
+        Return:
+            (tuple):
+        
+                (np.ndarray): n x m matrix of linear constraints `G`
+                (np.ndarray): m vector of linear constraints `h`
+
+        
+        Method
+        ======
+
+        The linear inequality constraints take the form of
+        
+        .. math::
+
+            G * x \\leq  h
+
+        Equivalent to :math:`\\max(G x - h) \\leq 0`
+
+        Since
+
+        .. math::
+
+            c_{f_{new}} = c_{f}+x,
+
+        .. math::
+
+             G(c_f+x) \\leq \\prime{h}
+
+        is the same as
+
+        .. math::
+
+            G x \leq \prime{h} - G c_{f},
+
+        and :math:`h = \prime{h} - G c_{f}`
+
+        Here are the constraints for p(v):
+
+        p'' positive for all v on isentrope
+        p(v,T=0) positive for all v
+
+        In "optimize.tex" I derive that for f(rho) these are
+        equivalent to:
+
+        f''*rho + 2*f' > 0 all rho                    eq:star
+        f >= C_V * T_CJ(rho) * \gamma_CJ(rho) * rho   eq:positive_p
+
+        For cubic splines between knots, f'' is constant and f' is
+        affine.  Consequently, f''*rho + 2*f' is affine between knots
+        and it is sufficient to check eq:star at the knots.  I only
+        check eq:positive at knots and hope that negative pressures
+        only occur so close to T=0 that such states are never visited
+        in simulations.
+
+        """
+
+        # The parent Isentrope provides the constraints for a volume based
+        # isentrope.
+        if not self.get_option('basis') == 'dens':
+            return Isentrope.get_constraints(self, scale=scale)
+        # end
+        
+        c_model = copy.deepcopy(self)
+        spline_end=c_model.get_option('spline_end')
+        initial_coefs = c_model.get_dof()          # Truncated to free variables
+        dim = len(c_model.prior.get_dof())
+        assert len(initial_coefs) == dim
+        rho_all = c_model.get_t()      # Not truncated
+        rho_unique = rho_all[spline_end - 1 : 1 - spline_end]
+        n_rho = len(rho_unique)
+        n_constraints = 3*n_rho
+
+        G_mat = np.zeros((n_constraints, dim))
+        tmp_coeffs = np.zeros(dim)           # Scratch coefficient array
+        for k in range(dim):
+            tmp_coeffs[k] = 1.0
+            # set_c returns a new isentrope without calling _on_update
+            tmp_spline = c_model.set_c(tmp_coeffs)
+            G_mat[:n_rho,k] = -1 * rho_unique**3\
+                              * (tmp_spline.derivative(2)(rho_unique) * rho_unique
+                                 + 2 * tmp_spline.derivative(1)(rho_unique))
+            G_mat[n_rho: 2 * n_rho,k] = -tmp_spline(rho_unique)
+            G_mat[2 * n_rho:, k] = -tmp_spline.derivative(2)(rho_unique)
+
+            tmp_coeffs[k] = 0.0
+        # end
+        h_vec = -np.dot(G_mat, initial_coefs)
+        
+        #scaleVec = np.maximum(scale, scale.max()*1e-15)
+        # Scale to make |h[i]| = 1 for all i
+        HI = np.diag(np.fabs(h_vec)**-1)
+        h_vec = np.dot(HI,h_vec)
+        G_mat = np.dot(HI,G_mat)
+
+        if scale:
+            # If P is preconditioned, must modify G
+            G_mat = np.dot(G_mat, c_model.get_scaling())
+        # end
+        
+        return G_mat, h_vec
 
 #-------------------------
 # Local Variables:
