@@ -82,7 +82,7 @@ class Simulation(Struc):
     **Methods**
 
     """
-    def __init__(self, req_models, name='Experiment', *args, **kwargs):
+    def __init__(self, req_models, name='Simulation', *args, **kwargs):
         """Instantiates the object.
         
         Args: 
@@ -93,8 +93,11 @@ class Simulation(Struc):
         Options can be set by passing them as keyword arguments
 
         """
-
-        def_opts = {}
+        # Name: [type, default, min, max, units, note]
+        def_opts = {'sens_mode': [str, 'ser', None, None, '',
+                                  'Method of sensitivity calculation, can be'
+                                  ' "ser" for serial "mpi" for mpi and'
+                                  ' "runjob" for runjob'],}
 
         if 'def_opts' in kwargs:
             def_opts.update(kwargs.pop('def_opts'))

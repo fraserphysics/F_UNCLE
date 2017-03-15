@@ -339,7 +339,7 @@ class TestBayesian(unittest.TestCase):
         self.assertEqual(len(out), 3)
         self.assertIsInstance(out[0], Bayesian)
         self.assertIsInstance(out[1], tuple)
-        self.assertEqual(len(out[1]), 2)
+        self.assertEqual(len(out[1]), 3)
 
     def test_multiple_calls(self):
         """Tests that the results are the same after calling multiple times
