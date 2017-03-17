@@ -522,7 +522,6 @@ class Bayesian(Struc):
                     log=False
                     )
             # end
-
             
             for i, x_i in enumerate(x_list):
                 dof_list.append(initial_dof + x_i * d_hat)
