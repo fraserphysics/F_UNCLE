@@ -82,7 +82,7 @@ class SimpleExperiment(GaussianExperiment):
         """Rather than test the trigger funciton, this returns the known offset
         """
 
-        return -1.0
+        return -1.0, 0.0
 
     def get_splines(self):
         """Overloads the base spline generateion which cannot deal with the
@@ -100,7 +100,7 @@ class TestSimpleExperiment(unittest.TestCase):
         """
         self.models = {'simp': SimpleModel([2, 1])}
         self.simSimp = SimpleSimulation()
-
+        
 
     def test_init(self):
         """Tests that the base experiment can be instantiated
@@ -108,7 +108,7 @@ class TestSimpleExperiment(unittest.TestCase):
 
         exp = SimpleExperiment()
         self.assertIsInstance(exp, GaussianExperiment)
-    
+        
     def test_shape(self):
         """Tests that the correct shape of the data is returned
         """

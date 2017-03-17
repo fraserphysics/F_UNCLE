@@ -30,7 +30,7 @@ None
 import sys
 import os
 import copy
-
+import pdb
 # =========================
 # Python Packages
 # =========================
@@ -96,7 +96,9 @@ class Experiment(Struc):
             'n_knots': [int, 200, 5, None, '-',
                         'The number of knots to represent the data'],
             'exp_var': [float, 1E-2, 0.0, 1.0, '-',
-                        'Percent variance in the data']
+                        'Percent variance in the data'],
+            'trigger_window': [float, 1E21, 0.0, None, '-',
+                               'The amount of experimental data to use']
         }
 
         if 'def_opts' in kwargs:
@@ -118,7 +120,7 @@ class Experiment(Struc):
         to be aling. Returns a shift if zerofor all values of trial
         data
         """
-        return 0.0
+        return 0.0, 0.0
 
     def _on_init(self, *args, **kwargs):
         """Experiment specific instantiation tasks
@@ -208,8 +210,8 @@ class Experiment(Struc):
         """
 
         return\
-            self.data[0],\
-            [self.data[1], self.mean_fn(self.data[0]), self.data[2],
+            self.data[0][self.window],\
+            [self.data[1][self.window], self.mean_fn(self.data[0][self.window]), self.data[2],
              ['vel data', 'vel fn', 'variance']],\
             {'mean_fn': self.mean_fn, 'var_fn': self.var_fn,
              'trigger': self.trigger}
@@ -240,11 +242,13 @@ class Experiment(Struc):
                 at each experimental time-stamp
 
         """
-        #tau = self.trigger(sim_data[0], sim_data[1][0])
+        # tau, t_0 = self.trigger(sim_data[0], sim_data[1][0])
         tau = sim_data[2]['tau']
+        t_0 = sim_data[2]['t_0']
         epsilon = self.data[1]\
                   - sim_data[2]['mean_fn'](self.data[0] - tau)
-        return epsilon
+        return epsilon[np.where(self.data[0] <
+                                t_0 + self.get_option('trigger_window'))[0]]
 
     def align(self, sim_data, plot=False, fig=None):
         """Updates the simulation data so it is aligned with the experiments
@@ -289,8 +293,9 @@ class Experiment(Struc):
         """
 
         raw_data = sim_data[1][0]
-        tau = self.trigger(sim_data[0], sim_data[1][0])
+        tau, t_0 = self.trigger(sim_data[0], sim_data[1][0])
         sim_data[2]['tau'] = tau
+        sim_data[2]['t_0'] = t_0
         sim_data[2]['trigger'] = copy.deepcopy(self.trigger)
         sim_data[1][0] = sim_data[2]['mean_fn'](self.data[0] - tau)
 
@@ -300,8 +305,12 @@ class Experiment(Struc):
         #     mean_knots[1],
         #     mean_knots[2]
         # )
-
-        return self.data[0], sim_data[1], sim_data[2]
+        # pdb.set_trace()
+        window = np.where(self.data[0] <
+                                t_0 + self.get_option('trigger_window'))[0]
+        self.window = window
+        sim_data[1][0] = sim_data[1][0][window]
+        return self.data[0][window], sim_data[1], sim_data[2]
 
     def shape(self):
         """Returns the number of independent data for the experiment
@@ -337,8 +346,8 @@ class Experiment(Struc):
             be calculated from the data.
 
         """
-
-        return np.diag(self.data[1] * self.get_option('exp_var'))
+        data = self()
+        return np.diag(data[1][0] * self.get_option('exp_var'))
 
 
     def _check_finite(self, data):
@@ -367,7 +376,7 @@ class Experiment(Struc):
                 # end
             # end
         # end
-
+        self.window = np.array([True] * data_out[0].shape[0])
         return data_out
 
     def _get_data(self, *args, **kwargs):
