@@ -35,7 +35,7 @@ import copy
 import math
 import sys
 import os
-
+import pdb
 # =========================
 # Python Packages
 # =========================
@@ -228,9 +228,14 @@ class Isentrope(GaussianModel):
 
         def arg_min(vel, eos, vol_0):
             r'''Solve for zero of derivative'''
-            return brentq(derr_dvol, v_min, v_max,
-                          args=(vel, eos, vol_0))
-
+            try:
+                return brentq(derr_dvol, v_min, v_max,
+                              args=(vel, eos, vol_0))
+            except Exception as inst:
+                print("brentq failed on slope search")
+                pdb.set_trace()
+                raise inst
+            
         def error(vel, eos, vol_0, p_0):
             r'''Calculate difference between pressure on isentrope at solution
             and on Rayleigh line'''
@@ -251,7 +256,8 @@ class Isentrope(GaussianModel):
             #end
 
         except Exception as inst:
-            # print("brentq failed")
+            print("brentq failed on velocity search")
+            pdb.set_trace()
             raise inst
             # print(inst)
             # import pdb
