@@ -547,6 +547,7 @@ class Bayesian(Struc):
             # Note: This approach makes use of the multi_solve method
             #       which helps accelerate the solution when using a
             #       mpi or run_job.
+
             iter_data = {}
             for key in analysis.simulations:
                 sim_i = analysis.simulations[key]['sim']
@@ -578,6 +579,20 @@ class Bayesian(Struc):
                 # end
                 costs[i] += analysis_list[i].sim_log_like(sorted_data[-1])
             # end
+
+            
+            for key in analysis.simulations:
+                fig = plt.figure()
+                ax9 = fig.gca()
+                exp_data = analysis.simulations[key]['exp']()
+                ax9.plot(exp_data[0], exp_data[1][0], label='Experiment')
+                for i, data in enumerate(iter_data[key]):
+                    ax9.plot(exp_data[0], data[2]['mean_fn'](exp_data[0] - data[2]['tau']),
+                             label = "step %02d"%i)
+                # end
+                fig.savefig("{:}-itn{:02d}_searchres.pdf".format(key,itn))
+            # end
+            
             
             # Updates the model dof to the optimal value
             besti = np.argmax(costs)
@@ -589,7 +604,7 @@ class Bayesian(Struc):
                       'End of iteration {:02d}'.format(str(costs), besti, itn))
 
             return (analysis_list[besti],
-                    costs[besti],
+                    new_log_like, # costs[besti],
                     sorted_data[besti],
                     model_dict[opt_key].get_dof(),
                     False)
@@ -736,7 +751,7 @@ class Bayesian(Struc):
 
         p_mat *= 0.5
 
-        solvers.options['show_progress'] = False
+        solvers.options['show_progress'] = True
         solvers.options['debug'] = False
         solvers.options['maxiters'] = 100  # 100 default
         solvers.options['reltol'] = 1e-6   # 1e-6 default
@@ -762,7 +777,7 @@ class Bayesian(Struc):
             if constrain:
                 sol = solvers.qp(matrix(p_mat), matrix(q_vec),
                                  matrix(g_mat), matrix(h_vec),
-                #                 intervals={'x':np.zeros(g_mat.shape[1])}
+                                 intervals={'x':np.zeros(g_mat.shape[1])}
                 )
             else:
                 sol = solvers.qp(matrix(p_mat), matrix(q_vec))
@@ -861,6 +876,15 @@ class Bayesian(Struc):
         q_mat = np.zeros(self.shape()[1])
 
         i = 0
+
+        # Plot commands for q matrix debug
+        fig = plt.figure()
+        ax1 = fig.gca()        
+        fig2 = plt.figure()
+        ax2 = fig2.gca()        
+
+        knots = self.models[self.opt_key].get_t()[:-self.models[self.opt_key].
+                                          get_option('spline_end')]
         for key in sims:
             p_tmp, q_tmp = sims[key]['exp'].get_pq(
                 self.models,
@@ -870,8 +894,13 @@ class Bayesian(Struc):
                 scale=self.get_option('precondition'))
             p_mat += p_tmp
             q_mat += q_tmp
+            ax1.plot(knots, q_tmp, label=key)
+            for i in xrange(p_tmp.shape[0]):
+                ax2.plot(knots, p_tmp[i, :])
         # end
-
+        ax1.legend(loc='best')
+        fig.savefig('q_vec.pdf')
+        fig2.savefig('P_mat.pdf')        
         return p_mat, q_mat
 
     def get_data(self):
@@ -897,7 +926,7 @@ class Bayesian(Struc):
         data = {}
         for key in sims:
             data[key] = sims[key]['exp'].align(
-                sims[key]['sim'](self.models)
+                sims[key]['sim'](copy.deepcopy(self.models))
             )
         # end
 

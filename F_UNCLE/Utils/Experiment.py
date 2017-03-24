@@ -110,7 +110,7 @@ class Experiment(Struc):
 
         data = self._get_data(*args, **kwargs)
         self.data = self._check_finite(data)
-
+        self.window = [True] * len(self.data[0])
         self.mean_fn, self.var_fn = self.get_splines()
 
         self._on_init(*args, **kwargs)
@@ -289,6 +289,8 @@ class Experiment(Struc):
                      - 'tau': Updated to show the time shift, in seconds,
                        required to bring the simulations and experiments
                        inline
+                     - 't_0': The experimental time step when the experiment
+                       starts
                      - 'trigger': The Trigger object used by the DataExperiment
         """
 
@@ -323,7 +325,7 @@ class Experiment(Struc):
 
            (int): The number of data
         """
-        return self.data[0].shape[0]
+        return self.data[0][self.window].shape[0]
 
     def get_sigma(self):
         """Returns the variance matrix.
@@ -347,7 +349,7 @@ class Experiment(Struc):
 
         """
         data = self()
-        return np.diag(data[1][0] * self.get_option('exp_var'))
+        return np.diag((data[1][0] * self.get_option('exp_var'))**2)
 
 
     def _check_finite(self, data):
@@ -532,6 +534,10 @@ class GaussianExperiment(Experiment):
         q_mat = -np.dot(np.dot(epsilon,
                                inv(self.get_sigma())),
                         sens_matrix)
+        #pdb.set_trace()
+        # q_mat = -np.dot(np.dot(epsilon.shape,
+        #                        inv(self.get_sigma())),
+        #                 sens_matrix)
 
         if scale:
             prior_scale = models[opt_key].get_scaling()

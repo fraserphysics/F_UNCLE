@@ -97,7 +97,15 @@ class Simulation(Struc):
         def_opts = {'sens_mode': [str, 'ser', None, None, '',
                                   'Method of sensitivity calculation, can be'
                                   ' "ser" for serial "mpi" for mpi and'
-                                  ' "runjob" for runjob'],}
+                                  ' "runjob" for runjob'],
+                    'fd_tol': [float, 1E-21, 0.0, 1.0, '',
+                               'Minimum threshold for sensitivities'],
+                    'fd_step': [float, 1E-2, 0.0, 1.0, '-',
+                               'Fraction of DOF value for finite difference'
+                               'sensitivity step size']
+        }
+
+
 
         if 'def_opts' in kwargs:
             def_opts.update(kwargs.pop('def_opts'))
@@ -395,7 +403,7 @@ class Simulation(Struc):
         models = copy.deepcopy(models)
         model = models[model_key]
 
-        step_frac = 2E-2
+        step_frac = self.get_option('fd_step')
 
         if initial_data is None:
             initial_data = self(models)
@@ -437,7 +445,7 @@ class Simulation(Struc):
         #end
         
         sens_matrix = np.linalg.lstsq(inp_mat, resp_mat.T)[0].T
-        return np.where(np.fabs(sens_matrix) > 1E-21,
+        return np.where(np.fabs(sens_matrix) > self.get_option('fd_tol'),
                         sens_matrix,
                         np.zeros(sens_matrix.shape))
 
@@ -458,7 +466,7 @@ class Simulation(Struc):
         models = copy.deepcopy(models)
         model = models[model_key]
 
-        step_frac = 2E-2
+        step_frac = self.get_option('fd_step')
 
         if initial_data is None:
             initial_data = self(models)
@@ -532,7 +540,7 @@ class Simulation(Struc):
         # end
  
         sens_matrix = np.linalg.lstsq(inp_mat, resp_mat.T)[0].T
-        return np.where(np.fabs(sens_matrix) > 1E-21,
+        return np.where(np.fabs(sens_matrix) > self.get_option('fd_tol'),
                         sens_matrix,
                         np.zeros(sens_matrix.shape))
 
@@ -553,7 +561,7 @@ class Simulation(Struc):
         models = copy.deepcopy(models)
         model = models[model_key]
 
-        step_frac = 2E-2
+        step_frac = self.get_option('fd_step')
 
         if initial_data is None:
             initial_data = self(models)
@@ -577,7 +585,7 @@ class Simulation(Struc):
         # end
    
         sens_matrix = np.linalg.lstsq(inp_mat, resp_mat.T)[0].T
-        return np.where(np.fabs(sens_matrix) > 1E-21,
+        return np.where(np.fabs(sens_matrix) > self.get_option('fd_tol'),
                         sens_matrix,
                         np.zeros(sens_matrix.shape))
 
