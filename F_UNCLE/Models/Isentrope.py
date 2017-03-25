@@ -233,7 +233,7 @@ class Isentrope(GaussianModel):
                               args=(vel, eos, vol_0))
             except Exception as inst:
                 print("brentq failed on slope search")
-                pdb.set_trace()
+                #pdb.set_trace()
                 raise inst
             
         def error(vel, eos, vol_0, p_0):
@@ -257,7 +257,7 @@ class Isentrope(GaussianModel):
 
         except Exception as inst:
             print("brentq failed on velocity search")
-            pdb.set_trace()
+            #pdb.set_trace()
             raise inst
             # print(inst)
             # import pdb
