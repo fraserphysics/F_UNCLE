@@ -547,7 +547,7 @@ class Bayesian(Struc):
             # Note: This approach makes use of the multi_solve method
             #       which helps accelerate the solution when using a
             #       mpi or run_job.
-
+            #sys.exit(0)
             iter_data = {}
             for key in analysis.simulations:
                 sim_i = analysis.simulations[key]['sim']
@@ -590,6 +590,7 @@ class Bayesian(Struc):
                     ax9.plot(exp_data[0], data[2]['mean_fn'](exp_data[0] - data[2]['tau']),
                              label = "step %02d"%i)
                 # end
+                ax9.legend(loc="best")
                 fig.savefig("{:}-itn{:02d}_searchres.pdf".format(key,itn))
             # end
             
@@ -1211,7 +1212,7 @@ class Bayesian(Struc):
         # ax4.get_legend().set_title("knots",
         #   prop = {'size':rcParams['legend.fontsize']})
 
-        for i in range(40, 50):
+        for i in range(40, 47):
             ax5.plot(sens_matrix[simid][:, i],
                      style[i - 40], label="{:4.3f}".format(knot_post[i]))
         ax5.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)

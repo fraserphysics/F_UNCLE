@@ -95,9 +95,12 @@ class Experiment(Struc):
                               'data'],
             'n_knots': [int, 200, 5, None, '-',
                         'The number of knots to represent the data'],
+            'n_smooth': [int, 0, 0, None, '-',
+                        'The number of knots to smooth over'],
+            
             'exp_var': [float, 1E-2, 0.0, 1.0, '-',
                         'Percent variance in the data'],
-            'trigger_window': [float, 1E21, 0.0, None, '-',
+            'data_window': [float, 1E21, 0.0, None, '-',
                                'The amount of experimental data to use']
         }
 
@@ -110,17 +113,29 @@ class Experiment(Struc):
 
         data = self._get_data(*args, **kwargs)
         self.data = self._check_finite(data)
-        self.window = [True] * len(self.data[0])
-        self.mean_fn, self.var_fn = self.get_splines()
+        self.mean_fn, self.var_fn = self.get_splines(
+            self.data[0],
+            self.data[1],
+            self.data[2]
+        )
 
+        # Performs class specific instantiation, i.e. making a trigger
         self._on_init(*args, **kwargs)
 
+        # Obtains the time shift from t=0 for the curent experiment
+        self.tau_exp = self.trigger(self.data[0], self.data[1])
+
+        # Creates a window which masks the experimental data to
+        # process only those within a certain time of the experimental
+        # data trigger
+        self.window = np.where(self.data[0] <
+                               self.tau_exp + self.get_option('data_window'))
     def simple_trigger(self, x, y):
         """This is the most basic trigger object for data which does not need
-        to be aling. Returns a shift if zerofor all values of trial
+        to be aling. Returns a shift if zero for all values of trial
         data
         """
-        return 0.0, 0.0
+        return 0.0
 
     def _on_init(self, *args, **kwargs):
         """Experiment specific instantiation tasks
@@ -134,7 +149,7 @@ class Experiment(Struc):
 
         return
 
-    def get_splines(self):
+    def get_splines(self, x_data, y_data, var_data=0.0):
         """Returns a spline representing the mean and variance of the data
 
         Args:
@@ -151,33 +166,71 @@ class Experiment(Struc):
                    difference between the data and mean_fn
         """
 
-        x_data = self.data[0]
-        y_data = self.data[1]
-        var_data = self.data[2]
+        # x_data = self.data[0]
+        # y_data = self.data[1]
+        # var_data = self.data[2]
 
         # bounds = self.get_option('bounds')
-        bounds = (x_data[1], x_data[-2])
+        bounds = (x_data[2], x_data[-3])
         knotlist = np.linspace(
             bounds[0],
             bounds[1],
             self.get_option('n_knots')
         )
-        mean_fn = LSQSpline(
-            x_data,
-            y_data,
-            knotlist,
-            ext=3
-        )
 
-        #mask = np.where(x_data < (x_data[0]+25E-6))[0]
-        #x_data = x_data[mask]
-        var_fn = IUSpline(
-            x_data,
-            (mean_fn(x_data) - y_data)**2,
-            ext=3
-        )
+        n_width = self.get_option('n_smooth')
+
+        # If smoohting knots > 0 then apply gausian
+        # smoothing. Otherwise smooth with LSQ splines
+        if n_width > 0:
+            width = knotlist[n_width]-knotlist[0]
+            d = np.empty((len(knotlist), len(x_data)))
+            for i in range(len(knotlist)):
+                d[i,:] = x_data - knotlist[i]
+            # end
+            g = np.where(d * d / (2 * width * width) < 50.0,
+                         -d * d / (2 * width * width),
+                         -50.0) # Gaussian weight matrix
+            g = np.exp(g)
+           
+            norm = g.sum(axis=1)             # Normalization vector
+
+            # mean_fn = IUSpline(
+            #     knotlist,
+            #     np.dot(g, y_data) / norm,
+            #     ext=3
+            # )
+            mean_fn = LSQSpline(
+                x_data,
+                y_data,
+                knotlist,
+                ext=3
+            )
+
+            error = (y_data - mean_fn(x_data))
+
+            var_fn = IUSpline(
+                knotlist,
+                np.dot(g, error * error) / norm,
+                ext=3
+            )
+            # end
+        else:
+            mean_fn = LSQSpline(
+                x_data,
+                y_data,
+                knotlist,
+                ext = 3
+            )
+            
+            var_fn = LSQSpline(
+                x_data,
+                (y_data - mean_fn(x_data))**2,
+                knotlist,
+                ext = 3
+            )
         # end
-
+        
         return mean_fn, var_fn
 
     def __call__(self):
@@ -208,6 +261,8 @@ class Experiment(Struc):
                     - `trigger` (Trigger): An object to align
                                            simulations to the data
         """
+    # self.data[0],\
+    #         [self.data[1], self.mean_fn(self.data[0]), self.data[2],
 
         return\
             self.data[0][self.window],\
@@ -245,10 +300,9 @@ class Experiment(Struc):
         # tau, t_0 = self.trigger(sim_data[0], sim_data[1][0])
         tau = sim_data[2]['tau']
         t_0 = sim_data[2]['t_0']
-        epsilon = self.data[1]\
-                  - sim_data[2]['mean_fn'](self.data[0] - tau)
-        return epsilon[np.where(self.data[0] <
-                                t_0 + self.get_option('trigger_window'))[0]]
+        epsilon = self.data[1][self.window]\
+                  - sim_data[2]['mean_fn'](self.data[0][self.window] - tau)
+        return epsilon
 
     def align(self, sim_data, plot=False, fig=None):
         """Updates the simulation data so it is aligned with the experiments
@@ -295,24 +349,25 @@ class Experiment(Struc):
         """
 
         raw_data = sim_data[1][0]
-        tau, t_0 = self.trigger(sim_data[0], sim_data[1][0])
-        sim_data[2]['tau'] = tau
-        sim_data[2]['t_0'] = t_0
-        sim_data[2]['trigger'] = copy.deepcopy(self.trigger)
-        sim_data[1][0] = sim_data[2]['mean_fn'](self.data[0] - tau)
+        
+        tau_sim = self.trigger(sim_data[0], sim_data[1][0])
 
-        # mean_knots = sim_data[2]['mean_fn']._eval_args
-        # sim_data[2]['mean_fn']._eval_args = (
-        #     mean_knots[0] + tau,
-        #     mean_knots[1],
-        #     mean_knots[2]
-        # )
-        # pdb.set_trace()
-        window = np.where(self.data[0] <
-                                t_0 + self.get_option('trigger_window'))[0]
-        self.window = window
-        sim_data[1][0] = sim_data[1][0][window]
-        return self.data[0][window], sim_data[1], sim_data[2]
+        # Trigger returns the time shift to align the simulations with
+        # t=0 To align the simulations with the experiments, we need
+        # the time shift which brings the experiments back to t=0. To
+        # convert from experiment time to simulation time
+        #t_sim = t_exp - tau_exp + tau_sim
+        #t_sim = t_exp - (tau_exp - tau_sim)
+        #t_sim = t_exp - tau
+        tau = self.tau_exp - tau_sim 
+        sim_data[2]['tau'] = tau        
+        sim_data[2]['t_0'] = self.tau_exp
+        sim_data[2]['trigger'] = copy.deepcopy(self.trigger)
+
+        sim_data[1][0] = sim_data[2]['mean_fn'](
+            self.data[0][self.window] - tau)
+
+        return self.data[0][self.window], sim_data[1], sim_data[2]
 
     def shape(self):
         """Returns the number of independent data for the experiment
@@ -348,8 +403,9 @@ class Experiment(Struc):
             be calculated from the data.
 
         """
-        data = self()
-        return np.diag((data[1][0] * self.get_option('exp_var'))**2)
+        
+        return np.diag((self.data[1][self.window]
+                        * self.get_option('exp_var'))**2)
 
 
     def _check_finite(self, data):
