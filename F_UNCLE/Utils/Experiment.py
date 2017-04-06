@@ -90,18 +90,15 @@ class Experiment(Struc):
 
         # name: type, default, min, max, units, note
         def_opts = {
-            'spline_bounds': [tuple, (0, 1), None, None, '-',
+            'data_bounds': [tuple, (0, 1E21), None, None, '-',
                               'The bounds for the spline to represent the '
                               'data'],
             'n_knots': [int, 200, 5, None, '-',
                         'The number of knots to represent the data'],
             'n_smooth': [int, 0, 0, None, '-',
-                        'The number of knots to smooth over'],
-            
+                        'The number of knots to smooth over'],            
             'exp_var': [float, 1E-2, 0.0, 1.0, '-',
                         'Percent variance in the data'],
-            'data_window': [float, 1E21, 0.0, None, '-',
-                               'The amount of experimental data to use']
         }
 
         if 'def_opts' in kwargs:
@@ -128,8 +125,11 @@ class Experiment(Struc):
         # Creates a window which masks the experimental data to
         # process only those within a certain time of the experimental
         # data trigger
-        self.window = np.where(self.data[0] <
-                               self.tau_exp + self.get_option('data_window'))
+        self.window = np.where((self.data[0] <
+                                self.tau_exp + self.get_option('data_bounds')[1])
+                               &(self.data[0] >
+                                 self.tau_exp + self.get_option('data_bounds')[0]))
+        
     def simple_trigger(self, x, y):
         """This is the most basic trigger object for data which does not need
         to be aling. Returns a shift if zero for all values of trial
@@ -195,17 +195,17 @@ class Experiment(Struc):
            
             norm = g.sum(axis=1)             # Normalization vector
 
-            # mean_fn = IUSpline(
-            #     knotlist,
-            #     np.dot(g, y_data) / norm,
-            #     ext=3
-            # )
-            mean_fn = LSQSpline(
-                x_data,
-                y_data,
+            mean_fn = IUSpline(
                 knotlist,
+                np.dot(g, y_data) / norm,
                 ext=3
             )
+            # mean_fn = LSQSpline(
+            #     x_data,
+            #     y_data,
+            #     knotlist,
+            #     ext=3
+            # )
 
             error = (y_data - mean_fn(x_data))
 
@@ -297,9 +297,7 @@ class Experiment(Struc):
                 at each experimental time-stamp
 
         """
-        # tau, t_0 = self.trigger(sim_data[0], sim_data[1][0])
         tau = sim_data[2]['tau']
-        t_0 = sim_data[2]['t_0']
         epsilon = self.data[1][self.window]\
                   - sim_data[2]['mean_fn'](self.data[0][self.window] - tau)
         return epsilon
@@ -348,8 +346,6 @@ class Experiment(Struc):
                      - 'trigger': The Trigger object used by the DataExperiment
         """
 
-        raw_data = sim_data[1][0]
-        
         tau_sim = self.trigger(sim_data[0], sim_data[1][0])
 
         # Trigger returns the time shift to align the simulations with
