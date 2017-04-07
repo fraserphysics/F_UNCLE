@@ -591,7 +591,7 @@ class Bayesian(Struc):
                              label = "step %02d"%i)
                 # end
                 ax9.legend(loc="best")
-                fig.savefig("{:}-itn{:02d}_searchres.pdf".format(key,itn))
+                fig.savefig("{:}-itn{:02d}_search_res.pdf".format(key,itn))
             # end
             
             
@@ -633,7 +633,11 @@ class Bayesian(Struc):
             with open('exp_data.pkl', 'wb') as fid:
                 pickle.dump(exp_data, fid)
             # end
-        
+
+            with open('prior_data.pkl', 'wb') as fid:
+                pickle.dump(initial_data, fid)
+            # end
+
         while not conv and i < maxiter:
             if verb and mpi_print:
                 print('Iter {} of {}'.format(i, maxiter))
