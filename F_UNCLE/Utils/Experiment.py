@@ -125,9 +125,9 @@ class Experiment(Struc):
         # Creates a window which masks the experimental data to
         # process only those within a certain time of the experimental
         # data trigger
-        self.window = np.where((self.data[0] <
+        self.window = np.where((self.data[0] <=
                                 self.tau_exp + self.get_option('data_bounds')[1])
-                               &(self.data[0] >
+                               &(self.data[0] >=
                                  self.tau_exp + self.get_option('data_bounds')[0]))
         
     def simple_trigger(self, x, y):

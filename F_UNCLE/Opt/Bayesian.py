@@ -641,6 +641,9 @@ class Bayesian(Struc):
         while not conv and i < maxiter:
             if verb and mpi_print:
                 print('Iter {} of {}'.format(i, maxiter))
+                with open('models_iter{:02d}.pkl'.format(i), 'wb') as fid:
+                    pickle.dump(analysis.models, fid)
+                # end                
             # end
                        
             analysis, log_like, initial_data, model_dof, conv =\
@@ -651,10 +654,6 @@ class Bayesian(Struc):
             if self.get_option('pickle_sens'):
                 with open('sim_data_iter{:02d}.pkl'.format(i), 'wb') as fid:
                     pickle.dump(initial_data, fid)
-                # end
-
-                with open('models_iter{:02d}.pkl'.format(i), 'wb') as fid:
-                    pickle.dump(analysis.models, fid)
                 # end
             # end            
             i += 1
@@ -782,7 +781,7 @@ class Bayesian(Struc):
             if constrain:
                 sol = solvers.qp(matrix(p_mat), matrix(q_vec),
                                  matrix(g_mat), matrix(h_vec),
-                                 intervals={'x':np.zeros(g_mat.shape[1])}
+                                 #intervals={'x':np.zeros(g_mat.shape[1])}
                 )
             else:
                 sol = solvers.qp(matrix(p_mat), matrix(q_vec))
