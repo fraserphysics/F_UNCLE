@@ -184,6 +184,14 @@ class Isentrope(GaussianModel):
         d_max = eos.get_option('vcj_upper')  # cm s**-1
 
         v_min, v_max = self.get_option('cj_vol_range')
+
+        if eos.get_option('basis').lower()[:3] == 'vol':
+            d_min = 1.05 * np.sqrt(-10 * eos.derivative(1)(v_max) * vol_0**2)
+            d_max = 0.95 * np.sqrt(-10 * eos.derivative(1)(v_min) * vol_0**2)
+        else:
+            d_min = 1.05 * np.sqrt(10 * eos.derivative(1)(v_max**-1)/v_max**2 * vol_0**2)
+            d_max = 0.95 * np.sqrt(10 * eos.derivative(1)(v_min**-1)/v_min**2 * vol_0**2)
+        
         # if eos.get_option('basis').lower()[:3] == 'vol':
         #     v_min = eos.get_option('spline_min')
         #     v_max = eos.get_option('spline_max')

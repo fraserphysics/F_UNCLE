@@ -545,11 +545,14 @@ class Experiment(Struc):
                                  delimiter=delimiter,
                                  missing_values=np.nan)
         # end
-
-        return data[:, indepcol],\
-            data[:, depcols][:,0],\
-            data[:, varcols][:,0]
-
+        if varcols is not None:
+            return data[:, indepcol],\
+                data[:, depcols][:,0],\
+                data[:, varcols][:,0]
+        else:
+            return data[:, indepcol],\
+                data[:, depcols][:,0],\
+                np.nan * np.ones(data.shape[0])
     
 class GaussianExperiment(Experiment):
     """Class to represent experimental data which is modelled as being
