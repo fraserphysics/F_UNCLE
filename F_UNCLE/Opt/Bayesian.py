@@ -547,7 +547,7 @@ class Bayesian(Struc):
             # Note: This approach makes use of the multi_solve method
             #       which helps accelerate the solution when using a
             #       mpi or run_job.
-
+            #sys.exit(0)
             iter_data = {}
             for key in analysis.simulations:
                 sim_i = analysis.simulations[key]['sim']
@@ -590,7 +590,8 @@ class Bayesian(Struc):
                     ax9.plot(exp_data[0], data[2]['mean_fn'](exp_data[0] - data[2]['tau']),
                              label = "step %02d"%i)
                 # end
-                fig.savefig("{:}-itn{:02d}_searchres.pdf".format(key,itn))
+                ax9.legend(loc="best")
+                fig.savefig("{:}-itn{:02d}_search_res.pdf".format(key,itn))
             # end
             
             
@@ -632,10 +633,17 @@ class Bayesian(Struc):
             with open('exp_data.pkl', 'wb') as fid:
                 pickle.dump(exp_data, fid)
             # end
-        
+
+            with open('prior_data.pkl', 'wb') as fid:
+                pickle.dump(initial_data, fid)
+            # end
+
         while not conv and i < maxiter:
             if verb and mpi_print:
                 print('Iter {} of {}'.format(i, maxiter))
+                with open('models_iter{:02d}.pkl'.format(i), 'wb') as fid:
+                    pickle.dump(analysis.models, fid)
+                # end                
             # end
                        
             analysis, log_like, initial_data, model_dof, conv =\
@@ -646,10 +654,6 @@ class Bayesian(Struc):
             if self.get_option('pickle_sens'):
                 with open('sim_data_iter{:02d}.pkl'.format(i), 'wb') as fid:
                     pickle.dump(initial_data, fid)
-                # end
-
-                with open('models_iter{:02d}.pkl'.format(i), 'wb') as fid:
-                    pickle.dump(analysis.models, fid)
                 # end
             # end            
             i += 1
@@ -777,7 +781,7 @@ class Bayesian(Struc):
             if constrain:
                 sol = solvers.qp(matrix(p_mat), matrix(q_vec),
                                  matrix(g_mat), matrix(h_vec),
-                                 intervals={'x':np.zeros(g_mat.shape[1])}
+                                 #intervals={'x':np.zeros(g_mat.shape[1])}
                 )
             else:
                 sol = solvers.qp(matrix(p_mat), matrix(q_vec))
@@ -1211,7 +1215,7 @@ class Bayesian(Struc):
         # ax4.get_legend().set_title("knots",
         #   prop = {'size':rcParams['legend.fontsize']})
 
-        for i in range(40, 50):
+        for i in range(40, 47):
             ax5.plot(sens_matrix[simid][:, i],
                      style[i - 40], label="{:4.3f}".format(knot_post[i]))
         ax5.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)

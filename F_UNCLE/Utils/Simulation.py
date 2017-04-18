@@ -100,7 +100,7 @@ class Simulation(Struc):
                                   ' "runjob" for runjob'],
                     'fd_tol': [float, 1E-21, 0.0, 1.0, '',
                                'Minimum threshold for sensitivities'],
-                    'fd_step': [float, 1E-2, 0.0, 1.0, '-',
+                    'fd_step': [float, 2E-2, 0.0, 1.0, '-',
                                'Fraction of DOF value for finite difference'
                                'sensitivity step size']
         }

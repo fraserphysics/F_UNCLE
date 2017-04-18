@@ -183,15 +183,24 @@ class Isentrope(GaussianModel):
         d_min = eos.get_option('vcj_lower')  # cm s**-1
         d_max = eos.get_option('vcj_upper')  # cm s**-1
 
+        v_min, v_max = self.get_option('cj_vol_range')
+
         if eos.get_option('basis').lower()[:3] == 'vol':
-            v_min = eos.get_option('spline_min')
-            v_max = eos.get_option('spline_max')
-        elif eos.get_option('basis').lower()[:3] == 'den':
-            v_min = eos.get_option('spline_max')**-1
-            v_max = eos.get_option('spline_min')**-1
+            d_min = 1.05 * np.sqrt(-10 * eos.derivative(1)(v_max) * vol_0**2)
+            d_max = 0.95 * np.sqrt(-10 * eos.derivative(1)(v_min) * vol_0**2)
         else:
-            raise IOError('{0} Unknown Isentrope basis, must be `vol` or `den`'
-                          .format(self.get_inform(1)))
+            d_min = 1.05 * np.sqrt(10 * eos.derivative(1)(v_max**-1)/v_max**2 * vol_0**2)
+            d_max = 0.95 * np.sqrt(10 * eos.derivative(1)(v_min**-1)/v_min**2 * vol_0**2)
+        
+        # if eos.get_option('basis').lower()[:3] == 'vol':
+        #     v_min = eos.get_option('spline_min')
+        #     v_max = eos.get_option('spline_max')
+        # elif eos.get_option('basis').lower()[:3] == 'den':
+        #     v_min = eos.get_option('spline_max')**-1
+        #     v_max = eos.get_option('spline_min')**-1
+        # else:
+        #     raise IOError('{0} Unknown Isentrope basis, must be `vol` or `den`'
+        #                   .format(self.get_inform(1)))
 
         # R is Rayleigh line
         def rayl_line(vel, vol, vol_0, p_0):
@@ -213,6 +222,7 @@ class Isentrope(GaussianModel):
                     + (vel / vol_0)**2 * 1E2
 
         else:
+            # print('Density based functions')
             # Density based EOS
             def rayl_err(vel, vol, eos, vol_0, p_0):
                 r'''Pressure difference between isentrope and Rayleigh line.'''
@@ -311,14 +321,24 @@ class Isentrope(GaussianModel):
             v_spec = np.linspace(self.get_option('spline_min'),
                                  self.get_option('spline_max'),
                                  200)
+
+        if self.get_option('basis') == 'vol':
+            x_data = v_spec
+            y_data = self(v_spec)
+        else:
+            x_data = np.where(v_spec > 1E-4,
+                              v_spec, 1E-4)**-1
+            y_data = self(v_spec)
+        # end
+        
         if log:
-            ax1.semilogy(v_spec,
-                         self(v_spec),
+            ax1.semilogy(x_data,
+                         y_data,
                          linestyles[0],
                          label=labels[0])
         else:
-            ax1.plot(v_spec,
-                     self(v_spec),
+            ax1.plot(x_data,
+                     y_data,
                      linestyles[0],
                      label=labels[0])
         # end
@@ -332,6 +352,22 @@ class Isentrope(GaussianModel):
 
         if vrange is not None:
             ax1.set_xlim(*vrange)
+
+        try:
+            detvel = self.vel_cj
+            cj_dens = self.state_cj.dens
+            rho0 = self.get_option('rho_0')
+            pres0 = self.get_option('pres_0')
+
+            vol_list = np.linspace(0.8 * cj_dens**-1, rho0**-1, 50)
+            
+            ax1.plot(vol_list, 0.1*(rho0*detvel)**2 * (rho0**-1 - vol_list) + pres0 )
+            
+        except Exception as inst:
+            raise inst
+        ax1.set_xlim((0.2,1.0))
+        ax1.set_ylim((0.0,2E11))        
+
         # ax1.set_xlabel(r'Specific volume
         #/ $\si{\cubic\centi\meter\per\gram}$')
         # ax1.set_ylabel(r'Pressure / $\si{\pascall}$')
