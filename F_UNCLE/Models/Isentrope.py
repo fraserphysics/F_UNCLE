@@ -474,7 +474,46 @@ class Spline(IU_Spline):
     which provides access to details to the knots which are treated as
     degrees of freedom
 """
+    def get_basis_functions(self):
+        """Extracts the basis functions for the value and 1st and 2nd der
 
+        Args:
+            None
+
+        Return:
+            (tuple):
+
+                0. list-n of value basis functions for the nth dof
+                   evaluated at all knots
+                1. list-n of 1st derivative basis functions for the nth dof
+                   evaluated at all knots
+                2. list-n of 2nd derivative basis functions for the nth dof
+                   evaluated at all knots
+                3. list-(n-4) of unique knot locations
+        """
+        valfn=[]
+        d1fn=[]
+        d2fn=[]
+        
+
+        knot_unique = self.get_t()[:]
+        initial_c = self.get_c(spline_end=4)
+        tmp_c = np.zeros(initial_c.shape)
+
+        knot_span = np.linspace(knot_unique[0],
+                                knot_unique[-1],
+                                200)
+        for i in range(len(initial_c)):
+            tmp_c[i] = 1.0
+            new_spline = self.set_c(tmp_c, spline_end=4)
+            valfn.append(new_spline(knot_span))
+            d1fn.append(new_spline.derivative(1)(knot_span))
+            d2fn.append(new_spline.derivative(2)(knot_span))
+            tmp_c[i] = 0.0
+        # end
+
+        return valfn, d1fn, d2fn, knot_unique, knot_span
+    
     def get_t(self):
         """Gives the knot locations
 
