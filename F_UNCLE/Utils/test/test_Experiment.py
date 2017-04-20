@@ -73,23 +73,23 @@ class SimpleExperiment(GaussianExperiment):
 
         This allows us to test the trigger as well
         """
-        xx = np.linspace(0, 10, 100)
-        yy = (4 * (xx+1))**2 + 2 * (xx+1) 
+        xx = np.linspace(0, 10, 5)
+        yy = (4 * (xx))**2 + 2 * (xx) 
 
-        return xx, yy, None
+        return xx + 1, yy, None
 
     def simple_trigger(self, x, y):
         """Rather than test the trigger funciton, this returns the known offset
         """
 
-        return -1.0, 0.0
+        return x[0]
 
-    def get_splines(self):
+    def get_splines(self, x_data, y_data, var_data=0):
         """Overloads the base spline generateion which cannot deal with the
         smooth experiment
         """
 
-        return IUSpline(self.data[0], self.data[1]), None
+        return IUSpline(x_data, y_data), None
     
 class TestSimpleExperiment(unittest.TestCase):
     """Exercises the functionality of Expeiment using simple classes
@@ -114,7 +114,7 @@ class TestSimpleExperiment(unittest.TestCase):
         """
 
         exp = SimpleExperiment()
-        self.assertEqual(100, exp.shape())
+        self.assertEqual(5, exp.shape())
         
     def test_sigma(self):
         """Tests that the correct covariance matrix is generated
@@ -122,9 +122,9 @@ class TestSimpleExperiment(unittest.TestCase):
 
         exp = SimpleExperiment(exp_var=0.01)
 
-        true_sigma = np.diag(exp.data[1] * 0.01)
+        true_sigma = np.diag((exp.data[1] * 0.01)**2)
 
-        npt.assert_array_equal(true_sigma, exp.get_sigma())
+        npt.assert_array_almost_equal(true_sigma, exp.get_sigma())
 
     def test_align(self):
         """Test of the align function
@@ -138,7 +138,7 @@ class TestSimpleExperiment(unittest.TestCase):
         aligned_data = exp.align(sim_data)
 
         # self.plot('aligned', exp, aligned_data)
-        self.assertEqual(aligned_data[2]['tau'], -1.0)
+        self.assertEqual(aligned_data[2]['tau'], 1)
         npt.assert_array_equal(aligned_data[0], exp.data[0])
         
     def test_compare(self):
@@ -149,12 +149,12 @@ class TestSimpleExperiment(unittest.TestCase):
 
         # Generate some simulation data
         sim_data = self.simSimp(self.models)
-        sim_data = exp.align(sim_data)
         stored_data = copy.deepcopy(sim_data)
+        sim_data = exp.align(sim_data)
         epsilon = exp.compare(sim_data)
 
-        npt.assert_array_almost_equal((4**2 - 2**2) * (exp.data[0]+1)**2
-                                      + (2-1) * (exp.data[0]+1), epsilon)
+        npt.assert_array_almost_equal((4**2 - 2**2) * (exp.data[0]-1)**2
+                                      + (2-1) * (exp.data[0]-1), epsilon)
         
 
     def test_pq(self):

@@ -79,7 +79,7 @@ class SimpleSimulation(Simulation):
         return (models['simp'],)
 
     def _on_call(self, models):
-        """Dummy simeriment
+        """Dummy simulation
         """
         sim_model = models
         x_list = np.arange(self.get_option('nDOF'))
@@ -256,7 +256,6 @@ class TestSimpleSimulation(unittest.TestCase):
         true_sens = np.linalg.lstsq(inp_mat, resp_mat)[0].T
         npt.assert_array_almost_equal(sens, true_sens, decimal=8)
 
-    @unittest.expectedFailure
     def test_pll_sens(self):
         """Test sensitivity calculation
         """

@@ -874,6 +874,7 @@ class Bayesian(Struc):
                 1. (np.ndarray): `q`, a nx1 matrix where n is the model DOF
 
         """
+        debug = self.get_option('debug')
         sims = self.simulations
 
         p_mat = np.zeros((self.shape()[1], self.shape()[1]))
@@ -882,13 +883,16 @@ class Bayesian(Struc):
         i = 0
 
         # Plot commands for q matrix debug
-        fig = plt.figure()
-        ax1 = fig.gca()        
-        fig2 = plt.figure()
-        ax2 = fig2.gca()        
 
-        knots = self.models[self.opt_key].get_t()[:-self.models[self.opt_key].
-                                          get_option('spline_end')]
+        if debug:
+            # Debugging creates plots of the P and Q matricies
+            fig = plt.figure()
+            ax1 = fig.gca()        
+            fig2 = plt.figure()
+            ax2 = fig2.gca()        
+
+            knots = self.models[self.opt_key].get_t()\
+                    [:-self.models[self.opt_key]. get_option('spline_end')]
         for key in sims:
             p_tmp, q_tmp = sims[key]['exp'].get_pq(
                 self.models,
@@ -898,13 +902,18 @@ class Bayesian(Struc):
                 scale=self.get_option('precondition'))
             p_mat += p_tmp
             q_mat += q_tmp
-            ax1.plot(knots, q_tmp, label=key)
-            for i in xrange(p_tmp.shape[0]):
-                ax2.plot(knots, p_tmp[i, :])
+
+            if debug:
+                ax1.plot(knots, q_tmp, label=key)
+                for i in range(p_tmp.shape[0]):
+                    ax2.plot(knots, p_tmp[i, :])
         # end
-        ax1.legend(loc='best')
-        fig.savefig('q_vec.pdf')
-        fig2.savefig('P_mat.pdf')        
+
+        if debug:
+            ax1.legend(loc='best')
+            fig.savefig('q_vec.pdf')
+            fig2.savefig('P_mat.pdf')
+            
         return p_mat, q_mat
 
     def get_data(self):

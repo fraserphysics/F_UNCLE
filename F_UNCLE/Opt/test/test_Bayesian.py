@@ -517,7 +517,7 @@ class TestSimpleModels(unittest.TestCase):
         data = self.bayes.get_data()
         sens_matrix = self.bayes._get_sens(initial_data=data)
 
-        indep = np.linspace(0, 10, 100) - data['simple'][2]['tau']
+        indep = np.linspace(1, 11, 5) - data['simple'][2]['tau']
         resp_mat = np.array([(1.02 * 2 * indep)**2 + 1 * indep -
                              (2 * indep)**2 - indep,
                              (2 * indep)**2 + 1.02 * indep -
@@ -581,7 +581,7 @@ class TestSimpleModels(unittest.TestCase):
         initial_data = new.get_data()
         sens_matrix = new._get_sens(initial_data=initial_data)
 
-        indep = np.linspace(0,10,100) + 1
+        indep = np.linspace(1, 11, 5) - initial_data['simple1'][2]['tau']
         resp_mat = np.array([(1.02 * 2 * indep)**2 + 1 * indep -
                              (2 * indep)**2 - indep,
                              (2 * indep)**2 + 1.02 * indep -

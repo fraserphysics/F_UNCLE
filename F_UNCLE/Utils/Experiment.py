@@ -399,9 +399,12 @@ class Experiment(Struc):
             be calculated from the data.
 
         """
-        
-        return np.diag((self.data[1][self.window]
-                        * self.get_option('exp_var'))**2)
+        # This test is needed so that the variance matrix is not
+        # sigular for zero values of experimental data
+        return np.diag(np.where(
+            np.fabs(self.data[1][self.window]) > 1E-12,
+            (self.data[1][self.window] * self.get_option('exp_var'))**2,
+            1E-12))
 
 
     def _check_finite(self, data):
@@ -539,7 +542,7 @@ class Experiment(Struc):
             folder,
             filename)))
 
-        with open(fname, 'r') as fid:
+        with open(fname, 'rb') as fid:
             data = np.genfromtxt(fid,
                                  skip_header=header_lines,
                                  delimiter=delimiter,

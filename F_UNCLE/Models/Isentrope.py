@@ -364,7 +364,7 @@ class Isentrope(GaussianModel):
             ax1.plot(vol_list, 0.1*(rho0*detvel)**2 * (rho0**-1 - vol_list) + pres0 )
             
         except Exception as inst:
-            raise inst
+            pass
         ax1.set_xlim((0.2,1.0))
         ax1.set_ylim((0.0,2E11))        
 
@@ -1083,7 +1083,7 @@ class DensityEOS(EOSModel):
         rho_all = c_model.get_t()      # Not truncated
         rho_unique = rho_all[spline_end - 1 : 1 - spline_end]
         n_rho = len(rho_unique)
-        n_constraints = 3*n_rho
+        n_constraints = 2*n_rho
 
         G_mat = np.zeros((n_constraints, dim))
         tmp_coeffs = np.zeros(dim)           # Scratch coefficient array
@@ -1095,7 +1095,7 @@ class DensityEOS(EOSModel):
                               * (tmp_spline.derivative(2)(rho_unique) * rho_unique
                                  + 2 * tmp_spline.derivative(1)(rho_unique))
             G_mat[n_rho: 2 * n_rho,k] = -tmp_spline(rho_unique)
-            G_mat[2 * n_rho:, k] = -tmp_spline.derivative(2)(rho_unique)
+            #G_mat[2 * n_rho:, k] = -tmp_spline.derivative(2)(rho_unique)
 
             tmp_coeffs[k] = 0.0
         # end
