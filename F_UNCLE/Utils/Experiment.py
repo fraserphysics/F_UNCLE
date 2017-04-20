@@ -135,7 +135,7 @@ class Experiment(Struc):
         to be aling. Returns a shift if zero for all values of trial
         data
         """
-        return 0.0
+        return x[0]
 
     def _on_init(self, *args, **kwargs):
         """Experiment specific instantiation tasks
