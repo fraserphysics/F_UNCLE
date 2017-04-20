@@ -277,7 +277,8 @@ class Isentrope(GaussianModel):
         return vel_cj, vol_cj, float(p_cj), rayl_line
 
     def plot(self, axes=None, figure=None, linestyles=['-k'],
-             labels=['Isentrope'], vrange=None, log=False, *args, **kwargs):
+             labels=['Isentrope'], vrange=None, log=False,
+             draw_rayl=False, *args, **kwargs):
         """Plots the EOS
 
         Overloads the :py:meth:`F_UNCLE.Utils.Struc.Struc.plot` method to plot
@@ -293,6 +294,7 @@ class Isentrope(GaussianModel):
                 0. 'Isentrope'
             vrange(tuple): Specific volume range to plot
             log(bool): Flag to plot on semilogy
+            draw_rayl(bool): Flag to draw rayleigh line
         Return:
             (plt.Figure): A reference to the figure containing the plot
 
@@ -354,19 +356,21 @@ class Isentrope(GaussianModel):
             ax1.set_xlim(*vrange)
 
         try:
-            detvel = self.vel_cj
-            cj_dens = self.state_cj.dens
-            rho0 = self.get_option('rho_0')
-            pres0 = self.get_option('pres_0')
+            if draw_rayl:
+                detvel = self.vel_cj
+                cj_dens = self.state_cj.dens
+                rho0 = self.get_option('rho_0')
+                pres0 = self.get_option('pres_0')
 
-            vol_list = np.linspace(0.8 * cj_dens**-1, rho0**-1, 50)
-            
-            ax1.plot(vol_list, 0.1*(rho0*detvel)**2 * (rho0**-1 - vol_list) + pres0 )
-            
+                vol_list = np.linspace(0.8 * cj_dens**-1, rho0**-1, 50)
+
+                ax1.plot(vol_list, 0.1*(rho0*detvel)**2
+                         * (rho0**-1 - vol_list) + pres0 )
+            # end
         except Exception as inst:
             pass
         ax1.set_xlim((0.2,1.0))
-        ax1.set_ylim((0.0,2E11))        
+        ax1.set_ylim((0.0,1E11))        
 
         # ax1.set_xlabel(r'Specific volume
         #/ $\si{\cubic\centi\meter\per\gram}$')

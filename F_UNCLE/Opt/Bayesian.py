@@ -512,7 +512,7 @@ class Bayesian(Struc):
             if plot_lsearch:
                 fig = plt.figure()
                 ax1 = fig.gca()            
-                ax1.plot(opt_model.get_t()[:-4],
+                ax1.plot(opt_model.get_t()[:-4]**-1,
                              np.fabs(d_hat),
                              label='Total Step')
                 opt_model.prior.plot(
