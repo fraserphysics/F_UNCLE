@@ -264,6 +264,7 @@ class GaussianModel(PhysicsModel):
                                     inv(self.get_sigma())),
                              self.get_dof() - self.prior.get_dof())
 
+
     def get_pq(self, scale=False):
         """Returns the P and q matrix components for the model
 
