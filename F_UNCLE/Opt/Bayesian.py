@@ -45,6 +45,7 @@ import copy
 import math
 import pdb
 import pickle
+
 # =========================
 # Python Packages
 # =========================
@@ -238,11 +239,13 @@ class Bayesian(Struc):
                                 ' list must be a Experiment type'
                                 .format(self.get_inform(1)))
             else:
-                sim_out = {}
                 for key in simulations:
-                    sim_out[key] = {'sim': copy.deepcopy(simulations[key][0]),
-                                    'exp': copy.deepcopy(simulations[key][1])}
+                    simulations[key] = {
+                        'sim': copy.deepcopy(simulations[key][0]),
+                        'exp': copy.deepcopy(simulations[key][1])
+                    }
                 # end
+                sim_out = copy.deepcopy(simulations)
             # end
         elif np.all([isinstance(simulations[key], dict)
                      for key in simulations]):
@@ -536,7 +539,8 @@ class Bayesian(Struc):
                         linestyles=['-'],
                         log=False
                     )
-                    fig.savefig('lineSearch_itn{:02d}.pdf'.format(itn))               
+                    fig.savefig('lineSearch_itn{:02d}.pdf'.format(itn))
+                    plt.close(fig)
                 analysis_list.append(analysis.update(models=model_dict))
                 costs[i] = analysis_list[-1].model_log_like()
             # end
@@ -604,6 +608,7 @@ class Bayesian(Struc):
                 ax9.legend(loc="best")
                 ax10.legend(loc="best")
                 fig.savefig("{:}-itn{:02d}_search_res.pdf".format(key,itn))
+                plt.close(fig)
             # end
             
             
@@ -930,7 +935,8 @@ class Bayesian(Struc):
             ax1.legend(loc='best')
             fig.savefig('q_vec.pdf')
             fig2.savefig('P_mat.pdf')
-            
+            plt.close(fig)
+            plt.close(fig2)
         return p_mat, q_mat
 
     def get_data(self):
