@@ -846,7 +846,7 @@ class EOSModel(Spline, Isentrope):
 
         sigma = self.get_option('spline_sigma')
 
-        return np.diag((sigma * self.get_dof())**2)
+        return np.diag((sigma * self.prior.get_dof())**2)
 
     def get_dof(self, *args, **kwargs):
         """Returns the spline coefficients as the model degrees of freedom

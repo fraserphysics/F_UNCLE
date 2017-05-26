@@ -45,6 +45,7 @@ import copy
 import math
 import pdb
 import pickle
+
 # =========================
 # Python Packages
 # =========================
@@ -238,11 +239,13 @@ class Bayesian(Struc):
                                 ' list must be a Experiment type'
                                 .format(self.get_inform(1)))
             else:
-                sim_out = {}
                 for key in simulations:
-                    sim_out[key] = {'sim': copy.deepcopy(simulations[key][0]),
-                                    'exp': copy.deepcopy(simulations[key][1])}
+                    simulations[key] = {
+                        'sim': copy.deepcopy(simulations[key][0]),
+                        'exp': copy.deepcopy(simulations[key][1])
+                    }
                 # end
+                sim_out = copy.deepcopy(simulations)
             # end
         elif np.all([isinstance(simulations[key], dict)
                      for key in simulations]):
@@ -369,8 +372,9 @@ class Bayesian(Struc):
            \log(p(f|y))_{model} = -\frac{1}{2}(f - \mu_f)\Sigma_f^{-1}(f-\mu_f)
 
         """
-
-        return self.models[self.opt_key].get_log_like()
+        lk = self.models[self.opt_key].get_log_like()
+        print("Log Like for {:s} is {:f}".format(self.opt_key, lk))
+        return lk 
 
     def sim_log_like(self, initial_data):
         r"""Gets the log likelihood of the simulations given the data
@@ -393,8 +397,10 @@ class Bayesian(Struc):
         sims = self.simulations
         log_like = 0
         for key in sims:
-            log_like += sims[key]['exp'].\
+            lk = sims[key]['exp'].\
                 get_log_like(initial_data[key])
+            print("Log Like for {:s} is {:f}".format(key, lk))
+            log_like += lk
         # end
 
         return log_like
@@ -533,7 +539,8 @@ class Bayesian(Struc):
                         linestyles=['-'],
                         log=False
                     )
-                    fig.savefig('lineSearch_itn{:02d}.pdf'.format(itn))               
+                    fig.savefig('lineSearch_itn{:02d}.pdf'.format(itn))
+                    plt.close(fig)
                 analysis_list.append(analysis.update(models=model_dict))
                 costs[i] = analysis_list[-1].model_log_like()
             # end
@@ -573,6 +580,8 @@ class Bayesian(Struc):
             # Calculates the cost of the data for each step
             sorted_data = []
             for i in range(len(x_list)):
+                print('--Step {:d}--'.format(i))
+                print("Log Like for {:s} is {:f}".format(self.opt_key, costs[i]))
                 sorted_data.append({})
                 for key in analysis.simulations:
                     sorted_data[-1][key] = iter_data[key][i]
@@ -583,15 +592,23 @@ class Bayesian(Struc):
             
             for key in analysis.simulations:
                 fig = plt.figure()
-                ax9 = fig.gca()
+                ax9 = fig.add_subplot(121)
+                ax10 = fig.add_subplot(122)
                 exp_data = analysis.simulations[key]['exp']()
                 ax9.plot(exp_data[0], exp_data[1][0], label='Experiment')
                 for i, data in enumerate(iter_data[key]):
+                    epsilon = analysis.simulations[key]['exp'].compare(data)
+                    sigma = analysis.simulations[key]['exp'].get_sigma()
                     ax9.plot(exp_data[0], data[2]['mean_fn'](exp_data[0] - data[2]['tau']),
                              label = "step %02d"%i)
+                    ax10.plot(exp_data[0],
+                              0.5 * np.dot(epsilon**2, np.linalg.inv(sigma)),                              
+                              label = "sigma %02d"%i)
                 # end
                 ax9.legend(loc="best")
+                ax10.legend(loc="best")
                 fig.savefig("{:}-itn{:02d}_search_res.pdf".format(key,itn))
+                plt.close(fig)
             # end
             
             
@@ -640,7 +657,7 @@ class Bayesian(Struc):
 
         while not conv and i < maxiter:
             if verb and mpi_print:
-                print('Iter {} of {}'.format(i, maxiter))
+                print('Iter {:d} of {:d}'.format(i, maxiter))
                 with open('models_iter{:02d}.pkl'.format(i), 'wb') as fid:
                     pickle.dump(analysis.models, fid)
                 # end                
@@ -672,7 +689,8 @@ class Bayesian(Struc):
 
         return analysis, (history, dof_hist, data_hist), sens_matrix
 
-    def fisher_decomposition(self, fisher, tol=1E-3):
+    @staticmethod
+    def fisher_decomposition(fisher, model, tol=1E-3):
         """Calculate a spectral decomposition of the fisher information matrix
 
         Args:
@@ -707,18 +725,22 @@ class Bayesian(Struc):
         vals = eig_vals[i]
         vecs = eig_vecs.T[i]
 
-        n_vals = max(len(np.where(vals > vals[0] * 1e-2)[0]), 3)
-        n_vecs = max(len(np.where(vals > vals[0] * 1e-2)[0]), 1)
+        n_vals = max(len(np.where(vals > vals[0] * tol)[0]), 3)
+        n_vecs = max(len(np.where(vals > vals[0] * tol)[0]), 1)
 
         # Find range of v that includes support of eigenfunctions
-        knots = self.models[self.opt_key].get_t()
+        #knots = self.models[self.opt_key].get_t()
+        knots = model.get_t()
         v_min = knots[0]
         v_max = knots[-1]
         vol = np.logspace(np.log10(v_min), np.log10(v_max), len(knots) * 10)
         funcs = []
         for vec in vecs[:n_vecs]:
-            new_model = self.models[self.opt_key].\
-                set_c(vec * self.models[self.opt_key].get_dof())
+            # new_model = self.models[self.opt_key].\
+            #     set_c(vec * self.models[self.opt_key].get_dof())
+            new_model = model.\
+                set_c(vec * model.get_dof())
+            
             funcs.append(new_model(vol))
             if funcs[-1][np.argmax(np.fabs(funcs[-1]))] < 0:
                 funcs[-1] *= -1
@@ -913,7 +935,8 @@ class Bayesian(Struc):
             ax1.legend(loc='best')
             fig.savefig('q_vec.pdf')
             fig2.savefig('P_mat.pdf')
-            
+            plt.close(fig)
+            plt.close(fig2)
         return p_mat, q_mat
 
     def get_data(self):
@@ -1048,7 +1071,7 @@ class Bayesian(Struc):
         # end
 
         return hessian
-
+    
     def plot_fisher_data(self, fisher_data, axes=None, fig=None,
                          linestyles=[], labels=[]):
         """

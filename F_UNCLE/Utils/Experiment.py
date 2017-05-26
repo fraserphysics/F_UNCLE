@@ -501,11 +501,10 @@ class Experiment(Struc):
                                   ' of Experiment which has implemented a model'
                                   .format(self.get_inform(1)))
     
-    def get_fisher_matrix(self, models, sens_matrix):
+    def get_fisher_matrix(self, sens_matrix):
         """Returns the fisher information matrix of the simulation
 
         Args:
-            models(dict): Dictionary of models
             sens_matrix(np.ndarray): the sensitivity matrix
 
         Keyword Args:

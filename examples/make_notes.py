@@ -195,18 +195,16 @@ if __name__ == '__main__':
 
     def info_all():
         fisher = opt_model.simulations['Gun']['exp'].\
-            get_fisher_matrix(opt_model.models,
-                              use_hessian=False,
-                              exp=opt_model.simulations['Gun']['exp'],
-                              sens_matrix=sens_matrix['Gun'])
+            get_fisher_matrix(sens_matrix=sens_matrix['Gun'])
         fisher += opt_model.simulations['Sphere']['exp'].\
-            get_fisher_matrix(opt_model.models,
-                              sens_matrix=sens_matrix['Sphere'])
+            get_fisher_matrix(sens_matrix=sens_matrix['Sphere'])
         fisher += opt_model.simulations['Stick']['exp'].\
-            get_fisher_matrix(opt_model.models,
-                              sens_matrix=sens_matrix['Stick'])
+            get_fisher_matrix(sens_matrix=sens_matrix['Stick'])
 
-        spec_data = opt_model.fisher_decomposition(fisher)
+        spec_data = Bayesian.fisher_decomposition(
+            fisher,
+            opt_model.models[opt_model.opt_key]
+        )
 
         fig = plt.figure(figsize=tall)
         fig = opt_model.plot_fisher_data(spec_data, fig=fig)
@@ -218,10 +216,13 @@ if __name__ == '__main__':
         ''' Fisher information about the gun experiment
         '''
         fisher = opt_model.simulations['Gun']['exp'].\
-            get_fisher_matrix(opt_model.models,
-                              sens_matrix=sens_matrix['Gun'])
+            get_fisher_matrix(sens_matrix=sens_matrix['Gun'])
 
-        spec_data = opt_model.fisher_decomposition(fisher)
+        spec_data = Bayesian.fisher_decomposition(
+            fisher,
+            opt_model.models[opt_model.opt_key]
+        )
+
 
         fig = plt.figure(figsize=tall)
         fig = opt_model.plot_fisher_data(spec_data, fig=fig)
@@ -233,9 +234,12 @@ if __name__ == '__main__':
         ''' Fisher information about the stick
         '''
         fisher = opt_model.simulations['Stick']['exp'].\
-            get_fisher_matrix(opt_model.models,
-                              sens_matrix=sens_matrix['Stick'])
-        spec_data = opt_model.fisher_decomposition(fisher)
+            get_fisher_matrix(sens_matrix=sens_matrix['Stick'])
+        spec_data = Bayesian.fisher_decomposition(
+            fisher,
+            opt_model.models[opt_model.opt_key]
+        )
+
 
         fig = plt.figure(figsize=tall)
         fig = opt_model.plot_fisher_data(spec_data, fig=fig)
@@ -246,10 +250,13 @@ if __name__ == '__main__':
         ''' Fisher information about the sphere
         '''
         fisher = opt_model.simulations['Sphere']['exp'].\
-            get_fisher_matrix(opt_model.models,
-                              sens_matrix=sens_matrix['Sphere'])
+            get_fisher_matrix(sens_matrix=sens_matrix['Sphere'])
 
-        spec_data = opt_model.fisher_decomposition(fisher)
+        spec_data = Bayesian.fisher_decomposition(
+            fisher,
+            opt_model.models[opt_model.opt_key]
+        )
+
         fig = plt.figure(figsize=tall)
         fig = opt_model.plot_fisher_data(spec_data, fig=fig)
         fig.tight_layout()
