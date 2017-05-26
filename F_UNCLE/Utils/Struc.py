@@ -396,6 +396,26 @@ class Struc(object):
 
         return ''
 
+    def write_tex_var(self, name, value, units):
+        """Returns a string which will define a variable in latex
+        
+        Args:
+
+            name(str): The variable name, do not include the leading slash
+            value(str): The string representation of the number
+            units(rstr): A *RAW* sting giving the correct latex syntax for the
+                         units
+        """
+        if units is None:
+            return '\\newcommand{{\\{:s}}}'\
+                '{{\\num{{{:s}}}}}\n'\
+                .format(name, value)
+        else:
+            return '\\newcommand{{\\{:s}}}'\
+                '{{\\SI{{{:s}}}{{{:s}}}}}\n'\
+                .format(name, value, units)
+
+        
     def plot(self, axes=None, fig=None, linestyles=[], labels=[]):
         """Plots the object
 

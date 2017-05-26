@@ -347,7 +347,7 @@ class Experiment(Struc):
         """
 
         tau_sim = self.trigger(sim_data[0], sim_data[1][0])
-
+        #print('tau_sim_calc      us', tau_sim)
         # Trigger returns the time shift to align the simulations with
         # t=0 To align the simulations with the experiments, we need
         # the time shift which brings the experiments back to t=0. To
