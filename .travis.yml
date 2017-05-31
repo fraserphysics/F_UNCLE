@@ -25,4 +25,4 @@ install:
    - source activate test-environment
    
 # command to run tests
-script: echo "backend: PDF" > ~/.confic/matplotlib/matplotlibrc && pytest F_UNCLE
+script: 'echo "backend: PDF" > ~/.confic/matplotlib/matplotlibrc && pytest F_UNCLE'
