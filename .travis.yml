@@ -25,4 +25,4 @@ install:
    - source activate test-environment
    
 # command to run tests
-script: 'mkdir ~/.config/matplotlib/ && echo backend : PDF > ~/.config/matplotlib/matplotlibrc && pytest F_UNCLE'
+script: 'mkdir -p ~/.config/matplotlib/ && echo backend : PDF > ~/.config/matplotlib/matplotlibrc && pytest F_UNCLE'
