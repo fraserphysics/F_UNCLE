@@ -256,6 +256,7 @@ class TestSimpleSimulation(unittest.TestCase):
         true_sens = np.linalg.lstsq(inp_mat, resp_mat)[0].T
         npt.assert_array_almost_equal(sens, true_sens, decimal=8)
 
+    @pytest.mark.skip('Skipping pll sens')
     def test_pll_sens(self):
         """Test sensitivity calculation
         """
