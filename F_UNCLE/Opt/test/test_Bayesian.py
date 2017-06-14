@@ -666,6 +666,7 @@ class TestSimpleModels(unittest.TestCase):
             use_hessian=True,
             sens_matrix=sens_matrix['simple1'])
 
+    @pytest.mark.xfail
     def test_fisher_matrix(self):
         """
         """
