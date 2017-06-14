@@ -550,7 +550,7 @@ class Experiment(Struc):
         if varcols is not None:
             return data[:, indepcol],\
                 data[:, depcols][:,0],\
-                data[:, varcols][:,0]
+                data[:, varcols]
         else:
             return data[:, indepcol],\
                 data[:, depcols][:,0],\

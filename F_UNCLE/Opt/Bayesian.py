@@ -589,26 +589,32 @@ class Bayesian(Struc):
                 costs[i] += analysis_list[i].sim_log_like(sorted_data[-1])
             # end
 
-            
-            for key in analysis.simulations:
-                fig = plt.figure()
-                ax9 = fig.add_subplot(121)
-                ax10 = fig.add_subplot(122)
-                exp_data = analysis.simulations[key]['exp']()
-                ax9.plot(exp_data[0], exp_data[1][0], label='Experiment')
-                for i, data in enumerate(iter_data[key]):
-                    epsilon = analysis.simulations[key]['exp'].compare(data)
-                    sigma = analysis.simulations[key]['exp'].get_sigma()
-                    ax9.plot(exp_data[0], data[2]['mean_fn'](exp_data[0] - data[2]['tau']),
-                             label = "step %02d"%i)
-                    ax10.plot(exp_data[0],
-                              0.5 * np.dot(epsilon**2, np.linalg.inv(sigma)),                              
-                              label = "sigma %02d"%i)
+            if self.get_option('debug'):
+                for key in analysis.simulations:
+                    try:
+                        fig = plt.figure()
+                        ax9 = fig.add_subplot(121)
+                        ax10 = fig.add_subplot(122)
+                        exp_data = analysis.simulations[key]['exp']()
+                        ax9.plot(exp_data[0], exp_data[1][0], label='Experiment')
+                        for i, data in enumerate(iter_data[key]):
+                            epsilon = analysis.simulations[key]['exp'].compare(data)
+                            sigma = analysis.simulations[key]['exp'].get_sigma()
+                            ax9.plot(exp_data[0], data[2]['mean_fn'](exp_data[0] - data[2]['tau']),
+                                     label = "step %02d"%i)
+                            ax10.plot(exp_data[0],
+                                      0.5 * np.dot(epsilon**2, np.linalg.inv(sigma)),
+                                      label = "sigma %02d"%i)
+                        # end
+                        ax9.legend(loc="best")
+                        ax10.legend(loc="best")
+                        fig.savefig("{:}-itn{:02d}_search_res.pdf".format(key,itn))
+                        plt.close(fig)
+                    except Exception:
+                        pass
+                    # end
                 # end
-                ax9.legend(loc="best")
-                ax10.legend(loc="best")
-                fig.savefig("{:}-itn{:02d}_search_res.pdf".format(key,itn))
-                plt.close(fig)
+                    
             # end
             
             
@@ -655,12 +661,14 @@ class Bayesian(Struc):
                 pickle.dump(initial_data, fid)
             # end
 
+            with open('prior_model.pkl', 'wb') as fid:
+                pickle.dump(analysis.models, fid)
+            # end                
+            
+
         while not conv and i < maxiter:
             if verb and mpi_print:
                 print('Iter {:d} of {:d}'.format(i, maxiter))
-                with open('models_iter{:02d}.pkl'.format(i), 'wb') as fid:
-                    pickle.dump(analysis.models, fid)
-                # end                
             # end
                        
             analysis, log_like, initial_data, model_dof, conv =\
@@ -669,6 +677,10 @@ class Bayesian(Struc):
             dof_hist.append(model_dof)
             data_hist.append(initial_data)
             if self.get_option('pickle_sens'):
+                with open('models_iter{:02d}.pkl'.format(i), 'wb') as fid:
+                    pickle.dump(analysis.models, fid)
+                # end                
+
                 with open('sim_data_iter{:02d}.pkl'.format(i), 'wb') as fid:
                     pickle.dump(initial_data, fid)
                 # end
