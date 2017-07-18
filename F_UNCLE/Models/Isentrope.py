@@ -118,7 +118,7 @@ class Isentrope(GaussianModel):
                            "Maximum value of volume modeled by EOS"],
             'spline_end': [float, 4, 0, None, '',
                            "Number of zero nodes at end of spline"],
-            'basis': [str, 'volume', None, None, '',
+            'basis': [str, 'vol', None, None, '',
                       "The basis of the isentrope, can be `volume` or"
                       " `density`"],
             'cj_vol_range': [tuple, (0.25,0.58), None, None, 'cm**3 g**-1',
@@ -352,6 +352,9 @@ class Isentrope(GaussianModel):
         else:
             ax1.set_xlabel(r'Specific volume / cm$^3$g$^{-1}$')
 
+        # ax1.set_xlim((0.2,1.0))
+        # ax1.set_ylim((0.0,1E11))        
+            
         if vrange is not None:
             ax1.set_xlim(*vrange)
 
@@ -369,8 +372,6 @@ class Isentrope(GaussianModel):
             # end
         except Exception as inst:
             pass
-        ax1.set_xlim((0.2,1.0))
-        ax1.set_ylim((0.0,1E11))        
 
         # ax1.set_xlabel(r'Specific volume
         #/ $\si{\cubic\centi\meter\per\gram}$')

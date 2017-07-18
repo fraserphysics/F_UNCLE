@@ -15,7 +15,7 @@ figs/gun_notes.pdf:
 	cp $(STAT_DOC)/gun.pdf $@
 
 # Block to make figures from simulations
-PYTHON = source activate p3dev; export PYTHONPATH=${FUNCLE_ROOT}/F_UNCLE/; \
+PYTHON = source activate funcle3; export PYTHONPATH=${FUNCLE_ROOT}/F_UNCLE/; \
 python
 
 SIM_FIGS = eos_diff eos eos_basis info_gun info_stick info_sphere gun_sens \

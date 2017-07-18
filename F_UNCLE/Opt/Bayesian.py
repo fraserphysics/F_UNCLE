@@ -514,7 +514,7 @@ class Bayesian(Struc):
             analysis_list = []
             
             # Builds the list of dof values to test and gets the prior cost
-            plot_lsearch=True
+            plot_lsearch=self.get_option('debug')
             if plot_lsearch:
                 fig = plt.figure()
                 ax1 = fig.gca()            

@@ -66,9 +66,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # F_UNLCE packages
-sys.path.append(os.path.abspath('./../'))
-from F_UNCLE.Experiments.GunModel import Gun
-from F_UNCLE.Experiments.Stick import Stick
+from F_UNCLE.Experiments.GunModel import Gun, GunExperiment
+from F_UNCLE.Experiments.Stick import Stick, StickExperiment
 from F_UNCLE.Models.Isentrope import EOSModel, EOSBump
 from F_UNCLE.Opt.Bayesian import Bayesian
 
@@ -76,20 +75,24 @@ if __name__ == '__main__':
     #################
     #    Get Data   #
     #################
-
+    # 0. Make figures directory if it does not exist
+    if not os.path.isdir('./scipyFigs'):
+        os.mkdir('./scipyFigs')
     # 1. Generate a functional form for the prior
     init_prior = np.vectorize(lambda v: 2.56e9 / v**3)
 
     # 2. Create the model and *true* EOS
     eos_model = EOSModel(init_prior, Spline_sigma=0.05)
     eos_true = EOSBump()
-
+    print(eos_model)
     # 3. Create the objects to generate simulations and pseudo experimental data
-    gun_experiment = Gun(model_attribute=eos_true, mass_he=1.0)
     gun_simulation = Gun(mass_he=1.0, sigma=1.0)
+    gun_experiment = GunExperiment(model=eos_true, mass_he=1.0)
+    stick_simulation = Stick(model_attribute=eos_true)
+    stick_experiment = StickExperiment(model=eos_true,
+                                       sigma_t=1E-9,
+                                       sigma_x=2E-3)
 
-    stick_experiment = Stick(model_attribute=eos_true)
-    stick_simulation = Stick(sigma_t=1E-9, sigma_x=2E-3)
 
     # 4. Create the analysis object
     analysis = Bayesian(
@@ -119,14 +122,14 @@ if __name__ == '__main__':
 
 
     # 7. Update the simulations and get new data
-    g_time_s, (g_vel_s, g_pos_s), g_spline_s =\
+    g_time_s, (g_vel_s, g_pos_s, labels), g_spline_s =\
         opt_model.simulations['Gun']['sim'](opt_model.models)
-    g_time_e, (g_vel_e, g_pos_e), g_spline_e =\
+    g_time_e, (g_vel_e, g_pos_e, tmp, labels), g_spline_e =\
         opt_model.simulations['Gun']['exp']()
 
-    s_pos_s, (s_time_s), s_data_s =\
+    s_pos_s, (s_time_s, labels), s_data_s =\
         opt_model.simulations['Stick']['sim'](opt_model.models)
-    s_pos_e, (s_time_e), s_data_e = opt_model.simulations['Stick']['exp']()
+    s_pos_e, (s_time_e, tmp, tmp, labels), s_data_e = opt_model.simulations['Stick']['exp']()
 
 
     ####################
@@ -145,9 +148,9 @@ if __name__ == '__main__':
     figwidth = 1.0 # fraction of \pagewidth for figure
     figwidth *= pagewidth/72.27
     figtype = '.pdf'
-    out_dir = os.path.join('.', '..', '..',
-                           'reports', 'poster', 'figures')+os.sep
-    #out_dir = '/Users/saandrews/Documents/projects/tmp/scipy_proceedings/papers/andrew_fraser/'
+    # out_dir = os.path.join('.', '..', '..',
+    #                        'reports', 'poster', 'figures')+os.sep
+    out_dir = './scipyFigs/'
     square = (figwidth, figwidth)
     tall = (figwidth, 1.25*figwidth)
 
@@ -156,7 +159,6 @@ if __name__ == '__main__':
     f1ax1 = fig1.gca()
     opt_model.simulations['Stick']['sim'].\
         plot(opt_model.models, axes=f1ax1)
-
     eos_model.prior.plot(axes=f1ax1, linestyles=['--b'], labels=['Prior EOS'])
     eos_true.plot(axes=f1ax1, linestyles=['-.g'], labels=['True EOS'])
     f1ax1.legend(loc='best')
@@ -164,22 +166,22 @@ if __name__ == '__main__':
     fig1.savefig(out_dir+'scipy2016_figure1'+figtype, dpi=1000)
 
     # Figure 1
-    fig1 = plt.figure(figsize=square)
-    f1ax1 = fig1.gca()
-    eos_model.prior.plot(axes=f1ax1, linestyles=['--b'], labels=['Prior EOS'])
-    eos_true.plot(axes=f1ax1, linestyles=['-.g'], labels=['True EOS'])
-    f1ax1.legend(loc='best')
-    fig1.tight_layout()
-    fig1.savefig(out_dir+'scipy2016_figure1eos'+figtype, dpi=1000)
+    fig11 = plt.figure(figsize=square)
+    f11ax1 = fig11.gca()
+    eos_model.prior.plot(axes=f11ax1, linestyles=['--b'], labels=['Prior EOS'])
+    eos_true.plot(axes=f11ax1, linestyles=['-.g'], labels=['True EOS'])
+    f11ax1.legend(loc='best')
+    fig11.tight_layout()
+    fig11.savefig(out_dir+'scipy2016_figure1eos'+figtype, dpi=1000)
 
     # Figure 5
-    fisher = opt_model.simulations['Gun']['sim'].\
-        get_fisher_matrix(opt_model.models,
-                          use_hessian=False,
-                          exp=opt_model.simulations['Gun']['exp'],
-                          sens_matrix=sens_matrix['Gun'])
+    fisher = opt_model.simulations['Gun']['exp'].\
+        get_fisher_matrix(sens_matrix=sens_matrix['Gun'])
 
-    spec_data = opt_model.fisher_decomposition(fisher)
+    spec_data = opt_model.fisher_decomposition(
+        fisher,
+        opt_model.models[opt_model.opt_key]
+    )
 
     fig5 = plt.figure(figsize=tall)
     fig5 = opt_model.plot_fisher_data(spec_data, fig=fig5)
@@ -189,18 +191,20 @@ if __name__ == '__main__':
 
     # Figure 2
 
-    fisher = opt_model.simulations['Stick']['sim'].\
-        get_fisher_matrix(opt_model.models,
-                          sens_matrix=sens_matrix['Stick'])
-    spec_data = opt_model.fisher_decomposition(fisher)
+    fisher = opt_model.simulations['Stick']['exp'].\
+        get_fisher_matrix(sens_matrix=sens_matrix['Stick'])
+    spec_data = opt_model.fisher_decomposition(
+        fisher,
+        opt_model.models[opt_model.opt_key]
+    )
 
     fig2 = plt.figure(figsize=tall)
     fig2 = opt_model.plot_fisher_data(spec_data, fig=fig2)
     fig2.tight_layout()
 
-    fig2.axes[1].axvline(s_data_s[1])
+    fig2.axes[1].axvline(s_data_s['vol_CJ'])
     fig2.axes[1].annotate(r'$v_{CJ}$',
-                          xy=(s_data_s[1],0),
+                          xy=(s_data_s['vol_CJ'], 0),
                           xytext=(30,30),
                           xycoords='data',
                           textcoords='offset points',
@@ -218,12 +222,12 @@ if __name__ == '__main__':
     stick_simulation.plot(opt_model.models,
                           axes=f3ax1, linestyles=['-k'],
                           labels=['Fit EOS'], level=2,
-                          data=(s_pos_s, (s_time_s), s_data_s))
+                          data=(s_pos_s, (s_time_s,), s_data_s))
 
     stick_simulation.plot(opt_model.models,
                           axes=f3ax1, linestyles=['+g'],
                           labels=['True EOS'], level=2,
-                          data=(s_pos_e, (s_time_e), s_data_e))
+                          data=(s_pos_e, (s_time_e,), s_data_e))
 
     stick_simulation.plot(opt_model.models,
                           axes=f3ax1, linestyles=['--b'],

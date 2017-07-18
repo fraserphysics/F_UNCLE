@@ -33,12 +33,12 @@ def stick_xt(plt, sim):
     sim.stick_simulation.plot(sim.opt_model.models,
                           axes=f3ax1, linestyles=['-k'],
                           labels=['Fit EOS'], level=2,
-                          data=(sim.s_pos_s, (sim.s_time_s), sim.s_data_s))
+                          data=(sim.s_pos_s, (sim.s_time_s,), sim.s_data_s))
 
     sim.stick_simulation.plot(sim.opt_model.models,
                           axes=f3ax1, linestyles=['+g'],
                           labels=['True EOS'], level=2,
-                          data=(sim.s_pos_e, (sim.s_time_e), sim.s_data_e))
+                          data=(sim.s_pos_e, (sim.s_time_e,), sim.s_data_e))
 
     sim.stick_simulation.plot(sim.opt_model.models,
                           axes=f3ax1, linestyles=['--b'],
@@ -51,18 +51,20 @@ def stick_xt(plt, sim):
 plot_dict['stick_xt'] = stick_xt
 
 def stick_fisher(plt, sim):
-    fisher = sim.opt_model.simulations['Stick']['sim'].\
-        get_fisher_matrix(sim.opt_model.models,
-                          sens_matrix=sim.sens_matrix['Stick'])
-    spec_data = sim.opt_model.fisher_decomposition(fisher)
+    fisher = sim.opt_model.simulations['Stick']['exp'].\
+        get_fisher_matrix(sens_matrix=sim.sens_matrix['Stick'])
+    spec_data = sim.opt_model.fisher_decomposition(
+        fisher,
+        sim.opt_model.models[sim.opt_model.opt_key]
+    )
 
     fig2 = plt.figure(figsize=tall)
     fig2 = sim.opt_model.plot_fisher_data(spec_data, fig=fig2)
     fig2.tight_layout()
 
-    fig2.axes[1].axvline(sim.s_data_s[1])
+    fig2.axes[1].axvline(sim.s_data_s['vol_CJ'])
     fig2.axes[1].annotate(r'$v_{CJ}$',
-                          xy=(sim.s_data_s[1],0),
+                          xy=(sim.s_data_s['vol_CJ'],0),
                           xytext=(30,30),
                           xycoords='data',
                           textcoords='offset points',
@@ -162,13 +164,13 @@ def gun_tv(plt, sim):
 plot_dict['gun_tv'] = gun_tv
 
 def gun_fisher(plt, sim):
-    fisher = sim.opt_model.simulations['Gun']['sim'].\
-        get_fisher_matrix(sim.opt_model.models,
-                          use_hessian=False,
-                          exp=sim.opt_model.simulations['Gun']['exp'],
-                          sens_matrix=sim.sens_matrix['Gun'])
+    fisher = sim.opt_model.simulations['Gun']['exp'].\
+        get_fisher_matrix(sens_matrix=sim.sens_matrix['Gun'])
 
-    spec_data = sim.opt_model.fisher_decomposition(fisher)
+    spec_data = sim.opt_model.fisher_decomposition(
+        fisher,
+        sim.opt_model.models[sim.opt_model.opt_key]
+    )
 
     fig5 = plt.figure(figsize=tall)
     fig5 = sim.opt_model.plot_fisher_data(spec_data, fig=fig5)

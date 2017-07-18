@@ -26,7 +26,7 @@ from F_UNCLE.Models.Ptw import Ptw
 
 parser = argparse.ArgumentParser(description='Generate plots for notes.tex')
 parser.add_argument('--show', dest='show', action='store_true')
-parser.add_argument('--fig_dir', type=str, dest='fig_dir', default='./',
+parser.add_argument('--fig_dir', type=str, dest='fig_dir', default='./NotesFig',
                     help='Directory of figures')
 for s, h in (
         ('eos_diff', 'Plot the difference between the prior and true eos'),
