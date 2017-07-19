@@ -309,6 +309,11 @@ class Isentrope(GaussianModel):
         else:
             raise TypeError("{} axis must be a matplotlib Axis object"
                             .format(self.get_inform(1)))
+
+        if isinstance(figure, plt.Figure):
+            fig = figure
+            ax1 = fig.gca()
+            
         # end
 
         # v_spec = np.logspace(np.log10(self.get_option('spline_min')),\

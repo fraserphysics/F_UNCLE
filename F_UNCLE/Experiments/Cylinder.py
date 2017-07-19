@@ -1,6 +1,5 @@
-"""
-
-For now, this is a copy of Stick.py
+"""Toy problem of a cylinder tests. The cylinder is modelled as an
+expanding ring
 
 Authors
 -------
@@ -17,7 +16,6 @@ ToDo
 ----
 
 None
-
 
 """
 
@@ -36,27 +34,32 @@ import unittest
 # =========================
 import numpy as np
 import matplotlib.pyplot as plt
-
-
+from scipy.interpolate import InterpolatedUnivariateSpline as IUSpline
+import scipy.integrate as spint
 # =========================
 # Custom Packages
 # =========================
-from ..Utils.Experiment import Experiment
+from ..Utils.Simulation import Simulation
+from ..Utils.Experiment import GaussianExperiment
+from ..Utils.NoiseModel import NoiseModel
 from ..Models.Isentrope import EOSBump, EOSModel, Isentrope, Spline
-
+from ..Models.SimpleStr import SimpleStr
+from .Sandwich import ToySandwich
 # =========================
 # Main Code
 # =========================
 
 
-class Stick(Experiment):
-    """A toy physics model representing a gun type experiment
+class ToyCylinder(ToySandwich):
+    """A toy physics model representing a Cylinder experiment
+    
+    Based on the ToySandwich class 
 
     Attributes:
         const(dict): A dictionary of conversion factors
 
     """
-    def __init__(self, eos, name='Gun Toy Computational Experiment', *args, **kwargs):
+    def __init__(self, name='Gun Toy Computational Experiment', *args, **kwargs):
         """Instantiate the Experiment object
 
         Args:
@@ -68,51 +71,100 @@ class Stick(Experiment):
 
         """
 
-        if isinstance(eos, Isentrope):
-            self.eos = eos
-        else:
-            raise TypeError('{:} Equation of state model must be an Isentrope object'
-                            .format(self.get_inform(2)))
-        # end
-
         def_opts = {
-            'x_i': [float, 0.4, 0.0, None, 'cm',
-                    'Initial position of projectile'],
-            'x_f': [float, 3.0, 0.0, None, 'cm',
-                    'Final/muzzle position of projectile'],
-            'm': [float, 500.0, 0.0, None, 'g',
-                  'Mass of projectile'],
-            'mass_he': [float, 4, 0.0, None, 'g',
-                        'The initial mass of high explosives used to drive\
-                        the projectile'],
-            'area': [float, 1.0, 0.0, None, 'cm**2',
-                     'Projectile cross section'],
-            'sigma': [float, 1.0e0, 0.0, None, '??',
-                      'Variance attributed to v measurements'],
+            'r_i': [float, 2.54, 0.0, None, 'cm',
+                    'Initial HE radius'],
+            'r_o': [float, 5.0, 0.0, None, 'cm',
+                    'Maximum expansion of the cylinder'],
+            'case_t': [float, 0.254, 0.0, None, 'cm',
+                    'Maximum expansion of the cylinder'],
+            'rho_cu': [float, 8.9, 0.0, None, 'g cm-3',
+                       'Ring density'],
+            'rho_cj': [float, 2.8, 0.0, None, 'g cm-3',
+                       'The CJ density of the reactants'],                 
             't_min': [float, 1.0e-6, 0.0, None, 'sec',
                       'Range of times for t2v spline'],
-            't_max': [float, 1.0e-2, 0.0, None, 'sec',
+            't_max': [float, 25e-6, 0.0, None, 'sec',
                       'Range of times for t2v spline'],
             'n_t': [int, 250, 0, None, '',
                     'Number of times for t2v spline']
         }
 
-        self.const = {'newton2dyne': 1e5,
-                      'cm2km': 1.0e5}
+        Simulation.__init__(self, {'eos': Isentrope, 'strength': SimpleStr},
+                            name=name, def_opts=def_opts, *args, **kwargs)
 
-        Experiment.__init__(self, name=name, def_opts=def_opts, *args, **kwargs)
+    def _on_check_models(self, models):
+        """Checks that the model is valid
 
-    def update(self, model=None):
-        """Update the analysis with a new model
+        Args:
+            model(Isentrope): A new EOS model
+
+        Return:
+            (GunModel): A copy of self with the new eos model
         """
-        if model is None:
-            pass
-        elif isinstance(model, Isentrope):
-            self.eos = copy.deepcopy(model)
-        else:
-            raise TypeError('{}: Model must be an isentrope for update'
-                            .format(self.get_inform(1)))
-        # end
+        return (models['eos'], models['strength'],)
+        
+    def _on_call(self, eos, strength):
+        """Solves the simulation 
+        """
+
+        def dfunc(x_in, tho, ro, rho_cj, rho_cu):
+            """Solves the ODE representing the cylinder case velocity
+
+            Args:
+                x(list): The state vector
+
+                   -x[0] is the position
+                   -x[1] is the velocity
+                   -x[2] is the thickness
+
+            Keyword Args:
+                p(dict): Parameter dictionary
+
+            Return:
+               (list): The derrivative of the state vector
+
+                  -[0] is the velocity
+                  -[1] is the acceleration
+                  -[2] is the rate of change of thickness
+
+            """
+            rad = x_in[0]  # Case radius
+            drad = x_in[1]  # Rate of change of case radius
+            th = x_in[2]  # Case thickness
+
+            v_spec = rho_cj**-1 * (rad/ro)**2
+            epsilon = (rad - ro) / ro
+
+            stress = strength(epsilon, drad / ro)
+
+            ddrad = 0.1 * (rho_cu * th)**-1 * eos(v_spec)\
+                - 0.1 * (rad * rho_cu)**-1 * stress  # cm s**-2
+
+            dth = - drad * ( th / rad)  # cm s**-1
+
+            return [drad, ddrad, dth]
+
+
+        tho = self.get_option('case_t')
+        ro = self.get_option('r_i')
+        rho_cj = self.get_option('rho_cj')
+        rho_cu = self.get_option('rho_cu')
+
+        t_list = np.linspace(1E-7, self.get_option('t_max'),
+                             self.get_option('n_t'))
+        data, infodict = spint.odeint(
+            dfunc,
+            [self.get_option('r_i'), 1E-9, tho],
+            t_list,
+            args = (ro, rho_cj, rho_cu),                                
+            full_output=True
+        )
+
+        return t_list,\
+            [data[:, 1], data[:, 0], data[:, 2]],\
+            {'mean_fn': IUSpline(t_list, data[:,1])}
+        
 
     def _on_str(self, *args, **kwargs):
         """Print method of the gun model
@@ -131,3 +183,38 @@ class Stick(Experiment):
         out_str += str(self.eos)
 
         return out_str
+
+class ToyCylinderExperiment(GaussianExperiment):
+    """A class representing pseudo experimental data for a gun show
+    """
+    def _get_data(self, models=None, rstate=None, *args, **kwargs):
+        """Creates a simulated set of experimental data from a user provided
+        model
+
+        Args:
+           models(dict): A dictionary of models with all the keys that
+                         ToyCylinder needs
+           rstate(np.random.RandomState): A random state, None generates a
+                                          new one
+        """
+
+        sim = ToyCylinder(**kwargs)
+
+        simdata = sim(models)
+
+        noise_model = NoiseModel()
+        noisedata = noise_model(simdata[0], simdata[1][0], rstate=rstate)
+        
+        return simdata[0], simdata[1][0] + noisedata,\
+            np.zeros(simdata[0].shape)
+    # end
+        
+    def get_sigma(self):
+        """Returns the co-variance matrix
+
+        see :py:meth:`F_UNCLE.Utils.Experiment.Experiment.get_sigma`
+        """
+
+        return np.diag(np.ones(self.shape())
+                       * self.data[1] * self.get_option('exp_var'))
+    
