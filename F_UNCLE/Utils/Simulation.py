@@ -287,13 +287,13 @@ class Simulation(Struc):
 
         return NotImplemented
     
-    def multi_solve(self, models, model_key, dof_list):
+    def multi_solve(self, models, opt_keys, dof_list):
         """Returns the results from calling the Experiment object for each 
         element of dof_list
 
         Args:
             models(dict): Dictionary of models
-            model_key(str): The key for the model in the models to be used
+            model_key(list): A list of the model keys used
             dof_list(list): A list of numpy array's defininf the model DOFs
 
         Returns:
@@ -305,12 +305,13 @@ class Simulation(Struc):
         
         ret_list = []
         for dof in dof_list:
-            if dof is not None:
-                models[model_key] = models[model_key].update_dof(dof)
-                ret_list.append(self(models))
-            else:
-                ret_list.append(None)
-            #end
+            idx = 0
+            for key in opt_keys:
+                shape = models[key].shape()
+                models[key] = models[key].update_dof(
+                    dof[idx : idx + shape])
+            # end
+            ret_list.append(self(models))
         # end
 
         return ret_list
@@ -545,13 +546,13 @@ class Simulation(Struc):
                         np.zeros(sens_matrix.shape))
 
         
-    def get_sens(self, models, model_key, initial_data=None):
+    def get_sens(self, models, model_keys, initial_data=None):
         """Gets the sensitivity of the experiment response to the model DOF
 
         Args:
             models(dict): The dictionary of models
-            model_key(str): The key of the model for which the sensitivity is
-                            desired
+            model_keys(list): The list of model keys for which the sensitivity is
+                              desired
         Keyword Args:
             initial_data(np.ndarray): The response for the nominal model DOF, if
                 it is `None`, it is calculated when this method is called
@@ -559,31 +560,46 @@ class Simulation(Struc):
         """
 
         models = copy.deepcopy(models)
-        model = models[model_key]
-
         step_frac = self.get_option('fd_step')
 
         if initial_data is None:
             initial_data = self(models)
         # end
 
-        resp_mat = np.zeros((initial_data[0].shape[0],
-                             model.shape()))
-        inp_mat = np.zeros((model.shape(),
-                            model.shape()))
-        new_dofs = np.array(copy.deepcopy(model.get_dof()),
-                            dtype=np.float64)
-
-        for i, coeff in enumerate(model.get_dof()):
-            new_dofs[i] += float(coeff * step_frac)
-            models[model_key] = model.update_dof(new_dofs)
-            inp_mat[:, i] = (new_dofs - model.get_dof())
-            resp_mat[:, i] = -self.compare(
-                self(models),                
-                initial_data)
-            new_dofs[i] -= float(coeff * step_frac)
+        ndof = 0
+        for key in model_keys:
+            ndof += models[key].shape()
         # end
-   
+        
+        resp_mat = np.zeros((initial_data[0].shape[0], ndof))
+        inp_mat = np.zeros((ndof, ndof))
+
+        idx = 0
+        for key in model_keys:
+            modeli = models[key]
+            new_dofs = np.array(copy.deepcopy(modeli.get_dof()),
+                                dtype=np.float64)
+            shape = models[key].shape()
+            if key in self.req_models:
+                for i, coeff in enumerate(modeli.get_dof()):                    
+                    new_dofs[i] += float(coeff * step_frac)
+                    models[key] = modeli.update_dof(new_dofs)
+                    inp_mat[idx : idx + shape, idx + i] =\
+                        (new_dofs - modeli.get_dof())
+                    resp_mat[:, idx + i] = -self.compare(
+                        self(models),                
+                        initial_data)
+                    new_dofs[i] -= float(coeff * step_frac)
+                # end
+                models[key] = modeli.update_dof(new_dofs)
+            else:
+                # If the simulation is not sensitive to the model, keep all entries
+                # equal to zero
+                pass
+            # end
+            idx += shape                    
+        # end
+
         sens_matrix = np.linalg.lstsq(inp_mat, resp_mat.T)[0].T
         return np.where(np.fabs(sens_matrix) > self.get_option('fd_tol'),
                         sens_matrix,

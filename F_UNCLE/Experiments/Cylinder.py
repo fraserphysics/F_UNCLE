@@ -216,5 +216,5 @@ class ToyCylinderExperiment(GaussianExperiment):
         """
 
         return np.diag(np.ones(self.shape())
-                       * self.data[1] * self.get_option('exp_var'))
+                       * self.data[1] * 0.05)
     

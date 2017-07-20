@@ -24,8 +24,8 @@ from F_UNCLE.Opt.Bayesian import Bayesian
 
 
 ## Make the models
-str_model = SimpleStr([101E9,0.0]) # Youngs modulis for Cu from Hibbeler
-str_true = SimpleStr([98E9, 0.0]) # Youngs modulis for Cu from Hibbeler
+str_model = SimpleStr([101E9,100.0]) # Youngs modulis for Cu from Hibbeler
+str_true = SimpleStr([98E9, 100.0]) # Youngs modulis for Cu from Hibbeler
 
 eos_model = EOSModel(
     lambda v: 2.56E9/v**3, # famma=3 gas for HE
@@ -55,7 +55,7 @@ cylinder_experiment = ToyCylinderExperiment(
 
 simulations = OrderedDict()
 simulations['Sand'] =  [sandwich_simulation, sandwich_experiment]
-simulations['Stick'] = [stick_simulation, stick_experiment]
+#simulations['Stick'] = [stick_simulation, stick_experiment]
 simulations['Cyl'] = [cylinder_simulation, cylinder_experiment]
 
 models = OrderedDict()
@@ -65,11 +65,11 @@ models['strength'] = str_model
 analysis = Bayesian(
     simulations=simulations,
     models=models,
-    opt_key='eos',
+    opt_keys=['eos', 'strength'],
     constrain=True,
     outer_reltol=1E-6,
     precondition=True,
-    debug=False,
+    debug=True,
     verb=True,
     sens_mode='ser',
     maxiter=6
@@ -82,7 +82,8 @@ if solve:
     to = time.time()
     opt_model, history, sens_matrix = analysis()
     print('time taken ', to - time.time() )
-
+    print(opt_model.models['eos'])
+    print(opt_model.models['strength'])
     # with open('opt_model.pkl', 'wb') as fid:
     #     pickle.dump(opt_model, fid)
 
@@ -104,7 +105,7 @@ else:
 
 fisher_data = {}
 # Get fisher info for everyone
-fisher_all = np.empty((eos_model.shape(), eos_model.shape()))
+fisher_all = np.empty((analysis.shape()[1], analysis.shape()[1]))
 for key in simulations:
     fisher = simulations[key]['exp'].get_fisher_matrix(sens_matrix[key])
     fisher_all += fisher
@@ -116,35 +117,35 @@ with open('fisher_matrix.pkl', 'wb') as fid:
     pickle.dump(fisher_data, fid)
 # end
 
-for key in fisher_data:
-    fisher = fisher_data[key]
-    eigs, vects, funcs, vol = Bayesian.fisher_decomposition(
-        fisher, opt_model.models['eos']
-    )
+# for key in fisher_data:
+#     fisher = fisher_data[key]
+#     eigs, vects, funcs, vol = Bayesian.fisher_decomposition(
+#         fisher, opt_model.models['eos']
+#     )
 
-    fig = plt.figure()
-    ax1 = fig.add_subplot(211)
-    ax2 = fig.add_subplot(212)
+#     fig = plt.figure()
+#     ax1 = fig.add_subplot(211)
+#     ax2 = fig.add_subplot(212)
 
-    ax1.semilogy(eigs/1E9, 'sk')
+#     ax1.semilogy(eigs/1E9, 'sk')
 
-    for i in range(funcs.shape[0]):
-        ax2.plot(vol, funcs[i],
-                 label="{:d}".format(i))
-    # end
-    # ax2.axvline(opt_model.models['eos'].state_cj.dens)
-    # ax2.axvline(opt_model.models['eos'].get_option('rho_0'))
-    ax1.xaxis.set_major_locator(MultipleLocator(1))
-    ax1.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+#     for i in range(funcs.shape[0]):
+#         ax2.plot(vol, funcs[i],
+#                  label="{:d}".format(i))
+#     # end
+#     # ax2.axvline(opt_model.models['eos'].state_cj.dens)
+#     # ax2.axvline(opt_model.models['eos'].get_option('rho_0'))
+#     ax1.xaxis.set_major_locator(MultipleLocator(1))
+#     ax1.xaxis.set_major_formatter(FormatStrFormatter('%d'))
 
-    ax1.set_xlabel('Eigenvalue rank')
-    ax1.set_ylabel('Eigenvalue')
-    ax2.set_xlabel(r'Density / g cm$^{-3}$')
-    ax2.set_ylabel(r'Presure / Pa')        
-    fig.tight_layout()
-    fig.savefig("{:}_fisher.eps".format(key))
-    plt.close(fig)
-# end   
+#     ax1.set_xlabel('Eigenvalue rank')
+#     ax1.set_ylabel('Eigenvalue')
+#     ax2.set_xlabel(r'Density / g cm$^{-3}$')
+#     ax2.set_ylabel(r'Presure / Pa')        
+#     fig.tight_layout()
+#     fig.savefig("{:}_fisher.eps".format(key))
+#     plt.close(fig)
+# # end   
 
 
 ## Plot the EOS
@@ -160,7 +161,7 @@ fig.savefig('eos_comparisson.pdf')
 
 ## Get the data for the sandwich
 sand_prior = sandwich_simulation({'eos': eos_model.prior})
-sand_post = sandwich_simulation({'eos': opt_model.models['eos']})
+sand_post = sandwich_simulation(opt_model.models)
 sand_exp = sandwich_experiment()
 
 fig = sandwich_simulation.plot(data=[sand_prior, sand_post, sand_exp],
@@ -171,7 +172,7 @@ fig.savefig('sand_results.pdf')
 
 ## Get the data for the cylinder
 cyl_prior = cylinder_simulation({'eos': eos_model.prior, 'strength': str_true})
-cyl_post = cylinder_simulation({'eos': opt_model.models['eos'], 'strength': str_true})
+cyl_post = cylinder_simulation(opt_model.models)
 cyl_exp = cylinder_experiment()
 
 fig = cylinder_simulation.plot(data=[cyl_prior, cyl_post, cyl_exp],

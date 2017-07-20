@@ -97,7 +97,37 @@ class SimpleSimulation(Simulation):
         """
         return self.get_option('nDOF')
 
+class TwoModelSimulation(SimpleSimulation):
+    """A simplified simulation to test how simulation objects work
+    Uses two simulations
+    """
+    def __init__(self, *args, **kwargs):
 
+        def_opts = {'sigma': [float, 1.0, None, None, '', 'Variance'],
+                    'nDOF': [int, 10, None, None, '', 'Number of DOFs']}
+
+        req_models = {'simp1': SimpleModel,
+                      'simp2': SimpleModel
+        }
+        
+        Simulation.__init__(self, req_models,
+                            name="Simplified simulation for testing",
+                            def_opts=def_opts, *args, **kwargs)
+
+    def _on_check_models(self, models):
+        return (models['simp1'], models['simp2'])
+
+    def _on_call(self, model1, model2):
+        """Dummy simulation
+        """
+        
+        x_list = np.arange(self.get_option('nDOF'))
+        values = np.array(model1(x_list) + model2(x_list))
+        mean_fn = IUSpline(x_list, values)
+        return x_list, [values,],\
+            {'mean_fn': mean_fn, 'tau': 0}
+
+    
 class TestSimulation(unittest.TestCase):
     """Test of the simeriment class
     """
@@ -239,7 +269,7 @@ class TestSimpleSimulation(unittest.TestCase):
         models = {'simp': SimpleModel([2, 1])}
 
         t0 = time.time()
-        sens = self.simSimp.get_sens(models, 'simp')
+        sens = self.simSimp.get_sens(models, ['simp'])
         t0 = time.time() - t0
         print('Serial sense took {:f}'.format(t0))
 
@@ -280,5 +310,41 @@ class TestSimpleSimulation(unittest.TestCase):
 
         npt.assert_array_almost_equal(sens, true_sens, decimal=8)
 
+class TestTwoModelSimulation(unittest.TestCase):
+    def setUp(self):
+        self.simSimp = TwoModelSimulation()
+        self.models = {'simp1' : SimpleModel([2, 1]),
+                       'simp2' : SimpleModel([3, 3])
+        }
+    # end
+
+    def test_get_sens(self):
+        """
+        """
+        sens = self.simSimp.get_sens(self.models, ['simp1', 'simp2'])
+
+        indep = np.arange(10)
+        resp_mat = np.array([(1.02 * 2 * indep)**2 + 1 * indep -
+                             (2 * indep)**2 - indep,
+                             (2 * indep)**2 + 1.02 * indep -
+                             (2 * indep)**2 - 1 * indep])
+        inp_mat = np.array([[0.02 * 2, 0], [0, 0.02]])
+
+        true_sens1 = np.linalg.lstsq(inp_mat, resp_mat)[0].T
+
+        indep = np.arange(10)
+        resp_mat = np.array([(1.02 * 3 * indep)**2 + 3 * indep -
+                             (3 * indep)**2 - 3 * indep,
+                             (3 * indep)**2 + 1.02 * 3  * indep -
+                             (3 * indep)**2 - 3 * indep])
+        inp_mat = np.array([[0.02 * 3, 0], [0, 0.02 * 3]])
+
+        true_sens2 = np.linalg.lstsq(inp_mat, resp_mat)[0].T
+        # print(sens)
+        # print(true_sens1 - sens[:,:2])
+        # print(true_sens2 - sens[:,2:])
+        npt.assert_array_almost_equal(sens[:,:2], true_sens1)
+        npt.assert_array_almost_equal(sens[:,2:], true_sens2)        
+        
 if __name__ == '__main__':
     unittest.main(verbosity=4)

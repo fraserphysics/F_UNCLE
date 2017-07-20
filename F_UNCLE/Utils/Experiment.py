@@ -561,13 +561,13 @@ class GaussianExperiment(Experiment):
     normally distributed
     """
     
-    def get_pq(self, models, opt_key, sim_data, sens_matrix,
+    def get_pq(self, models, opt_keys, sim_data, sens_matrix,
            scale=False):
         """Generates the P and q matrix for the Bayesian analysis
 
         Args:
            models(dict): The dictionary of models
-           opt_key(str): The key for the model being optimized
+           opt_keys(list): The key for the models which are being optimized
            sim_data(list): Lengh three list corresponding to the `__call__` from
                            a Experiment object
            sens_matrix(np.ndarray): The sensitivity matrix
@@ -597,9 +597,20 @@ class GaussianExperiment(Experiment):
         #                 sens_matrix)
 
         if scale:
-            prior_scale = models[opt_key].get_scaling()
-            p_mat = np.dot(prior_scale, np.dot(p_mat, prior_scale))
-            q_mat = np.dot(prior_scale, q_mat)
+            ndof = 0
+            for key in opt_keys:
+                ndof += models[key].shape()
+            # end
+            scale_vec = np.zeros(2*(ndof,))
+            idx = 0
+            for key in opt_keys:
+                shape = models[key].shape()
+                scale_vec[idx: idx + shape, idx: idx + shape]\
+                          = models[key].get_scaling()
+                idx += shape
+            # end
+            p_mat = np.dot(scale_vec, np.dot(p_mat, scale_vec))
+            q_mat = np.dot(scale_vec, q_mat)
         # end
 
         return p_mat, q_mat

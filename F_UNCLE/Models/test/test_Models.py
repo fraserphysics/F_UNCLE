@@ -227,5 +227,19 @@ class TestSimpleStr(unittest.TestCase):
         shape = strmod.shape()
 
         self.assertEqual(shape, 2)
+
+    def test_log_like(self):
+        strmod = SimpleStr(self.Cu_coeff)
+
+        log_like = strmod.get_log_like()
+
+        print(log_like)
+        
+        newmod = strmod.update_dof([90E9, 0.0])
+
+        log_like = newmod.get_log_like()
+
+        print(log_like)
+        
 if __name__ == '__main__':
     unittest.main(verbosity=4)

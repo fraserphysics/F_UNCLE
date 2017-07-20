@@ -15,13 +15,14 @@ from ..Utils.Struc import Struc
 class SimpleStr(GaussianModel):
     """Simplified strength model
     """
-    coeff = [0.0, 0.0] # The model coefficients
+    coeff = np.array([0.0, 0.0]) # The model coefficients
+    prior = None
     
     def __init__(self, prior_coeff, name='Simple Strength Model', *args, **kwargs):
         """
         """
         def_opts = {
-            'sigma': [float, 0.05 , 0, None, '',
+            'sigma': [float, 0.005 , 0, None, '',
                       "Normalized variance for each coefficeint"],
             }
 
@@ -29,20 +30,37 @@ class SimpleStr(GaussianModel):
             def_opts.update(kwargs.pop('def_opts'))
         # end
 
-        self.coeff = prior_coeff
+        self.coeff = np.array(prior_coeff)
 
         Struc.__init__(self, name, def_opts = def_opts, *args, **kwargs)
 
-        self = self.update_dof(prior_coeff)
+        self.update_dof(prior_coeff)
+            
         self.prior = copy.deepcopy(self)
 
+    def plot(self, axes = None, labels=['Coeff'], linestyles=['ok'],
+             *args, **kwargs):
+        """
+        """
+        axes.plot(self.get_dof(), linestyles[0], label=labels[0])
+    # end
+    
     def get_sigma(self, *args, **kwargs):
         """
         """
 
         sigma = self.get_option('sigma')
-        return np.diag(sigma * np.ones((self.shape(),)))
+        return np.diag((sigma * self.prior.get_dof())**2)
 
+    def get_scaling(self):
+        return np.diag(self.prior.get_dof())
+#        return np.diag(np.ones((self.shape(),)))
+
+    def get_constraints(self, scale=False):
+        g_mat = np.zeros(2 * (self.shape(),))
+        h_vec = np.ones((self.shape(),))        
+        return g_mat, h_vec
+    
     def shape(self):
         """
         """
@@ -57,9 +75,10 @@ class SimpleStr(GaussianModel):
                              .format(self.get_inform(1)))
         # end
         new_model = copy.deepcopy(self)
-        new_model.coeff = dof_in
+        new_model.coeff = np.array(dof_in)
 
         return new_model
+    
     def __call__(self, epsilon, epsilon_dot, *args, **kwargs):
         """Calculates the stress corresonding to the strain
         

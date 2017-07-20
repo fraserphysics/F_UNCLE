@@ -106,12 +106,14 @@ class TestToyCylinder(unittest.TestCase):
         """
         self.eos_model = EOSModel(lambda v: 2.56E9/v**3, spline_max = 2.0)
         self.eos_true = EOSBump()
-        self.str_model = SimpleStr([101E9, 0.0])
+        self.str_model = SimpleStr([101E9, 100])
+
     def test_instantiate_simulation(self):
         """Test that the Cylinder can be instantiated
         """
 
         cyl = ToyCylinder()
+
         
     def test_run_simulation(self):
         """Test that the Cylinder can be run
@@ -127,3 +129,34 @@ class TestToyCylinder(unittest.TestCase):
         ax2 = ax1.twinx()
         ax2.plot(1E6 * data[0], data[1][2])
         fig.savefig("cylinder_sim.pdf")
+
+    def test_delta_simulation(self):
+        """Tests if the simulation is sensitive to the strength model
+        """
+
+        cyl = ToyCylinder()
+        
+        data1 = cyl({'eos': self.eos_model,
+                    'strength': self.str_model})
+
+        data2 = cyl({'eos': self.eos_model,
+                     'strength': self.str_model.update_dof((1.02 * 101E9, 1.0))})
+
+        fig = cyl.plot(data=[data1, data2],
+                       labels=['Original', 'Delta'],
+                       linestyles=['-k', '-g', '-r']
+        )
+
+        fig.savefig('delta_str.pdf')
+
+    def test_sens(self):
+        """
+        """
+        cyl = ToyCylinder()
+
+        models = {'eos': self.eos_model,
+                  'strength': self.str_model}
+
+        sens = cyl.get_sens(models,
+                            ['strength'])
+        print(sens)
