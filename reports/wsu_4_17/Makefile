@@ -10,8 +10,12 @@ slides.pdf: slides.aux
 lognom.pdf: ; # Gets made as side effect of rule for hixson.pdf
 hixson.pdf: shaw.py
 	python2.7 shaw.py hixson.pdf lognom.pdf
+
+GEN = $(filter-out slides.tex, $(wildcard slides.*)) hixson.pdf lognom.pdf
+
+.PHONY: clean
 clean:
-	rm -f *.pyc ui*.py
+	rm -f *.pyc *~ ${GEN}
 ###---------------
 ### Local Variables:
 ### mode: makefile
