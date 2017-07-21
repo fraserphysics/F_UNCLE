@@ -29,6 +29,7 @@ import unittest
 import copy
 import math
 import pdb
+import pytest
 # =========================
 # Python Packages
 # =========================
@@ -40,43 +41,27 @@ from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 import matplotlib.gridspec as gridspec
 from matplotlib import rcParams
 
-
-if __name__ == '__main__':
-    sys.path.append(os.path.abspath('./../../'))
-    from F_UNCLE.Utils.Experiment import Experiment
-    from F_UNCLE.Utils.test_Experiment import SimpleExperiment
-    from F_UNCLE.Utils.PhysicsModel import PhysicsModel
-    from F_UNCLE.Utils.test_PhysicsModel import SimpleModel
-    from F_UNCLE.Utils.Struc import Struc
-    from F_UNCLE.Opt.Bayesian import Bayesian
-
-else:
-    from ..Utils.Experiment import Experiment
-    from ..Utils.test_Experiment import SimpleExperiment
-    from ..Utils.PhysicsModel import PhysicsModel
-    from ..Utils.test_PhysicsModel import SimpleModel
-    from ..Utils.Struc import Struc
-    from .Bayesian import Bayesian
-
-# end
-
+# =========================
+# Custon Packages
+# =========================
+from ...Utils.Experiment import Experiment
+from ...Utils.Simulation import Simulation
+from ...Utils.PhysicsModel import PhysicsModel
+from ...Utils.Struc import Struc
+from ..Bayesian import Bayesian
 
 # ================
 # Testing Packages
 # ================
-if __name__ == '__main__':
-    sys.path.append(os.path.abspath('./../../'))
-    from F_UNCLE.Experiments.GunModel import Gun
-    from F_UNCLE.Experiments.Stick import Stick
-    from F_UNCLE.Models.Isentrope import EOSModel, EOSBump
-else:
-    from ..Experiments.GunModel import Gun
-    from ..Experiments.Stick import Stick
-    from ..Models.Isentrope import EOSModel, EOSBump
-# end
+from ...Experiments.GunModel import Gun, GunExperiment
+from ...Experiments.Stick import Stick, StickExperiment
+from ...Models.Isentrope import EOSModel, EOSBump
+from ...Utils.test.test_PhysicsModel import SimpleModel
+from ...Utils.test.test_Experiment import SimpleExperiment
+from ...Utils.test.test_Simulation import SimpleSimulation
 
 
-# @unittest.skip('skipped long tests')
+#@pytest.mark.skip('Skipping long tests')
 class TestBayesian(unittest.TestCase):
     """Test class for the bayesian object
     """
@@ -92,11 +77,10 @@ class TestBayesian(unittest.TestCase):
 
         # Create the objects to generate simulations and
         # pseudo experimental data
-        self.exp1 = Gun(model_attribute=self.eos_true,
-                        name="Default Gun Experiment")
+        self.exp1 = GunExperiment(model=self.eos_true)
         self.sim1 = Gun(name="Default Gun Simulation")
 
-        self.exp2 = Stick(model_attribute=self.eos_true)
+        self.exp2 = StickExperiment(model=self.eos_true)
         self.sim2 = Stick()
 
     # end
@@ -115,9 +99,9 @@ class TestBayesian(unittest.TestCase):
         self.assertIsInstance(bayes.simulations['Gun']['sim'], Gun)
         self.assertEqual(bayes.simulations['Gun']['sim'].name,
                          "Default Gun Simulation")
-        self.assertIsInstance(bayes.simulations['Gun']['exp'], Gun)
+        self.assertIsInstance(bayes.simulations['Gun']['exp'], GunExperiment)
         self.assertEqual(bayes.simulations['Gun']['exp'].name,
-                         "Default Gun Experiment")
+                         "Data Experiment")
 
     # end
 
@@ -355,7 +339,7 @@ class TestBayesian(unittest.TestCase):
         self.assertEqual(len(out), 3)
         self.assertIsInstance(out[0], Bayesian)
         self.assertIsInstance(out[1], tuple)
-        self.assertEqual(len(out[1]), 2)
+        self.assertEqual(len(out[1]), 3)
 
     def test_multiple_calls(self):
         """Tests that the results are the same after calling multiple times
@@ -417,10 +401,10 @@ class TestSimpleModels(unittest.TestCase):
         """Generates the simplified model
         """
         self.model = SimpleModel([2, 1])
-        self.exp_model = SimpleModel([4, 2])
 
-        self.sim1 = SimpleExperiment()
-        self.exp1 = SimpleExperiment(model_attribute=self.exp_model)
+
+        self.sim1 = SimpleSimulation()
+        self.exp1 = SimpleExperiment()
 
         self.bayes = Bayesian(models={'simp': self.model},
                               simulations={'simple': [self.sim1, self.exp1]},
@@ -464,25 +448,12 @@ class TestSimpleModels(unittest.TestCase):
                              simulations={'basic': [self.sim1, self.exp1]},
                              opt_key='simp3')
 
-    def test_compare(self):
-        """Test of the compare function
-        """
-
-        data = self.bayes.get_data()
-
-        indep = np.arange(10)
-
-        true_data = (2 * indep)**2 + 1 * indep
-
-        npt.assert_equal(data['simple'][0], indep,
-                         err_msg='Compare, indep vector not as predicted')
-        npt.assert_equal(data['simple'][1][0], true_data,
-                         err_msg='Compare, dependent vecotr not as predicted')
 
     def test_sens(self):
         """Test the sign and magnitude of the sensitivity
         """
-        sens_matrix = self.bayes._get_sens()
+        initial_data = {'simple': self.sim1({'simp': self.model})}
+        sens_matrix = self.bayes._get_sens(initial_data=initial_data)
 
         indep = np.arange(10)
         resp_mat = np.array([(1.02 * 2 * indep)**2 + 1 * indep -
@@ -503,7 +474,7 @@ class TestSimpleModels(unittest.TestCase):
         npt.assert_array_almost_equal(sens_matrix['simple'], resp_mat2.T,
                                       decimal=8,
                                       err_msg='Sens matrix  not as predicted')
-
+    @pytest.mark.xfail
     def test_hessian(self):
         """Tests hessian calculation
         """
@@ -546,7 +517,7 @@ class TestSimpleModels(unittest.TestCase):
         data = self.bayes.get_data()
         sens_matrix = self.bayes._get_sens(initial_data=data)
 
-        indep = np.arange(10)
+        indep = np.linspace(1, 11, 5) - data['simple'][2]['tau']
         resp_mat = np.array([(1.02 * 2 * indep)**2 + 1 * indep -
                              (2 * indep)**2 - indep,
                              (2 * indep)**2 + 1.02 * indep -
@@ -585,7 +556,7 @@ class TestSimpleModels(unittest.TestCase):
 
         P, q = self.bayes._get_sim_pq(initial_data, sens_matrix)
 
-        sigma = np.diag(np.ones(10))
+        sigma = self.exp1.get_sigma()
 
         P_true = np.dot(np.dot(sens_matrix['simple'].T,
                                inv(sigma)),
@@ -593,8 +564,8 @@ class TestSimpleModels(unittest.TestCase):
 
         npt.assert_array_almost_equal(P, P_true, decimal=8)
 
-        epsilon = self.bayes.simulations['simple']['exp']()[1][0]\
-            - initial_data['simple'][1][0]
+        epsilon = self.bayes.simulations['simple']['exp']\
+                            .compare(initial_data['simple'])
 
         q_true = -np.dot(np.dot(epsilon, inv(sigma)), sens_matrix['simple'])
 
@@ -610,7 +581,7 @@ class TestSimpleModels(unittest.TestCase):
         initial_data = new.get_data()
         sens_matrix = new._get_sens(initial_data=initial_data)
 
-        indep = np.arange(10)
+        indep = np.linspace(1, 11, 5) - initial_data['simple1'][2]['tau']
         resp_mat = np.array([(1.02 * 2 * indep)**2 + 1 * indep -
                              (2 * indep)**2 - indep,
                              (2 * indep)**2 + 1.02 * indep -
@@ -635,7 +606,7 @@ class TestSimpleModels(unittest.TestCase):
 
         P, q = new._get_sim_pq(initial_data, sens_matrix)
 
-        sigma = np.diag(np.ones(10))
+        sigma = self.exp1.get_sigma()
 
         P_true = np.dot(np.dot(sens_matrix['simple1'].T,
                                inv(sigma)),
@@ -644,8 +615,8 @@ class TestSimpleModels(unittest.TestCase):
 
         npt.assert_array_almost_equal(P, P_true, decimal=8)
 
-        epsilon = new.simulations['simple1']['exp']()[1][0]\
-            - initial_data['simple1'][1][0]
+        epsilon = new.simulations['simple1']['exp'].\
+                  compare(initial_data['simple1'])
 
         q_true = -np.dot(np.dot(epsilon, inv(sigma)), sens_matrix['simple1'])
         q_true += q_true
@@ -668,17 +639,17 @@ class TestSimpleModels(unittest.TestCase):
         true_model_ll = -0.5 * np.dot(np.dot(np.array([-1, -0.5]),
                                              inv(self.model.get_sigma())),
                                       np.array([-1, -0.5]))
-        x = np.arange(10)
-        epsilon = (4 * x)**2 + 2 * x - x**2 - 0.5 * x
+
+        epsilon = self.exp1.compare(initial_data['simple1'])
         true_sim_ll = -0.5 * np.dot(np.dot(epsilon,
-                                           inv(self.sim1.get_sigma(model))),
+                                           inv(self.exp1.get_sigma())),
                                     epsilon)
         true_sim_ll *= 2
 
         self.assertEqual(model_log_like, true_model_ll)
         self.assertEqual(sim_log_like, true_sim_ll)
 
-    @unittest.expectedFailure
+    @pytest.mark.xfail
     def test_fisher_matrix_with_hessian(self):
         """
         """
@@ -690,12 +661,12 @@ class TestSimpleModels(unittest.TestCase):
         initial_data = new.get_data()
         sens_matrix = new._get_sens(initial_data=initial_data)
 
-        fisher = new.simulations['simple1']['sim'].get_fisher_matrix(
+        fisher = new.simulations['simple1']['exp'].get_fisher_matrix(
             new.models,
             use_hessian=True,
-            exp=new.simulations['simple1']['exp'],
             sens_matrix=sens_matrix['simple1'])
 
+    @pytest.mark.xfail
     def test_fisher_matrix(self):
         """
         """
@@ -707,8 +678,7 @@ class TestSimpleModels(unittest.TestCase):
         initial_data = new.get_data()
         sens_matrix = new._get_sens(initial_data=initial_data)
 
-        sigma = inv(new.simulations['simple1']['sim'].
-                    get_sigma(new.models))
+        sigma = inv(new.simulations['simple1']['exp'].get_sigma())
 
         fisher_1 = np.dot(np.dot(sens_matrix['simple1'].T,
                                  sigma),
@@ -718,11 +688,11 @@ class TestSimpleModels(unittest.TestCase):
                                  sigma),
                           sens_matrix['simple2'])
 
-        npt.assert_array_almost_equal(self.sim1.get_fisher_matrix(
+        npt.assert_array_almost_equal(self.exp1.get_fisher_matrix(
                                       new.models,
                                       sens_matrix=sens_matrix['simple1']),
                                       fisher_1)
-        npt.assert_array_almost_equal(self.sim1.get_fisher_matrix(
+        npt.assert_array_almost_equal(self.exp1.get_fisher_matrix(
                                       new.models,
                                       sens_matrix=sens_matrix['simple2']),
                                       fisher_2)

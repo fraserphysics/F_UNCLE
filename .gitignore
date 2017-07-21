@@ -5,7 +5,10 @@
 doc/_build
 build
 TAGS
-
+*.cache
+*.pkl
+*.bbl
+*.blg
 *.aux
 *.log
 *.nav
@@ -19,7 +22,8 @@ TAGS
 /reports/ut_2_17/figs
 /reports/ut_2_17/static_figs
 /reports/ut_2_17/ui*.py
-/reports/ut_2_17/ui_temp.py.orig 
+/reports/ut_2_17/ui_temp.py.orig
+/reports/notes/sim_figs_made
 _build/
+.coverage
 figs
-static_figs

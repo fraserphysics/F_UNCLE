@@ -16,22 +16,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # F_UNLCE packages
-if __name__ == '__main__':
-    sys.path.append(os.path.abspath('./../../'))
-    from F_UNCLE.Experiments.GunModel import Gun
-    from F_UNCLE.Models.Isentrope import EOSModel, EOSBump
-    from F_UNCLE.Opt.cost_opt import CostOpt
-    from F_UNCLE.Opt.Bayesian import Bayesian
-    from F_UNCLE.Models.Ptw import Ptw
-else:
-    from ..Experiments.GunModel import Gun
-    from ..Experiments.Stick import Stick
-    from ..Experiments.Sphere import Sphere
-    from ..Models.Ptw import Ptw
-    from ..Models.Isentrope import EOSModel, EOSBump
-    from ..Opt.Bayesian import Bayesian
-    from ..Opt.cost_opt import CostOpt
-# end
+sys.path.append(os.path.abspath('./../'))
+from F_UNCLE.Experiments.GunModel import Gun
+from F_UNCLE.Models.Isentrope import EOSModel, EOSBump
+from F_UNCLE.Opt.cost_opt import CostOpt
+from F_UNCLE.Opt.Bayesian import Bayesian
+from F_UNCLE.Models.Ptw import Ptw
 
 
 parser = argparse.ArgumentParser(description='Generate plots for notes.tex')

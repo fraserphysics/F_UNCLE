@@ -26,18 +26,11 @@ import matplotlib.pyplot as plt
 # Module Packages
 # =========================
 
-if __name__ == '__main__':
-    sys.path.append(os.path.abspath('./../../'))
-    from F_UNCLE.Utils.Struc import Struc
-    from F_UNCLE.Utils.PhysicsModel import PhysicsModel
-    from F_UNCLE.Models.Ptw import Ptw
+from ...Utils.Struc import Struc
+from ...Utils.PhysicsModel import PhysicsModel
+from ..Ptw import Ptw
 
-else:
-    from ..Utils.Struc import Struc
-    from ..Utils.PhysicsModel import PhysicsModel
-    from .Ptw import Ptw
 
-# end
 class TestPtw(unittest.TestCase):
     """Test of the Ptw class
     """

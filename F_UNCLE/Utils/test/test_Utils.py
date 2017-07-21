@@ -18,6 +18,7 @@ from __future__ import unicode_literals
 import unittest
 import sys
 import os
+
 # =========================
 # Python Packages
 # =========================
@@ -25,14 +26,8 @@ import os
 # =========================
 # External Packages
 # =========================
-if __name__ == '__main__':
-    sys.path.append(os.path.abspath('./../../'))
-    from F_UNCLE.Utils.Struc import Struc
-    from F_UNCLE.Utils.Container import Container
-else:
-    from .Struc import Struc
-    from .Container import Container
-# end
+from ..Struc import Struc
+from ..Container import Container
 
 
 class TestObject(unittest.TestCase):
