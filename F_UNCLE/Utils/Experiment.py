@@ -125,11 +125,25 @@ class Experiment(Struc):
         # Creates a window which masks the experimental data to
         # process only those within a certain time of the experimental
         # data trigger
-        self.window = np.where((self.data[0] <=
-                                self.tau_exp + self.get_option('data_bounds')[1])
-                               &(self.data[0] >=
-                                 self.tau_exp + self.get_option('data_bounds')[0]))
+        self.window = self.get_window()
         
+    def get_window(self):
+        """Creates a 'window' to consider only a selection of the data slice
+
+        Default window goes between tau + bounds[0] and tau + bounds[1]
+        
+        Args: 
+            None
+
+        Return:
+            (np.ndarray): Boolean array, True where data is to be used
+        """
+
+        return np.where((self.data[0] <=
+                         self.tau_exp + self.get_option('data_bounds')[1])
+                        &(self.data[0] >=
+                          self.tau_exp + self.get_option('data_bounds')[0]))
+
     def simple_trigger(self, x, y):
         """This is the most basic trigger object for data which does not need
         to be aling. Returns a shift if zero for all values of trial

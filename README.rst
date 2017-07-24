@@ -108,9 +108,6 @@ F_UNCLE
 reports
    Latex source for papers and presentations based on F_UNCLE
 
-test
-   Vacuous root for nosetest
-
 The F_UNCLE directory has the following sub-directories:
 
 examples

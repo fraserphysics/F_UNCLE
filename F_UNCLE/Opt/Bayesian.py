@@ -787,26 +787,28 @@ class Bayesian(Struc):
         vecs = eig_vecs.T[i]
 
         n_vals = max(len(np.where(vals > vals[0] * tol)[0]), 3)
-        n_vecs = max(len(np.where(vals > vals[0] * tol)[0]), 1)
+        n_vecs = max(len(np.where(vals > vals[0] * tol)[0]), 3)
 
         # Find range of v that includes support of eigenfunctions
         #knots = self.models[self.opt_key].get_t()
         knots = model.get_t()
         v_min = knots[0]
         v_max = knots[-1]
-        vol = np.logspace(np.log10(v_min), np.log10(v_max), len(knots) * 10)
+        vol = np.logspace(np.log10(v_min), np.log10(v_max), len(knots) * 100)
         funcs = []
-        for vec in vecs[:n_vecs]:
+        for eig , vec in zip(vals[:n_vecs], vecs[:n_vecs]):
             # new_model = self.models[self.opt_key].\
             #     set_c(vec * self.models[self.opt_key].get_dof())
             new_model = model.\
                 set_c(vec * model.get_dof())
-            
+
             funcs.append(new_model(vol))
             if funcs[-1][np.argmax(np.fabs(funcs[-1]))] < 0:
                 funcs[-1] *= -1
             # end
+            funcs[-1] = np.array(funcs[-1]) *  1/max(funcs[-1])
         funcs = np.array(funcs)
+        
 
         return vals[:n_vals], vecs, funcs, vol
 
