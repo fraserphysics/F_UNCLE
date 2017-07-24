@@ -1,0 +1,29 @@
+Reports made for F_UNCLE
+
+Scipy 2016 Paper
+---------------
+
+ - LA-UR-16-23717
+
+ - Code to generate the figures was located in F_UNCLE/examples/scipy2016.py
+
+ - Source for the paper is located at
+   <https://github.com/scipy-conference/scipy_proceedings/tree/2016/papers/andrew_fraser>
+
+ - Code is located in Release 1.0.0, code is not compatible with version 2+ of F_UNCLE
+ 
+Scipy 2016 poster
+----------------
+
+ - LA-UR-16-24568
+
+ - Code is located in Release 1.0.0, code is not compatible with
+   version 2+ of F_UNCLE
+
+UT_austin talk
+--------------
+
+ - LA-UR-17-20559
+
+ - Code is located in Release 1.0.0, code is not compatible with
+   version 2+ of F_UNCLE
