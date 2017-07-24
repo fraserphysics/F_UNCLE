@@ -529,7 +529,6 @@ class Bayesian(Struc):
                         model_dict[key].get_scaling()
                     idx += shape
                 # end
-                pdb.set_trace()
                 d_hat = np.dot(scale_vect, d_hat)
                 #print('x scaled', d_hat)
             # end
@@ -922,17 +921,31 @@ class Bayesian(Struc):
     def _get_constraints(self):
         r"""Get the constraints on the model
         """
-        gmat = np.zeros(2 * (self.shape()[1],))
-        hvec = np.zeros((self.shape()[1],))
-        idx = 0
+        gmat_list = []
+        hvec_list = []
+        ncon = 0
         for key in self.opt_keys:
-            shape = self.models[key].shape()
             g_tmp, h_tmp = self.models[key].get_constraints(
                 scale=self.get_option('precondition'))
-            gmat[idx: idx + shape, idx: idx + shape] = g_tmp
-            hvec[idx: idx + shape] = h_tmp
-            idx += shape
+            ncon += h_tmp.shape[0]
+            gmat_list.append(g_tmp)
+            hvec_list.append(h_tmp)
         # end
+        
+        gmat = np.zeros((ncon, self.shape()[1]))
+        hvec = np.zeros((ncon,))
+
+        idx_dof = 0
+        idx_con = 0
+        for i in range(len(hvec_list)):
+            shape_con, shape_dof = gmat_list[i].shape            
+            gmat[idx_con: idx_con + shape_con,
+                 idx_dof: idx_dof + shape_dof] = gmat_list[i]
+            hvec[idx_con: idx_con + shape_con] = hvec_list[i]
+            idx_dof += shape_dof
+            idx_con += shape_con
+        # end
+
         return gmat, hvec
 
     def _get_model_pq(self):
@@ -1101,8 +1114,8 @@ class Bayesian(Struc):
                     models, opt_keys, initial_data[key],
                     comm=mpi_comm)
             elif sim_i.get_option('sens_mode') == 'runjob':
-                raise NotImplementedError('runjob sesnitivity not yet support'
-                                          ' multiple models')                           
+                # raise NotImplementedError('runjob sesnitivity not yet support'
+                #                           ' multiple models')                           
                 sens_matrix[key] = sim_i.get_sens_runjob(
                     models, opt_keys, initial_data[key])
             else:
