@@ -529,7 +529,6 @@ class Bayesian(Struc):
                         model_dict[key].get_scaling()
                     idx += shape
                 # end
-                pdb.set_trace()
                 d_hat = np.dot(scale_vect, d_hat)
                 #print('x scaled', d_hat)
             # end
@@ -539,7 +538,7 @@ class Bayesian(Struc):
                 print('Start of line search')
             
             # Finds the optimal step in the d_hat direction 
-            n_steps = 5
+            n_steps = 10
             costs = np.zeros(n_steps)
             iter_data = []
             initial_dof = copy.deepcopy(analysis.get_opt_dof())
@@ -836,7 +835,7 @@ class Bayesian(Struc):
         p_mat += tmp[0]
         q_vec += tmp[1]
 
-        p_mat *= 0.5
+        #p_mat *= 0.5
 
         solvers.options['show_progress'] = True
         solvers.options['debug'] = False

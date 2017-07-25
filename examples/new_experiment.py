@@ -24,8 +24,8 @@ from F_UNCLE.Opt.Bayesian import Bayesian
 
 
 ## Make the models
-str_model = SimpleStr([101E9,100.0]) # Youngs modulis for Cu from Hibbeler
-str_true = SimpleStr([98E9, 100.0]) # Youngs modulis for Cu from Hibbeler
+str_model = SimpleStr([101E9, 100.0]) # Youngs modulis for Cu from Hibbeler
+str_true  = SimpleStr([101E9, 100.0]) # Youngs modulis for Cu from Hibbeler
 
 eos_model = EOSModel(
     lambda v: 2.56E9/v**3, # famma=3 gas for HE
@@ -50,7 +50,7 @@ cylinder_simulation = ToyCylinder()
 cylinder_experiment = ToyCylinderExperiment(
     models={'eos': eos_true, 'strength': str_true},
     rstate=rstate
-)
+    )
 
 
 simulations = OrderedDict()
@@ -65,7 +65,7 @@ models['strength'] = str_model
 analysis = Bayesian(
     simulations=simulations,
     models=models,
-    opt_keys=['eos', 'strength'],
+    opt_keys=['eos'],#, 'strength'],
     constrain=True,
     outer_reltol=1E-6,
     precondition=True,

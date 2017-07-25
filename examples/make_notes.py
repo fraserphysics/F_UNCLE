@@ -11,6 +11,8 @@ import os
 import pdb
 import argparse
 import time
+from collections import OrderedDict
+
 # External python packages
 import numpy as np
 import matplotlib.pyplot as plt
@@ -80,17 +82,19 @@ if __name__ == '__main__':
     sphere_experiment = SphereExperiment(model=eos_true, ptw=Ptw())
     sphere_simulation = Sphere()
 
+    models = OrderedDict()
+    models['eos'] = eos_model
+    models['strength'] = Ptw()
+    
     # 4. Create the analysis object
-
     analysis = Bayesian(
         simulations={
             'Gun': [gun_simulation, gun_experiment],
             'Stick': [stick_simulation, stick_experiment],
             'Sphere': [sphere_simulation, sphere_experiment]
         },
-        models={'eos': eos_model,
-                'strength': Ptw()},
-        opt_key='eos',
+        models= models,
+        opt_keys=['eos'],
         constrain=True,
         outer_reltol=1E-6,
         precondition=True,
