@@ -35,6 +35,13 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
+
+# Allows the unicode type when running in python3
+try:
+    unicode
+except NameError:
+    unicode = str
+
 # =========================
 # Python Standard Libraries
 # =========================
@@ -190,7 +197,7 @@ class Bayesian(Struc):
         if opt_keys is None and len(self.models)>1:
             raise IOError("{:} Must define opt key if more than one model"
                           "used".format(self.get_inform(1)))
-        elif isinstance(opt_keys, str):
+        elif isinstance(opt_keys, (unicode, str)):
             opt_keys=[opt_keys]
         elif opt_keys is None:
             opt_keys=[list(self.models.keys())[0]]
