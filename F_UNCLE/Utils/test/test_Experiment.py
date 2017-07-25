@@ -170,12 +170,12 @@ class TestSimpleExperiment(unittest.TestCase):
         aligned_data = exp.align(sim_data)
 
         # Get the sensitivity matrix
-        sens_matrix = self.simSimp.get_sens(self.models, 'simp', aligned_data)
+        sens_matrix = self.simSimp.get_sens(self.models, ['simp'], aligned_data)
 
         # Get the error between the sim and experiment
         epsilon = exp.compare(sim_data)
         
-        p_mat, q_vec = exp.get_pq(self.models, 'simp', sim_data, sens_matrix,
+        p_mat, q_vec = exp.get_pq(self.models, ['simp'], sim_data, sens_matrix,
                                   scale=False)
         sigma_mat = exp.get_sigma()
         p_mat_hat = np.dot(np.dot(sens_matrix.T, np.linalg.inv(sigma_mat)),

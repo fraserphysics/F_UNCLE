@@ -29,7 +29,7 @@ import matplotlib.pyplot as plt
 from ...Utils.Struc import Struc
 from ...Utils.PhysicsModel import PhysicsModel
 from ..Ptw import Ptw
-
+from ..SimpleStr import SimpleStr
 
 class TestPtw(unittest.TestCase):
     """Test of the Ptw class
@@ -138,5 +138,108 @@ class TestPtw(unittest.TestCase):
             flow_stress_model(300.0, 1.1E12, 'Cu')
         # end
 
+class TestSimpleStr(unittest.TestCase):
+    """Test of the simplified strength model
+    """
+
+    def setUp(self):
+        """
+        """
+
+        self.Cu_coeff = [101E9, 0.1]
+        
+    def test_instantiation(self):
+        """Test that the object can be printed 
+        """
+
+        strmod = SimpleStr(self.Cu_coeff)
+
+    def test_alt_instantiation(self):
+        """Alternative instantiation methods
+        """
+
+        strmod = SimpleStr((90E9, 1.0))
+        strmod = SimpleStr(np.array((90E9, 1.0)))        
+
+    def test_bad_instantiation(self):
+        """Object raises the correct error when incorret parameters are given 
+        """
+
+        with self.assertRaises(ValueError):
+            strmod = SimpleStr([90E9])
+
+        with self.assertRaises(ValueError):
+            strmod = SimpleStr([90E9, 0.0, 0.0])
+            
+    def test_print(self):
+
+        strmod = SimpleStr(self.Cu_coeff)
+        print(strmod)
+
+    def test_get_sigma(self):
+
+        strmod = SimpleStr(self.Cu_coeff)
+        strmod.get_sigma()
+        
+    def test_set_dof(self):
+
+        strmod = SimpleStr(self.Cu_coeff)
+        newmod = strmod.update_dof([90E9, 2.0])
+
+        self.assertFalse(strmod is newmod)
+
+        dof = strmod.get_dof()
+
+        self.assertEqual(dof[0], self.Cu_coeff[0])
+        self.assertEqual(dof[1], self.Cu_coeff[1])
+
+        dof = newmod.get_dof()
+
+        self.assertEqual(dof[0], 90E9)
+        self.assertEqual(dof[1], 2.0)
+        
+
+    def test_get_dof(self):
+
+        strmod = SimpleStr(self.Cu_coeff)
+
+        dof = strmod.get_dof()
+
+        self.assertEqual(dof[0], self.Cu_coeff[0])
+        self.assertEqual(dof[1], self.Cu_coeff[1])
+        
+    def test_call(self):
+
+        strmod = SimpleStr(self.Cu_coeff)
+
+        epsilon = np.array([1E-3, 2E-4])
+        epsilon_dot = np.array([1E-2, 2E-2])
+        sigma = strmod(epsilon, epsilon_dot)
+
+        np.testing.assert_array_equal(
+            sigma,
+            self.Cu_coeff[0] * epsilon + self.Cu_coeff[1] * epsilon_dot
+        )
+    
+    def test_shape(self):
+        strmod = SimpleStr(self.Cu_coeff)
+
+        shape = strmod.shape()
+
+        self.assertEqual(shape, 2)
+
+    def test_log_like(self):
+        strmod = SimpleStr(self.Cu_coeff)
+
+        log_like = strmod.get_log_like()
+
+        print(log_like)
+        
+        newmod = strmod.update_dof([90E9, 0.0])
+
+        log_like = newmod.get_log_like()
+
+        print(log_like)
+        
 if __name__ == '__main__':
     unittest.main(verbosity=4)
