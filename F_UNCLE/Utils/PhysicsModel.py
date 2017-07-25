@@ -39,6 +39,7 @@ import copy
 # =========================
 import numpy as np
 from numpy.linalg import inv
+import matplotlib.pyplot as plt
 # =========================
 # Custom Packages
 # =========================
@@ -234,6 +235,65 @@ class PhysicsModel(Struc):
         new_model.prior = copy.deepcopy(prior)
         return new_model
 
+    @staticmethod
+    def plot_sens_matrix(sens_matrix, simid, models, mkey,
+                         fig=None):
+        """Prints the sensitivity matrix
+
+        Args:
+            sens_matrix(dict): Dictionary of sensitivity matricies
+            simid(str): Key for simulation 
+            models(OrderedDict): Ordered dictionary of models 
+            mkey(str): Key in models corresponding to the EOSModel
+        
+        Keyword Args
+            fig(plt.Figure): A valid matplotlib figure on which to plot.
+                             If `None`, creates a new figure
+
+        Return:
+            (plt.Figure): The figure
+        """
+
+        if simid not in sens_matrix:
+            raise IndexError('simid not in the sensitivity'
+                             'matrix dictionary')
+
+        if mkey not in models:
+            raise IndexError('mkey not in the models'
+                             ' dictionary')
+
+        if fig is None:
+            fig = plt.figure()
+        else:
+            fig = fig
+        # end
+        ax = fig.gca()        
+
+        model = models[mkey]
+
+        idx = 0
+        for key in models:
+            shape = models[key].shape()
+            if key == mkey:
+                break
+            else:
+                idx += shape
+            # end
+        # end
+
+        model_sens = sens_matrix[simid][:, idx: idx + shape]
+
+        for j in range(shape):
+            ax.plot(model_sens[:, j], label='{:02d}'.format(j))
+        # end
+        
+        ax.set_ylabel('Sensitivity')
+        ax.set_xlabel('Model resp. indep. var.')        
+        ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+        ax.get_legend().set_title("DOF")
+        
+        return fig
+    
     def get_log_like(self):
         """Returns the log likelyhood of the model
         """

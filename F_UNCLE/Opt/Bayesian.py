@@ -440,18 +440,20 @@ class Bayesian(Struc):
         """Determines the best candidate EOS function for the models
 
         Return:
-           (tuple): length 2, elements are:
+           (tuple): length 3, elements are:
 
-               0. (PhysicsModel): The model which gives best agreement over the
-                  space
+               0. (Bayesian): A copy of self with the optimal models
                1. (list): is of solution history elements are:
 
                    0. (np.ndarray) Log likelihood, (nx1) where n is number of
                       iterations
                    1. (np.ndarray) model dof history (nxm) where n is iterations
                       and m is the model dofs
-               2. (np.ndarray) sensitivity matrix of all experiments to
-                   the model
+
+               2. (dict) sensitivity matrix of all experiments to
+                   the model, keys are simulation keys
+               3. (dict) fisher information matrix for all experiments
+                   keys are simulation keys
 
         """
         #FixMe: "intitial_data" misspelled and not used
@@ -664,8 +666,7 @@ class Bayesian(Struc):
                 # end
                     
             # end
-            
-            
+                       
             # Updates the model dof to the optimal value
             besti = np.argmax(costs)
 
@@ -744,17 +745,40 @@ class Bayesian(Struc):
                   .format(self.get_inform(1)))
         # end
 
+        # Make the fisher information matrix
+        fisher_data = {}
+        # Get fisher info for everyone
+        fisher_all = np.empty((analysis.shape()[1], analysis.shape()[1]))
+        for key in analysis.simulations:
+            fisher = analysis.simulations[key]['exp']\
+                             .get_fisher_matrix(sens_matrix[key])
+            fisher_all += fisher
+            fisher_data[key] = fisher 
+        # end
+        fisher_data['All'] = fisher_all
+        if self.get_option('pickle_sens'):
+            with open('fisher_matrix.pkl', 'wb') as fid:
+                pickle.dump(fisher_data, fid)
+            # end
+        # end
+               
         dof_hist = np.array(dof_hist)
         history = np.array(history)
 
-        return analysis, (history, dof_hist, data_hist), sens_matrix
+        return analysis, (history, dof_hist, data_hist), sens_matrix,\
+            fisher_data
 
     @staticmethod
-    def fisher_decomposition(fisher, model, tol=1E-3):
+    def fisher_decomposition(fisher_dct, simid,  models, mkey, tol=1E-3):
         """Calculate a spectral decomposition of the fisher information matrix
 
         Args:
-            fisher(np.ndarray): A nxn array where n is model dof
+            fisher_dct(dict): A dictionary nxn array where n is sum of all
+                              model dof
+            simid(str): Key for the simulation you want the Fisher info for
+            models(dict): A dictionary of all models
+            mkey(str): The key for the model on which the analysis is being
+                       performed
 
         Keyword Args:
             tol(float): Eigenvalues less than tol are ignored
@@ -776,9 +800,30 @@ class Bayesian(Struc):
                 3. (np.ndarray): vector of independent variable
 
         """
+        if simid not in fisher_dct:
+            raise IndexError('simid not in the fisher information'
+                             ' matrix dictionary')
 
+        if mkey not in models:
+            raise IndexError('mkey not in the models'
+                             ' dictionary')
+
+        fisher = fisher_dct[simid]
+        idx = 0
+        for key in models:
+            shape = models[key].shape()
+            if key == mkey:
+                break
+            else:
+                idx += shape
+            # end
+        # end
+        model = models[mkey]
+        
         # Spectral decomposition of info matrix and sort by eigenvalues
-        eig_vals, eig_vecs = np.linalg.eigh(fisher)
+        eig_vals, eig_vecs = np.linalg.eigh(
+            fisher[idx: idx + shape, idx: idx + shape]
+        )
         eig_vals = np.maximum(eig_vals, 0)        # info is positive definite
 
         i = np.argsort(eig_vals)[-1::-1]
@@ -796,18 +841,14 @@ class Bayesian(Struc):
         vol = np.logspace(np.log10(v_min), np.log10(v_max), len(knots) * 100)
         funcs = []
         for eig , vec in zip(vals[:n_vecs], vecs[:n_vecs]):
-            # new_model = self.models[self.opt_key].\
-            #     set_c(vec * self.models[self.opt_key].get_dof())
             new_model = model.\
                 set_c(vec * model.get_dof())
-
             funcs.append(new_model(vol))
             if funcs[-1][np.argmax(np.fabs(funcs[-1]))] < 0:
                 funcs[-1] *= -1
             # end
             funcs[-1] = np.array(funcs[-1]) *  1/max(funcs[-1])
         funcs = np.array(funcs)
-        
 
         return vals[:n_vals], vecs, funcs, vol
 
@@ -1275,105 +1316,6 @@ class Bayesian(Struc):
         # ax1.set_xlabel('Iteration number')
         # fig.savefig('EOS_convergence.pdf')
 
-    def plot_sens_matrix(self, simid, axes=None, fig=None,
-                         sens_matrix=None, labels=[], linestyles=[]):
-        """Prints the sensitivity matrix
-
-        Args:
-            simid(str): The key for the simulation to plot
-            axes(plt.Axes): The axes object *Ignored*
-            fig(plt.Figure): A valid matplotlib figure on which to plot.
-                             If `None`, creates a new figure
-            sens_matrix(dict): A dict of the total sensitivity
-            labels(list): Strings for labels *Ignored*
-            linestyles(list): Strings for linestyles *Ignored*
-
-        Return:
-            (plt.Figure): The figure
-        """
-        if sens_matrix is None:
-            sens_matrix = self._get_sens()
-        elif isinstance(sens_matrix, dict):
-            if simid not in sens_matrix:
-                raise IndexError('{:} simid not in the sensitivity'
-                                 'matrix'.format(self.get_inform(1)))
-        else:
-            raise TypeError('{:} sens matrix must be none or an dict'.
-                            format(self.get_inform(1)))
-        # end
-
-        if fig is None:
-            fig = plt.figure()
-        else:
-            fig = fig
-        # end
-
-        model = self.models[self.opt_key]
-
-        gs = gridspec.GridSpec(3, 4,
-                               width_ratios=[6, 1, 6, 1])
-
-        ax1 = fig.add_subplot(gs[0])
-        ax2 = fig.add_subplot(gs[2])
-        ax3 = fig.add_subplot(gs[4])
-        ax4 = fig.add_subplot(gs[6])
-        ax5 = fig.add_subplot(gs[8])
-
-        knot_post = model.get_t()
-
-        resp_val = self.simulations[simid]['exp']()[0]
-
-        style = ['-r', '-g', '-b', ':r', ':g', ':b',
-                 '--r', '--g', '--b', '--k']
-        for i in range(10):
-            ax1.plot(sens_matrix[simid][:, i],
-                     style[i], label="{:4.3f}".format(knot_post[i]))
-        ax1.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-        # ax1.get_legend().set_title("knots",
-        #   prop = {'size':rcParams['legend.fontsize']})
-        for i in range(10, 20):
-            ax2.plot(sens_matrix[simid][:, i],
-                     style[i - 10], label="{:4.3f}".format(knot_post[i]))
-        ax2.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-        # ax2.get_legend().set_title("knots",
-        #   prop = {'size':rcParams['legend.fontsize']})
-        for i in range(20, 30):
-            ax3.plot(sens_matrix[simid][:, i],
-                     style[i - 20], label="{:4.3f}".format(knot_post[i]))
-        ax3.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-        # ax3.get_legend().set_title("knots",
-        #   prop = {'size':rcParams['legend.fontsize']})
-
-        for i in range(30, 40):
-            ax4.plot(sens_matrix[simid][:, i],
-                     style[i - 30], label="{:4.3f}".format(knot_post[i]))
-        ax4.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-        # ax4.get_legend().set_title("knots",
-        #   prop = {'size':rcParams['legend.fontsize']})
-
-        for i in range(40, 47):
-            ax5.plot(sens_matrix[simid][:, i],
-                     style[i - 40], label="{:4.3f}".format(knot_post[i]))
-        ax5.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-        # ax5.get_legend().set_title("knots",
-        #   prop = {'size':rcParams['legend.fontsize']})
-
-        ax1.set_ylabel('Sensitivity')
-        ax3.set_ylabel('Sensitivity')
-        ax5.set_ylabel('Sensitivity')
-        ax5.set_xlabel('Model resp. indep. var.')
-        ax4.set_xlabel('Model resp. indep. var.')
-
-        # xlocator = (max(resp_val) - min(resp_val)) / 4
-        # ax1.xaxis.set_major_locator(MultipleLocator(xlocator))
-        # ax2.xaxis.set_major_locator(MultipleLocator(xlocator))
-        # ax3.xaxis.set_major_locator(MultipleLocator(xlocator))
-        # ax4.xaxis.set_major_locator(MultipleLocator(xlocator))
-        # ax5.xaxis.set_major_locator(MultipleLocator(xlocator))
-
-        fig.tight_layout()
-
-        return fig
 
 ###---------------
 ### Local Variables:

@@ -28,7 +28,7 @@ from F_UNCLE.Models.Ptw import Ptw
 
 parser = argparse.ArgumentParser(description='Generate plots for notes.tex')
 parser.add_argument('--show', dest='show', action='store_true')
-parser.add_argument('--fig_dir', type=str, dest='fig_dir', default='./NotesFig',
+parser.add_argument('--fig_dir', type=str, dest='fig_dir', default='./NotesFig/',
                     help='Directory of figures')
 for s, h in (
         ('eos_diff', 'Plot the difference between the prior and true eos'),
@@ -59,6 +59,9 @@ for s, h in (
 
 options = parser.parse_args()
 
+if not os.path.isdir(options.fig_dir):
+    os.mkdir(options.fig_dir)
+    
 if __name__ == '__main__':
     #################
     #    Get Data   #
@@ -101,7 +104,7 @@ if __name__ == '__main__':
         debug=False,
         verb=True,
         sens_mode='ser',
-        maxiter=6)
+        maxiter=1)
 
     # 5. Generate data from the simulations using the prior
     gun_prior_sim = gun_simulation(analysis.models)
@@ -110,7 +113,7 @@ if __name__ == '__main__':
 
     # 6. Run the analysis
     to = time.time()
-    opt_model, history, sens_matrix = analysis()
+    opt_model, history, sens_matrix, fisher_matrix = analysis()
     print('time taken ', to - time.time() )
 
     # 7. Update the simulations and get new data
@@ -198,17 +201,10 @@ if __name__ == '__main__':
         return fig
 
     def info_all():
-        fisher = opt_model.simulations['Gun']['exp'].\
-            get_fisher_matrix(sens_matrix=sens_matrix['Gun'])
-        fisher += opt_model.simulations['Sphere']['exp'].\
-            get_fisher_matrix(sens_matrix=sens_matrix['Sphere'])
-        fisher += opt_model.simulations['Stick']['exp'].\
-            get_fisher_matrix(sens_matrix=sens_matrix['Stick'])
-
+        
         spec_data = Bayesian.fisher_decomposition(
-            fisher,
-            opt_model.models[opt_model.opt_key]
-        )
+            fisher_matrix, 'All', opt_model.models, 'isen')
+        
 
         fig = plt.figure(figsize=tall)
         fig = opt_model.plot_fisher_data(spec_data, fig=fig)
@@ -219,13 +215,9 @@ if __name__ == '__main__':
     def info_gun():
         ''' Fisher information about the gun experiment
         '''
-        fisher = opt_model.simulations['Gun']['exp'].\
-            get_fisher_matrix(sens_matrix=sens_matrix['Gun'])
-
         spec_data = Bayesian.fisher_decomposition(
-            fisher,
-            opt_model.models[opt_model.opt_key]
-        )
+            fisher_matrix, 'Gun', opt_model.models, 'eos')
+        
 
 
         fig = plt.figure(figsize=tall)
@@ -237,13 +229,11 @@ if __name__ == '__main__':
     def info_stick():
         ''' Fisher information about the stick
         '''
-        fisher = opt_model.simulations['Stick']['exp'].\
-            get_fisher_matrix(sens_matrix=sens_matrix['Stick'])
-        spec_data = Bayesian.fisher_decomposition(
-            fisher,
-            opt_model.models[opt_model.opt_key]
-        )
 
+        spec_data = Bayesian.fisher_decomposition(
+            fisher_matrix, 'Stick', opt_model.models, 'eos')
+        
+        
 
         fig = plt.figure(figsize=tall)
         fig = opt_model.plot_fisher_data(spec_data, fig=fig)
@@ -253,13 +243,10 @@ if __name__ == '__main__':
     def info_sphere():
         ''' Fisher information about the sphere
         '''
-        fisher = opt_model.simulations['Sphere']['exp'].\
-            get_fisher_matrix(sens_matrix=sens_matrix['Sphere'])
 
         spec_data = Bayesian.fisher_decomposition(
-            fisher,
-            opt_model.models[opt_model.opt_key]
-        )
+            fisher_matrix, 'Sphere', opt_model.models, 'eos')
+        
 
         fig = plt.figure(figsize=tall)
         fig = opt_model.plot_fisher_data(spec_data, fig=fig)
@@ -343,20 +330,29 @@ if __name__ == '__main__':
         fig.tight_layout()
         return fig
 
-    gun_sens = lambda: opt_model.plot_sens_matrix(
-        simid='Gun',
+    gun_sens = lambda: EOSModel.plot_sens_matrix(
+        sens_matrix,
+        'Gun',
+        opt_model.models,
+        'eos',
         fig=plt.figure(figsize=square),
-        sens_matrix=sens_matrix)             # Gun sensitivity plot
+        )             # Gun sensitivity plot
 
-    stick_sens = lambda: opt_model.plot_sens_matrix(
-        simid='Stick',
+    stick_sens = lambda: EOSModel.plot_sens_matrix(
+        sens_matrix,
+        'Stick',
+        opt_model.models,
+        'eos',
         fig=plt.figure(figsize=square),
-        sens_matrix=sens_matrix)             # Stick sensitivity plot
+        )             # Stick sensitivity plot
 
-    sphere_sens = lambda: opt_model.plot_sens_matrix(
-        simid='Sphere',
+    sphere_sens = lambda: EOSModel.plot_sens_matrix(
+        sens_matrix,
+        'Sphere',
+        opt_model.models,
+        'eos',
         fig=plt.figure(figsize=square),
-        sens_matrix=sens_matrix)             # Sphere sensitivity plot
+        )             # Sphere sensitivity plot
 
     eos_basis = lambda: eos_model.plot_basis(
         fig=plt.figure(figsize=square))    # EOS basis functions

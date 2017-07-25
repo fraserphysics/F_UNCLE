@@ -65,7 +65,7 @@ models['strength'] = str_model
 analysis = Bayesian(
     simulations=simulations,
     models=models,
-    opt_keys=['eos'],#, 'strength'],
+    opt_keys=['eos', 'strength'],
     constrain=True,
     outer_reltol=1E-6,
     precondition=True,
@@ -80,7 +80,7 @@ solve = True
 
 if solve:
     to = time.time()
-    opt_model, history, sens_matrix = analysis()
+    opt_model, history, sens_matrix, fisher_matrix  = analysis()
     print('time taken ', to - time.time() )
     print(opt_model.models['eos'])
     print(opt_model.models['strength'])
@@ -103,19 +103,6 @@ else:
         sens_matrix = pickle.load(fid)
 # end
 
-fisher_data = {}
-# Get fisher info for everyone
-fisher_all = np.empty((analysis.shape()[1], analysis.shape()[1]))
-for key in simulations:
-    fisher = simulations[key]['exp'].get_fisher_matrix(sens_matrix[key])
-    fisher_all += fisher
-    fisher_data[key] = fisher 
-# end
-
-fisher_data['All'] = fisher_all
-with open('fisher_matrix.pkl', 'wb') as fid:
-    pickle.dump(fisher_data, fid)
-# end
 
 # for key in fisher_data:
 #     fisher = fisher_data[key]
@@ -180,3 +167,39 @@ fig = cylinder_simulation.plot(data=[cyl_prior, cyl_post, cyl_exp],
                          linestyles=['-k', '--r', '-.g'])
 
 fig.savefig('cyl_results.pdf')
+
+
+## Plot the sensitivity of the cylinder to isen
+fig = EOSModel.plot_sens_matrix(sens_matrix, 'Cyl', opt_model.models, 'eos')
+fig.savefig('cyl_eos_sens.pdf')
+
+fig = SimpleStr.plot_sens_matrix(sens_matrix, 'Cyl', opt_model.models, 'strength')
+fig.savefig('cyl_str_sens.pdf')
+
+## Plot the sensitivity of the sandwich to isen
+fig = EOSModel.plot_sens_matrix(sens_matrix, 'Sand', opt_model.models, 'eos')
+fig.savefig('sand_eos_sens.pdf')
+
+fig = SimpleStr.plot_sens_matrix(sens_matrix, 'Sand', opt_model.models, 'strength')
+fig.savefig('sand_str_sens.pdf')
+
+
+## Get the fisher information
+def make_fisher_image(data):
+    fig = plt.figure()
+    ax1 = fig.add_subplot(121)
+    ax2 = fig.add_subplot(122)
+    ax1.semilogy(data[0], 'sk')
+    for i in range(data[2].shape[0]):
+        ax2.plot(data[3], data[2][i])
+    # end
+    return fig
+
+data = Bayesian.fisher_decomposition(fisher_matrix, 'Cyl', opt_model.models, 'eos')
+fig = make_fisher_image(data)
+fig.savefig('cyl_eos_info.pdf')
+
+
+data = Bayesian.fisher_decomposition(fisher_matrix, 'Sand', opt_model.models, 'eos')
+fig = make_fisher_image(data)
+fig.savefig('sand_eos_info.pdf')

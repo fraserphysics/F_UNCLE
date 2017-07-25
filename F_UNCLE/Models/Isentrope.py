@@ -41,6 +41,7 @@ import pdb
 # =========================
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 from scipy.interpolate import InterpolatedUnivariateSpline as IU_Spline
 from scipy.optimize import brentq
 # For scipy.interpolate.InterpolatedUnivariateSpline. See:
@@ -951,6 +952,117 @@ class EOSModel(Spline, Isentrope):
         axes.set_xlabel(r'Specific Volume / ${cm}^3{g}^{-1}$')
         axes.set_ylabel(r'Pressure difference / Pa')
         return axes
+    
+    @staticmethod
+    def plot_sens_matrix(sens_matrix, simid, models, mkey,
+                         fig=None):
+        """Prints the sensitivity matrix
+
+        Args:
+            sens_matrix(dict): Dictionary of sensitivity matricies
+            simid(str): Key for simulation 
+            models(OrderedDict): Ordered dictionary of models 
+            mkey(str): Key in models corresponding to the EOSModel
+        
+        Keyword Args
+            fig(plt.Figure): A valid matplotlib figure on which to plot.
+                             If `None`, creates a new figure
+
+        Return:
+            (plt.Figure): The figure
+        """
+        if simid not in sens_matrix:
+            raise IndexError('Simid not in the sensitivity'
+                             'matrix dictionary')
+
+        if mkey not in models:
+            raise IndexError('mkey not in the models'
+                             ' dictionary')
+        
+        # end
+
+        if fig is None:
+            fig = plt.figure()
+        else:
+            fig = fig
+        # end
+        
+        model = models[mkey]
+
+        idx = 0
+        for key in models:
+            shape = models[key].shape()
+            if key == mkey:
+                break
+            else:
+                idx += shape
+            # end
+        # end
+
+        model_sens = sens_matrix[simid][:, idx: idx + shape]
+        
+        gs = gridspec.GridSpec(3, 4,
+                               width_ratios=[6, 1, 6, 1])
+
+        ax1 = fig.add_subplot(gs[0])
+        ax2 = fig.add_subplot(gs[2])
+        ax3 = fig.add_subplot(gs[4])
+        ax4 = fig.add_subplot(gs[6])
+        ax5 = fig.add_subplot(gs[8])
+
+        knot_post = model.get_t()
+
+        style = ['-r', '-g', '-b', ':r', ':g', ':b',
+                 '--r', '--g', '--b', '--k']
+        for i in range(10):
+            ax1.plot(model_sens[:, i],
+                     style[i], label="{:4.3f}".format(knot_post[i]))
+        ax1.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+        # ax1.get_legend().set_title("knots",
+        #   prop = {'size':rcParams['legend.fontsize']})
+        for i in range(10, 20):
+            ax2.plot(model_sens[:, i],
+                     style[i - 10], label="{:4.3f}".format(knot_post[i]))
+        ax2.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+        # ax2.get_legend().set_title("knots",
+        #   prop = {'size':rcParams['legend.fontsize']})
+        for i in range(20, 30):
+            ax3.plot(model_sens[:, i],
+                     style[i - 20], label="{:4.3f}".format(knot_post[i]))
+        ax3.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+        # ax3.get_legend().set_title("knots",
+        #   prop = {'size':rcParams['legend.fontsize']})
+
+        for i in range(30, 40):
+            ax4.plot(model_sens[:, i],
+                     style[i - 30], label="{:4.3f}".format(knot_post[i]))
+        ax4.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+        # ax4.get_legend().set_title("knots",
+        #   prop = {'size':rcParams['legend.fontsize']})
+
+        for i in range(40, 47):
+            ax5.plot(model_sens[:, i],
+                     style[i - 40], label="{:4.3f}".format(knot_post[i]))
+        ax5.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+        # ax5.get_legend().set_title("knots",
+        #   prop = {'size':rcParams['legend.fontsize']})
+
+        ax1.set_ylabel('Sensitivity')
+        ax3.set_ylabel('Sensitivity')
+        ax5.set_ylabel('Sensitivity')
+        ax5.set_xlabel('Model resp. indep. var.')
+        ax4.set_xlabel('Model resp. indep. var.')
+
+        # xlocator = (max(resp_val) - min(resp_val)) / 4
+        # ax1.xaxis.set_major_locator(MultipleLocator(xlocator))
+        # ax2.xaxis.set_major_locator(MultipleLocator(xlocator))
+        # ax3.xaxis.set_major_locator(MultipleLocator(xlocator))
+        # ax4.xaxis.set_major_locator(MultipleLocator(xlocator))
+        # ax5.xaxis.set_major_locator(MultipleLocator(xlocator))
+
+        fig.tight_layout()
+
+        return fig
 
     def plot_basis(self, axes=None, fig=None, labels=[], linstyles=[]):
         """Plots the basis function and their first and second derivatives
@@ -1123,7 +1235,8 @@ class DensityEOS(EOSModel):
         # end
         
         return G_mat, h_vec
-
+    
+    
 #-------------------------
 # Local Variables:
 # eval: (python-mode)
