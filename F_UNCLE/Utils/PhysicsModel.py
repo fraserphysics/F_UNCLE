@@ -260,9 +260,9 @@ class GaussianModel(PhysicsModel):
     def get_log_like(self):
         """Returns the log liklyhood of the model, given the prior
         """
-        return -0.5 * np.dot(np.dot(self.get_dof() - self.prior.get_dof(),
+        return float(-0.5 * np.dot(np.dot(self.get_dof() - self.prior.get_dof(),
                                     inv(self.get_sigma())),
-                             self.get_dof() - self.prior.get_dof())
+                             self.get_dof() - self.prior.get_dof()))
 
 
     def get_pq(self, scale=False):

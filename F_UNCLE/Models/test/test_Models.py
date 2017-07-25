@@ -30,6 +30,7 @@ from ...Utils.Struc import Struc
 from ...Utils.PhysicsModel import PhysicsModel
 from ..Ptw import Ptw
 from ..SimpleStr import SimpleStr
+from ..RandomVariable import RandomVariable
 
 class TestPtw(unittest.TestCase):
     """Test of the Ptw class
@@ -240,6 +241,77 @@ class TestSimpleStr(unittest.TestCase):
         log_like = newmod.get_log_like()
 
         print(log_like)
+
+class TestRandomVariable(unittest.TestCase):
+
+    def setUp(self):
+        """
+        """
         
+    def instanciate(self, inp):
+
+        var = RandomVariable(inp)
+
+        self.assertIsInstance(var.get_dof(), np.ndarray)
+        self.assertTupleEqual(var.get_dof().shape, (1,1))      
+        self.assertEquals(var.get_dof()[0], 1)
+        
+    def test_instnatiation(self):
+
+        # Pass an int        
+        self.instanciate(1)
+        
+        # Pass a float
+        self.instanciate(1.0)
+
+        # Pass a list
+        self.instanciate([1.0])
+        
+        # Pass a tuple
+        self.instanciate((1.0,))
+        
+        # Pass a numpy array
+        self.instanciate(np.array([1.0]))
+        
+    def test_bad_instantiation(self):
+        # Pass a 2-list
+
+        with self.assertRaises(ValueError):
+            self.instanciate([1.0, 2.0])            
+
+        # Pass a 2-tuple
+        with self.assertRaises(ValueError):
+            self.instanciate((1.0, 2.0))            
+
+        # Pass a 2-np.array
+        with self.assertRaises(ValueError):
+            self.instanciate(np.array([1.0, 2.0]))            
+
+    def test_print(self):
+
+        var = RandomVariable(1)
+
+        print(var)
+
+
+    def test_sigma(self):
+        """Test the variance is obtained correctly
+        """
+
+        var = RandomVariable(1)
+
+        sig = var.get_sigma()
+
+        self.assertTupleEqual(sig.shape, (1,1))
+
+    def test_shape(self):
+        """Test shape
+        """
+
+        var = RandomVariable(1)
+
+        self.assertEqual(var.shape(), 1)
+    
+    
 if __name__ == '__main__':
     unittest.main(verbosity=4)
