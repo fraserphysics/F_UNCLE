@@ -355,10 +355,12 @@ class TestBayesian(unittest.TestCase):
         bayes.set_option('maxiter', 1)
         out = bayes()
 
-        self.assertEqual(len(out), 3)
+        self.assertEqual(len(out), 4)
         self.assertIsInstance(out[0], Bayesian)
         self.assertIsInstance(out[1], tuple)
         self.assertEqual(len(out[1]), 3)
+        self.assertIsInstance(out[2], dict)
+        self.assertIsInstance(out[3], dict)
 
     def test_multiple_calls(self):
         """Tests that the results are the same after calling multiple times
@@ -367,9 +369,9 @@ class TestBayesian(unittest.TestCase):
                          models={'eos': self.eos_model},
                          opt_keys='eos')
 
-        sol1, hist1, sens1 = bayes()
+        sol1, hist1, sens1, fisher1 = bayes()
 
-        sol2, hist2, sens2 = bayes()
+        sol2, hist2, sens2, fisher2 = bayes()
 
         npt.assert_almost_equal(hist1[0], hist2[0], decimal=4,
                                 err_msg='Histories not equal for subsequent'
@@ -687,7 +689,6 @@ class TestSimpleModels(unittest.TestCase):
             use_hessian=True,
             sens_matrix=sens_matrix['simple1'])
 
-    @pytest.mark.xfail
     def test_fisher_matrix(self):
         """
         """
@@ -710,11 +711,9 @@ class TestSimpleModels(unittest.TestCase):
                           sens_matrix['simple2'])
 
         npt.assert_array_almost_equal(self.exp1.get_fisher_matrix(
-                                      new.models,
                                       sens_matrix=sens_matrix['simple1']),
                                       fisher_1)
         npt.assert_array_almost_equal(self.exp1.get_fisher_matrix(
-                                      new.models,
                                       sens_matrix=sens_matrix['simple2']),
                                       fisher_2)
 
