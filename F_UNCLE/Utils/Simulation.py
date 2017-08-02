@@ -69,7 +69,7 @@ class Simulation(Struc):
     **Definitions**
 
     Simulation
-        A ananlysuis based on one or more physics
+        A analysis based on one or more physics
         models which attempts to predict experimental data
 
     In order for an Experiment to work with the F_UNCLE framework, it must
@@ -87,7 +87,7 @@ class Simulation(Struc):
         
         Args: 
             req_models(dict): A dictionary in the form {key: type} of the names
-                              and types of the mandatory physcis models this
+                              and types of the mandatory physics models this
                               Experiment uses
 
         Options can be set by passing them as keyword arguments
@@ -230,7 +230,7 @@ class Simulation(Struc):
         """Compares a the results of two Experiments
         
         The comparison is made by comparing the results of simdata1
-        and simdata2 at each independant variable in simdata2. 
+        and simdata2 at each independent variable in simdata2. 
         
         The difference is evaluated as simdata2 **less** simdata1
 
@@ -257,8 +257,8 @@ class Simulation(Struc):
         """Generates the P and q matrix for the Bayesian analysis
 
         Args:
-           model(PhysicsModel): The model being analysed
-           sim_data(list): Lengh three list corresponding to the `__call__` from
+           model(PhysicsModel): The model being analyzed
+           sim_data(list): Length three list corresponding to the `__call__` from
                            a Experiment object
            experiment(Experiment): A valid Experiment object
            sens_matrix(np.ndarray): The sensitivity matrix
@@ -277,7 +277,7 @@ class Simulation(Struc):
 
         Args:
            model(PhysicsModel): The model under investigation
-           sim_data(list): Lengh three list corresponding to the `__call__` from
+           sim_data(list): Length three list corresponding to the `__call__` from
                            a Experiment object
            experiment(Experiment): A valid Experiment object
 
@@ -294,7 +294,7 @@ class Simulation(Struc):
         Args:
             models(dict): Dictionary of models
             model_key(list): A list of the model keys used
-            dof_list(list): A list of numpy array's defininf the model DOFs
+            dof_list(list): A list of numpy array's defining the model DOFs
 
         Returns:
             (list): A list of outputs to __call___ for the experiment 
@@ -323,7 +323,7 @@ class Simulation(Struc):
         Args:
             models(dict): Dictionary of models
             model_key(str): The key for the model in the models to be used
-            dof_list(list): A list of numpy array's defininf the model DOFs
+            dof_list(list): A list of numpy array's defining the model DOFs
 
         Returns:
             (list): A list of outputs to __call___ for the experiment 
@@ -350,7 +350,7 @@ class Simulation(Struc):
         Args:
             models(dict): Dictionary of models
             model_key(str): The key for the model in the models to be used
-            dof_list(list): A list of numpy array's defininf the model DOFs
+            dof_list(list): A list of numpy array's defining the model DOFs
 
         Returns:
             (list): A list of outputs to __call___ for the experiment 
@@ -361,7 +361,7 @@ class Simulation(Struc):
         
         ret_list = []
         
-        raise NotImplementedError('{:} multi solve using runjob is not availible'
+        raise NotImplementedError('{:} multi solve using runjob is not available'
                                   .format(self.get_inform(0)))
 
         return ret_list
@@ -384,7 +384,7 @@ class Simulation(Struc):
 
         """
 
-        raise NotImplementedError('{:} multi solve using runjob is not availible'
+        raise NotImplementedError('{:} multi solve using runjob is not available'
                                   .format(self.get_inform(0)))
 
 
@@ -606,7 +606,7 @@ class Simulation(Struc):
                         np.zeros(sens_matrix.shape))
 
     def _get_hessian(self, models, model_key, initial_data=None):
-        r"""Gets the Hessian (matrix of second derrivatives) of the simulated
+        r"""Gets the Hessian (matrix of second derivatives) of the simulated
         experiments to the EOS
 
         .. math::

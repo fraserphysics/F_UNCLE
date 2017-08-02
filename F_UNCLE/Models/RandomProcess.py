@@ -3,7 +3,6 @@
 
 import copy
 
-
 import numpy as np
 from ..Utils.PhysicsModel import GaussianModel
 from ..Utils.Struc import Struc
