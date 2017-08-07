@@ -194,7 +194,7 @@ class PhysicsModel(Struc):
         return NotImplemented
 
     def _on_update_dof(self, model):
-        """An extra method to perform special post-pocessing tasks when the DOF has
+        """An extra method to perform special post-processing tasks when the DOF has
         been updated
         
         Args:
@@ -241,7 +241,7 @@ class PhysicsModel(Struc):
         """Prints the sensitivity matrix
 
         Args:
-            sens_matrix(dict): Dictionary of sensitivity matricies
+            sens_matrix(dict): Dictionary of sensitivity matrices
             simid(str): Key for simulation 
             models(OrderedDict): Ordered dictionary of models 
             mkey(str): Key in models corresponding to the EOSModel
@@ -295,7 +295,7 @@ class PhysicsModel(Struc):
         return fig
     
     def get_log_like(self):
-        """Returns the log likelyhood of the model
+        """Returns the log likelihood of the model
         """
 
         return NotImplemented
@@ -307,18 +307,18 @@ class PhysicsModel(Struc):
         return NotImplemented
 
     def get_pq(self, scale=False):
-        """Returns the p and q matricies for the model
+        """Returns the p and q matrices for the model
         """
 
         return NotImplemented
 
 
 class GaussianModel(PhysicsModel):
-    """Generates model statistics assuming a gausian error
+    """Generates model statistics assuming a Gaussian error
     """
 
     def get_log_like(self):
-        """Returns the log liklyhood of the model, given the prior
+        """Returns the log likelihood of the model, given the prior
         """
         return float(-0.5 * np.dot(np.dot(self.get_dof() - self.prior.get_dof(),
                                     inv(self.get_sigma())),

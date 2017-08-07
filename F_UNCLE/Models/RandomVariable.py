@@ -23,7 +23,7 @@ class RandomVariable(GaussianModel):
         """
         def_opts = {
             'sigma': [float, 0.005 , 0, None, '',
-                      "Normalized variance for each coefficeint"],
+                      "Normalized variance for each coefficient"],
             }
 
         if 'def_opts' in kwargs:

@@ -119,7 +119,7 @@ class Experiment(Struc):
         # Performs class specific instantiation, i.e. making a trigger
         self._on_init(*args, **kwargs)
 
-        # Obtains the time shift from t=0 for the curent experiment
+        # Obtains the time shift from t=0 for the current experiment
         self.tau_exp = self.trigger(self.data[0], self.data[1])
 
         # Creates a window which masks the experimental data to
@@ -146,7 +146,7 @@ class Experiment(Struc):
 
     def simple_trigger(self, x, y):
         """This is the most basic trigger object for data which does not need
-        to be aling. Returns a shift if zero for all values of trial
+        to be aligned. Returns a shift if zero for all values of trial
         data
         """
         return x[0]
@@ -194,7 +194,7 @@ class Experiment(Struc):
 
         n_width = self.get_option('n_smooth')
 
-        # If smoohting knots > 0 then apply gausian
+        # If smoothing knots > 0 then apply Gaussian
         # smoothing. Otherwise smooth with LSQ splines
         if n_width > 0:
             width = knotlist[n_width]-knotlist[0]
@@ -451,7 +451,7 @@ class Experiment(Struc):
         return data_out
 
     def _get_data(self, *args, **kwargs):
-        """Abstract class for parsing datafiles or generating synthetic data
+        """Abstract class for parsing data-files or generating synthetic data
 
         Args:
             *args(list): Variable length list of arguments passed from
@@ -465,7 +465,7 @@ class Experiment(Struc):
                 0. (np.ndarray): The independent variable
                 1. (np.ndarray): The **single** dependent variable
                 2. (np.ndarray or None): The variance of the dependent
-                   variable if availible 
+                   variable if available 
         """
         
         raise NotImplementedError("Must be implemented in a child of the"
@@ -479,7 +479,7 @@ class Experiment(Struc):
         Args:
            models(dict): The dictionary of models
            opt_key(str): The key for the model being optimized
-           sim_data(list): Lengh three list corresponding to the `__call__` from
+           sim_data(list): Length three list corresponding to the `__call__` from
                            a Experiment object
            sens_matrix(np.ndarray): The sensitivity matrix
 
@@ -493,7 +493,7 @@ class Experiment(Struc):
 
         """
 
-        raise NotImplementedError('{:} cannot compute likelyhoods without a'
+        raise NotImplementedError('{:} cannot compute likelihoods without a'
                                   ' statistical model for the data. Use a child'
                                   ' of Experiment which has implemented a model'
                                   .format(self.get_inform(1)))
@@ -502,7 +502,7 @@ class Experiment(Struc):
         """Gets the log likelihood of the current simulation
 
         Args:
-           sim_data(list): Lengh three list corresponding to the `__call__` from
+           sim_data(list): Length three list corresponding to the `__call__` from
                            a Experiment object
            experiment(Experiment): A valid Experiment object
 
@@ -510,7 +510,7 @@ class Experiment(Struc):
             (float): The log of the likelihood of the simulation
         """
 
-        raise NotImplementedError('{:} cannot compute likelyhoods without a'
+        raise NotImplementedError('{:} cannot compute likelihoods without a'
                                   ' statistical model for the data. Use a child'
                                   ' of Experiment which has implemented a model'
                                   .format(self.get_inform(1)))
@@ -522,7 +522,7 @@ class Experiment(Struc):
             sens_matrix(np.ndarray): the sensitivity matrix
 
         Keyword Args:
-            use_hessian(bool): Flag to toggle wheather or not to use the hessian
+            use_hessian(bool): Flag to toggle whether or not to use the hessian
 
         Return:
             (np.ndarray): The fisher information matrix, a nxn matrix where
@@ -540,13 +540,13 @@ class Experiment(Struc):
         Args:
             folder(str): The folder within fit_9501/Data where the experimental
                          data are located
-            filename(str): The name of the datafile
-            root_dir(str): The path of the file caling this method
+            filename(str): The name of the data-file
+            root_dir(str): The path of the file calling this method
             header_lines(int): The number of header lines to skip
             delimiter(str): The delimiter for the file
             indepcol(int): The index of the independent variable column
-            depcols(list): The indicies of the dependant variables
-            varcols(list): The indicies of the variance of the dep var
+            depcols(list): The indices of the dependent variables
+            varcols(list): The indices of the variance of the dep var
 
         """
         fname = os.path.abspath(os.path.normcase(os.path.join(
@@ -571,7 +571,7 @@ class Experiment(Struc):
                 np.nan * np.ones(data.shape[0])
     
 class GaussianExperiment(Experiment):
-    """Class to represent experimental data which is modelled as being
+    """Class to represent experimental data which is modeled as being
     normally distributed
     """
     
@@ -582,7 +582,7 @@ class GaussianExperiment(Experiment):
         Args:
            models(dict): The dictionary of models
            opt_keys(list): The key for the models which are being optimized
-           sim_data(list): Lengh three list corresponding to the `__call__` from
+           sim_data(list): Leigh three list corresponding to the `__call__` from
                            a Experiment object
            sens_matrix(np.ndarray): The sensitivity matrix
 
@@ -633,7 +633,7 @@ class GaussianExperiment(Experiment):
         """Gets the log likelihood of the current simulation
 
         Args:
-           sim_data(list): Lengh three list corresponding to the `__call__` from
+           sim_data(list): Length three list corresponding to the `__call__` from
                            a Experiment object
            experiment(Experiment): A valid Experiment object
 

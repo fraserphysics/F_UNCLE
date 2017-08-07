@@ -283,7 +283,7 @@ class Isentrope(GaussianModel):
         """Plots the EOS
 
         Overloads the :py:meth:`F_UNCLE.Utils.Struc.Struc.plot` method to plot
-        the eos over the range of volumes.
+        the EOS over the range of volumes.
 
         Args:
             axes(plt.Axes): The axes on which to plot the figure, if None,
@@ -386,7 +386,7 @@ class Isentrope(GaussianModel):
         return fig
 
     def get_constraints(self, scale=False):
-        r"""Returns the G and h matricies corresponding to the model
+        r"""Returns the G and h matrices corresponding to the model
 
         Args:
            model(GaussianModel): The physics model subject to
@@ -825,7 +825,7 @@ class EOSModel(Spline, Isentrope):
         return np.diag(dev)
 
     def _on_str(self):
-        """Addeed information on the EOS
+        """Added information on the EOS
         """
 
         dof = self.get_dof()
@@ -877,7 +877,7 @@ class EOSModel(Spline, Isentrope):
         return self._on_update_dof(self.set_c(c_in))
 
     def _on_update_dof(self, model):
-        """An extra method to perform special post-pocessing tasks when the DOF
+        """An extra method to perform special post-processing tasks when the DOF
         has been updated
 
         Args:
@@ -895,7 +895,7 @@ class EOSModel(Spline, Isentrope):
                   linestyles=['-k', '--k', '-.k'],
                   labels=None,
                   vrange=None):
-        """Plots the difference between the current EOS and ither isentropes
+        """Plots the difference between the current EOS and other Isentropes
 
         Plots the difference vs the prior
 
@@ -904,7 +904,7 @@ class EOSModel(Spline, Isentrope):
             axes(plt.Axes): The Axes on which to plot
             figure(plt.Figure): The figure object *Ignored*
             linestyles(list): A list of styles to plot
-            labels(list): A list of labels for the isentropes
+            labels(list): A list of labels for the Isentropes
             vrange(tuple): the specific volume range to plot
         Return:
             (plt.Axes)
@@ -939,8 +939,8 @@ class EOSModel(Spline, Isentrope):
         # end
 
         if not isinstance(isentropes, (list, tuple)):
-            raise TypeError("{:} isentropes must be a list or tuple of"
-                            "isentropes".format(self.get_inform(1)))
+            raise TypeError("{:} Isentropes must be a list or tuple of"
+                            "Isentropes".format(self.get_inform(1)))
         # end
         for isen, lbl in zip(isentropes, labels):
             axes.plot(v_list, isen(v_list**-1) - self.prior(v_list),
@@ -959,7 +959,7 @@ class EOSModel(Spline, Isentrope):
         """Prints the sensitivity matrix
 
         Args:
-            sens_matrix(dict): Dictionary of sensitivity matricies
+            sens_matrix(dict): Dictionary of sensitivity matrices
             simid(str): Key for simulation 
             models(OrderedDict): Ordered dictionary of models 
             mkey(str): Key in models corresponding to the EOSModel
