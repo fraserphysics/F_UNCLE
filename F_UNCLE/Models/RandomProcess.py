@@ -27,9 +27,10 @@ class RandomProcess(GaussianModel):
         
         Struc.__init__(self, name, def_opts = def_opts, *args, **kwargs)
 
-        self.mean = prior_mean
-        self.update_dof(prior_mean, prior_var)
-        self.var = prior_var
+
+        tmp_model = self.update_dof(prior_mean, prior_var)
+        self.mean = tmp_model.mean
+        self.var = tmp_model.var
         self.prior = copy.deepcopy(self)
 
     def plot(self, axes = None, labels=['Coeff'], linestyles=['ok'],
@@ -64,25 +65,25 @@ class RandomProcess(GaussianModel):
         if isinstance(dof_in, (int, float)):
             raise TypeError("{:} Random process DOF must be iterable"
                             .format(self.get_inform(1)))
-        elif len(dof_in) < 2:
-            raise TypeError("{:} Random process DOF must have two or more"
-                            " degrees of freedom"
-                            .format(self.get_inform(1)))
-        # end
-
-        if not isinstance(dof_in, np.ndarray):
+        elif isinstance(dof_in, (list, tuple)):
             dof_in = np.array(dof_in)
-
+            
         if var_in is None:
             var_in = self.var
         elif not isinstance(var_in, np.ndarray):
             var_in = np.array(var_in)
 
-        if not dof_in.shape[0] == self.mean.shape[0]:
+        if var_in is not None and not dof_in.shape[0] == var_in.shape[0]:
+            raise IndexError("{:} DOF must have the same dimensions"
+                             " as the variance".format(self.get_inform(1)))
+            
+        if self.mean is not None and not dof_in.shape[0] == self.mean.shape[0]:
             raise IndexError("{:} DOF must have the same dimensions"
                              " as the prior".format(self.get_inform(1)))
         
-        if var_in is not None and not dof_in.shape[0] == var_in.shape[0]:
+        if self.var is not None and\
+           var_in is not None and \
+           not dof_in.shape[0] == var_in.shape[0]:
             raise IndexError("{:} Variance must have the same dimensions"
                              " as DOF".format(self.get_inform(1)))
         
@@ -117,12 +118,12 @@ class RandomProcess(GaussianModel):
         out_str = "\n\n"
         out_str += "Random Process\n"
         out_str += "==============\n\n"
+        out_str += "\tNumber   Mean       Prior       Variance\n"
+        out_str += "\t------   ----       -----       --------\n"                   
 
         for i in range(self.mean.shape[0]):
-        out_str += "\tNumber   Mean       Variance\n"
-        out_str += "\t------   ----       --------\n"                   
-        out_str += "\t{:02d}   {:4.3e}    {:4.3e}\n"\
-                   .format(i, self.mean[i], self.var[i])
+            out_str += "\t{:02d}       {:4.3e}  {:4.3e}   {:4.3e}\n"\
+                       .format(i, self.mean[i], self.prior.mean[i], self.var[i])
 
         return out_str
 

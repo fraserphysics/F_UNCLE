@@ -20,6 +20,7 @@ import pdb
 # =========================
 
 import numpy as np
+import numpy.testing as npt
 import matplotlib.pyplot as plt
 
 # =========================
@@ -31,7 +32,7 @@ from ...Utils.PhysicsModel import PhysicsModel
 from ..Ptw import Ptw
 from ..SimpleStr import SimpleStr
 from ..RandomVariable import RandomVariable
-
+from ..RandomProcess import RandomProcess
 class TestPtw(unittest.TestCase):
     """Test of the Ptw class
     """
@@ -311,7 +312,109 @@ class TestRandomVariable(unittest.TestCase):
         var = RandomVariable(1)
 
         self.assertEqual(var.shape(), 1)
+
+class TestRandomProcess(unittest.TestCase):
+
+    def setUp(self):
+        """
+        """
+
+        self.mean = [1.0, 2.0, 3.0]
+        self.var =  [0.5, 0.25, 0.125]
+
+    def test_instnatiation(self):
+
+        var = RandomProcess(self.mean, self.var)
+
+        self.assertIsInstance(var.get_dof(), np.ndarray)
+        self.assertTupleEqual(var.get_dof().shape, (3,))      
+        self.assertEquals(var.get_dof()[0], 1.0)
+        self.assertEquals(var.get_dof()[1], 2.0)
+        self.assertEquals(var.get_dof()[2], 3.0)        
+
+        # Test a size 1 process
+        var = RandomProcess([1.0], [2.0])
+        
+    def test_bad_instantiation(self):
+        # Pass different length mean and variance
+        with self.assertRaises(IndexError):
+            RandomProcess([1.0, 2.0], [0.5, ])            
+
+        # Pass different length mean and variance
+        with self.assertRaises(IndexError):
+            RandomProcess([1.0,], [0.5, 0.25])            
+
+        
+    def test_update(self):
+
+        model = RandomProcess(self.mean, self.var)
+
+        # Update with no var
+        new_model = model.update_dof([2.0, 4.0, 6.0])
+
+        # Original DOF unchanged
+        self.assertEquals(model.get_dof()[0], self.mean[0])
+        self.assertEquals(model.get_dof()[1], self.mean[1])
+        self.assertEquals(model.get_dof()[2], self.mean[2])        
+
+        # New model updated
+        self.assertEquals(new_model.get_dof()[0], 2.0)
+        self.assertEquals(new_model.get_dof()[1], 4.0)
+        self.assertEquals(new_model.get_dof()[2], 6.0)        
+
+        # New model has the original prior
+        self.assertEquals(new_model.prior.get_dof()[0], self.mean[0])
+        self.assertEquals(new_model.prior.get_dof()[1], self.mean[1])
+        self.assertEquals(new_model.prior.get_dof()[2], self.mean[2])        
+        
+        # Variance should be the same as the original model
+        variance = np.diag(new_model.get_sigma())
+        self.assertEquals(variance.shape[0], 3)
+        self.assertEquals(variance[0], self.var[0]**2)
+        self.assertEquals(variance[1], self.var[1]**2)
+        self.assertEquals(variance[2], self.var[2]**2)        
+        
+        
+    def test_bad_update(self):
+
+        model = RandomProcess(self.mean, self.var)
+
+        # Update with different number of mean values
+        with self.assertRaises(IndexError):
+            model.update_dof([2.0, 4.0, 6.0, 8.0])
+        # end
+
+        # Update with different number of mean values
+        with self.assertRaises(IndexError):
+            model.update_dof([2.0, 4.0])
+        # end
     
+    def test_print(self):
+
+        var = RandomProcess(self.mean, self.var)
+
+        print(var)
+
+
+    def test_sigma(self):
+        """Test the variance is obtained correctly
+        """
+
+        var = RandomProcess(self.mean, self.var)
+
+        sig = var.get_sigma()
+
+        self.assertTupleEqual(sig.shape, (3,3))
+        npt.assert_array_equal(np.diag(sig),
+                               [0.5**2, 0.25**2, 0.125**2])
+    def test_shape(self):
+        """Test shape
+        """
+
+        var = RandomProcess(self.mean, self.var)
+
+        self.assertEqual(var.shape(), 3)
+        
     
 if __name__ == '__main__':
     unittest.main(verbosity=4)
