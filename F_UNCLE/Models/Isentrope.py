@@ -361,8 +361,8 @@ class Isentrope(GaussianModel):
         # ax1.set_xlim((0.2,1.0))
         # ax1.set_ylim((0.0,1E11))        
             
-        if vrange is not None:
-            ax1.set_xlim(*vrange)
+        # if vrange is not None:
+        #     ax1.set_xlim((min(x_data), max(x_data)))
 
         try:
             if draw_rayl:
@@ -1001,8 +1001,8 @@ class EOSModel(Spline, Isentrope):
 
         model_sens = sens_matrix[simid][:, idx: idx + shape]
         
-        gs = gridspec.GridSpec(3, 4,
-                               width_ratios=[6, 1, 6, 1])
+        gs = gridspec.GridSpec(2, 6,
+                               width_ratios=[6, 1, 6, 1, 6, 1])
 
         ax1 = fig.add_subplot(gs[0])
         ax2 = fig.add_subplot(gs[2])
@@ -1017,42 +1017,69 @@ class EOSModel(Spline, Isentrope):
         for i in range(10):
             ax1.plot(model_sens[:, i],
                      style[i], label="{:4.3f}".format(knot_post[i]))
-        ax1.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+            #legend.labelspacing  : 0.5      # the vertical space between the legend entries
+#legend.handlelength  : 2.0      # the length of the legend lines
+#legend.handleheight  : 0.7      # the height of the legend handle
+#legend.handletextpad : 0.8      # the space between the legend line and legend text
+        ax1.legend(bbox_to_anchor=(1.05, 1),
+                   loc=2,
+                   borderaxespad=0.,
+                   handlelength=1.0,
+                   labelspacing=0.25)
         # ax1.get_legend().set_title("knots",
         #   prop = {'size':rcParams['legend.fontsize']})
         for i in range(10, 20):
             ax2.plot(model_sens[:, i],
                      style[i - 10], label="{:4.3f}".format(knot_post[i]))
-        ax2.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+        ax2.legend(bbox_to_anchor=(1.05, 1),
+                   loc=2,
+                   borderaxespad=0.,
+                   handlelength=1.0,
+                   labelspacing=0.25)
+
         # ax2.get_legend().set_title("knots",
         #   prop = {'size':rcParams['legend.fontsize']})
         for i in range(20, 30):
             ax3.plot(model_sens[:, i],
                      style[i - 20], label="{:4.3f}".format(knot_post[i]))
-        ax3.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+        ax3.legend(bbox_to_anchor=(1.05, 1),
+                   loc=2,
+                   borderaxespad=0.,
+                   handlelength=1.0,
+                   labelspacing=0.25)
+
         # ax3.get_legend().set_title("knots",
         #   prop = {'size':rcParams['legend.fontsize']})
 
         for i in range(30, 40):
             ax4.plot(model_sens[:, i],
                      style[i - 30], label="{:4.3f}".format(knot_post[i]))
-        ax4.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+        ax4.legend(bbox_to_anchor=(1.05, 1),
+                   loc=2,
+                   borderaxespad=0.,
+                   handlelength=1.0,
+                   labelspacing=0.25)
+
         # ax4.get_legend().set_title("knots",
         #   prop = {'size':rcParams['legend.fontsize']})
 
-        for i in range(40, 47):
+        for i in range(40, model.shape()):
             ax5.plot(model_sens[:, i],
                      style[i - 40], label="{:4.3f}".format(knot_post[i]))
-        ax5.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+        ax5.legend(bbox_to_anchor=(1.05, 1),
+                   loc=2,
+                   borderaxespad=0.,
+                   handlelength=1.0,
+                   labelspacing=0.25)
+
         # ax5.get_legend().set_title("knots",
         #   prop = {'size':rcParams['legend.fontsize']})
 
         ax1.set_ylabel('Sensitivity')
-        ax3.set_ylabel('Sensitivity')
-        ax5.set_ylabel('Sensitivity')
-        ax5.set_xlabel('Model resp. indep. var.')
-        ax4.set_xlabel('Model resp. indep. var.')
-
+        ax4.set_ylabel('Sensitivity')
+        ax3.set_xlabel('Model resp.')
+        ax4.set_xlabel('Model resp.')
+        ax5.set_xlabel('Model resp.')
         # xlocator = (max(resp_val) - min(resp_val)) / 4
         # ax1.xaxis.set_major_locator(MultipleLocator(xlocator))
         # ax2.xaxis.set_major_locator(MultipleLocator(xlocator))

@@ -547,7 +547,7 @@ class Bayesian(Struc):
                 print('Start of line search')
             
             # Finds the optimal step in the d_hat direction 
-            n_steps = 10
+            n_steps = 7
             costs = np.zeros(n_steps)
             iter_data = []
             initial_dof = copy.deepcopy(analysis.get_opt_dof())
@@ -564,10 +564,10 @@ class Bayesian(Struc):
                 for i, key in enumerate(opt_keys):
                     search_ax[key] = fig.add_subplot(1,len(opt_keys),i+1)                    
                     model_dict[key].prior.plot(
-                    axes=search_ax[key],
-                    labels=['Prior'],
-                    linestyles=['-'],
-                    log=False
+                        axes=search_ax[key],
+                        labels=['Prior'],
+                        linestyles=['-'],
+                        log=False                        
                 )
             # end
             
@@ -885,8 +885,13 @@ class Bayesian(Struc):
         p_mat += tmp[0]
         q_vec += tmp[1]
 
-        #p_mat *= 0.5
-
+        # >>>>IMPORTANT<<<<
+        # The formulation shows a factor of 1/2 applied to the P matrix but
+        # CVXOPT *already* applies this factor to the P matrix, so the following
+        # line, if uncommneted, does it twice. DO NOT DO THIS
+        #p_mat *= 0.5 # DO NOT UNCOMMENT THIS LINE
+        # >>>>IMPORTANT<<<<
+        
         solvers.options['show_progress'] = True
         solvers.options['debug'] = False
         solvers.options['maxiters'] = 100  # 100 default
