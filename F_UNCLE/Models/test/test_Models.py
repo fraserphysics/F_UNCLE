@@ -324,16 +324,16 @@ class TestRandomProcess(unittest.TestCase):
 
     def test_instnatiation(self):
 
-        var = RandomProcess(self.mean, self.var)
+        rproc = RandomProcess(self.mean, self.var)
 
-        self.assertIsInstance(var.get_dof(), np.ndarray)
-        self.assertTupleEqual(var.get_dof().shape, (3,))      
-        self.assertEquals(var.get_dof()[0], 1.0)
-        self.assertEquals(var.get_dof()[1], 2.0)
-        self.assertEquals(var.get_dof()[2], 3.0)        
+        self.assertIsInstance(rproc.get_dof(), np.ndarray)
+        self.assertTupleEqual(rproc.get_dof().shape, (3,))      
+        self.assertEquals(rproc.get_dof()[0], 1.0)
+        self.assertEquals(rproc.get_dof()[1], 2.0)
+        self.assertEquals(rproc.get_dof()[2], 3.0)        
 
         # Test a size 1 process
-        var = RandomProcess([1.0], [2.0])
+        rproc = RandomProcess([1.0], [2.0])
         
     def test_bad_instantiation(self):
         # Pass different length mean and variance
@@ -344,7 +344,11 @@ class TestRandomProcess(unittest.TestCase):
         with self.assertRaises(IndexError):
             RandomProcess([1.0,], [0.5, 0.25])            
 
-        
+
+    def test_call(self):
+
+        rproc = RandomProcess(self.mean, self.var)        
+        npt.assert_array_equal(rproc(), self.mean)
     def test_update(self):
 
         model = RandomProcess(self.mean, self.var)
@@ -391,18 +395,18 @@ class TestRandomProcess(unittest.TestCase):
     
     def test_print(self):
 
-        var = RandomProcess(self.mean, self.var)
+        rproc = RandomProcess(self.mean, self.var)
 
-        print(var)
+        print(rproc)
 
 
     def test_sigma(self):
         """Test the variance is obtained correctly
         """
 
-        var = RandomProcess(self.mean, self.var)
+        rproc = RandomProcess(self.mean, self.var)
 
-        sig = var.get_sigma()
+        sig = rproc.get_sigma()
 
         self.assertTupleEqual(sig.shape, (3,3))
         npt.assert_array_equal(np.diag(sig),
@@ -411,9 +415,9 @@ class TestRandomProcess(unittest.TestCase):
         """Test shape
         """
 
-        var = RandomProcess(self.mean, self.var)
+        rproc = RandomProcess(self.mean, self.var)
 
-        self.assertEqual(var.shape(), 3)
+        self.assertEqual(rproc.shape(), 3)
         
     
 if __name__ == '__main__':

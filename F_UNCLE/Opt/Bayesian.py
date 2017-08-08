@@ -567,6 +567,7 @@ class Bayesian(Struc):
                         axes=search_ax[key],
                         labels=['Prior'],
                         linestyles=['-'],
+                        vrange=(0.2, 0.8),
                         log=False                        
                 )
             # end
@@ -579,6 +580,7 @@ class Bayesian(Struc):
                     shape = model_dict[key].shape()
                     model_dict[key] = model_dict[key].update_dof(
                         dof_list[-1][idx : idx + shape])
+                    # print(model_dict[key])
                     idx += shape
                 # end
                 
@@ -588,6 +590,7 @@ class Bayesian(Struc):
                             axes=search_ax[key],
                             labels=['Step {:02d}'.format(i)],
                             linestyles=['-'],
+                            vrange=(0.2, 0.8),                            
                             log=False
                         )
                     fig.savefig('lineSearch_itn{:02d}.pdf'.format(itn))
@@ -885,6 +888,14 @@ class Bayesian(Struc):
         p_mat += tmp[0]
         q_vec += tmp[1]
 
+
+        n_dof = self.shape()[1]
+
+        # If the convex approximateion is too smooth, you have reached an optimum
+        # if np.linalg.matrix_rank(p_mat, tol=np.finfo(np.float64).eps) < n_dof\
+        #    and np.linalg.matrix_rank(p_mat, tol=1E-21) == n_dof:
+        #     return {'x':np.zeros((n_dof,))}
+        
         # >>>>IMPORTANT<<<<
         # The formulation shows a factor of 1/2 applied to the P matrix but
         # CVXOPT *already* applies this factor to the P matrix, so the following
@@ -1013,8 +1024,8 @@ class Bayesian(Struc):
                 1. (np.ndarray): `q`, a nx1 matrix where n is the model DOF
         """
         
-        pmat = np.zeros(2 * (self.shape()[1],))
-        qvec = np.zeros((self.shape()[1],))
+        pmat = np.zeros(2 * (self.shape()[1],), np.float64)
+        qvec = np.zeros((self.shape()[1],), np.float64)
         idx = 0
         for key in self.opt_keys:
             p_tmp, q_tmp = self.models[key].get_pq(

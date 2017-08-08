@@ -310,6 +310,7 @@ class Simulation(Struc):
                 shape = models[key].shape()
                 models[key] = models[key].update_dof(
                     dof[idx : idx + shape])
+                idx += shape
             # end
             ret_list.append(self(models))
         # end
