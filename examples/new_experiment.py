@@ -24,11 +24,12 @@ from F_UNCLE.Opt.Bayesian import Bayesian
 
 
 ## Make the models
-str_model = SimpleStr([101E9, 100.0]) # Youngs modulis for Cu from Hibbeler
+str_model = SimpleStr([101E9, 100.0], sigma=0.05) # Youngs modulis for Cu from Hibbeler
 str_true  = SimpleStr([101E9, 100.0]) # Youngs modulis for Cu from Hibbeler
 
 eos_model = EOSModel(
     lambda v: 2.56E9/v**3, # famma=3 gas for HE
+    spline_sigma = 0.05,
     spline_max = 2.0
 )
 eos_true = EOSBump()
