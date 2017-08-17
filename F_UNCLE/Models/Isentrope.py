@@ -334,9 +334,8 @@ class Isentrope(GaussianModel):
             x_data = v_spec
             y_data = self(v_spec)
         else:
-            x_data = np.where(v_spec > 1E-4,
-                              v_spec, 1E-4)**-1
-            y_data = self(v_spec)
+            x_data = v_spec**-1
+            y_data = self(x_data)
         # end
         
         if log:

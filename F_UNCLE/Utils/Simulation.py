@@ -574,15 +574,18 @@ class Simulation(Struc):
         
         resp_mat = np.zeros((initial_data[0].shape[0], ndof))
         inp_mat = np.zeros((ndof, ndof))
-
+        
         idx = 0
+        print("Getting sens for ", self.name)
         for key in model_keys:
+            print("\tSolving sens for model, ", key)
             modeli = models[key]
             new_dofs = np.array(copy.deepcopy(modeli.get_dof()),
                                 dtype=np.float64)
             shape = models[key].shape()
             if key in self.req_models:
-                for i, coeff in enumerate(modeli.get_dof()):                    
+                for i, coeff in enumerate(modeli.get_dof()):
+                    print('\t\tGetting sens for dof, ', i)
                     new_dofs[i] += float(coeff * step_frac)
                     models[key] = modeli.update_dof(new_dofs)
                     inp_mat[idx : idx + shape, idx + i] =\

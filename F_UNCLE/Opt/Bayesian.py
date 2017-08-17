@@ -567,7 +567,7 @@ class Bayesian(Struc):
                         axes=search_ax[key],
                         labels=['Prior'],
                         linestyles=['-'],
-                        vrange=(0.2, 0.8),
+                        vrange=(0.1, 0.8),
                         log=False                        
                 )
             # end
@@ -590,7 +590,7 @@ class Bayesian(Struc):
                             axes=search_ax[key],
                             labels=['Step {:02d}'.format(i)],
                             linestyles=['-'],
-                            vrange=(0.2, 0.8),                            
+                            vrange=(0.1, 0.8),                            
                             log=False
                         )
                     fig.savefig('lineSearch_itn{:02d}.pdf'.format(itn))
@@ -926,15 +926,15 @@ class Bayesian(Struc):
         # >>Supressed plotting routine to show the constraint matrix
         
         try:
+            # return{'x':np.dot(np.linalg.inv(p_mat),-q_vec)}
             if constrain:
                 sol = solvers.qp(matrix(p_mat), matrix(q_vec),
                                  matrix(g_mat), matrix(h_vec),
-                                 #intervals={'x':np.zeros(g_mat.shape[1])}
+                                 intervals={'x':np.zeros(g_mat.shape[1])}
                 )
             else:
                 sol = solvers.qp(matrix(p_mat), matrix(q_vec))
-
-            #print('x scaled', np.array(sol['x']).reshape(-1))
+            # end
         except ValueError as inst:
             print(inst)
             print("G " + str(g_mat.shape))
