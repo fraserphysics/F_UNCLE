@@ -99,6 +99,9 @@ class Experiment(Struc):
                         'The number of knots to smooth over'],            
             'exp_var': [float, 1E-2, 0.0, 1.0, '-',
                         'Percent variance in the data'],
+            'exp_corr': [float, 0.0, 0.0, 1.0, '-',
+                        'Correlation in the data'],
+              
         }
 
         if 'def_opts' in kwargs:

@@ -62,15 +62,14 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 import matplotlib.gridspec as gridspec
 try:
-    # from mpi4py import MPI
-    # mpi_comm = MPI.COMM_WORLD
-    # if mpi_comm.Get_rank() == 0:
-    #     mpi_print = True
-    # # end
-    # else:
-    #     mpi_print = False
-    # # end
-    mpi_print = True
+    from mpi4py import MPI
+    mpi_comm = MPI.COMM_WORLD
+    if mpi_comm.Get_rank() == 0:
+        mpi_print = True
+    # end
+    else:
+        mpi_print = False
+    # end
 except ImportError as inst:
     mpi_print = True
 # end
@@ -185,9 +184,8 @@ class Bayesian(Struc):
                       'Flag to print debug information'],
             'verb': [bool, True, None, None, '-',
                      'Flag to print stats during optimization'],
-            # 'sens_mode': [str, 'ser', None, None, '-',
-            #               'Flag for how to evaluate sensitivities, `ser`'
-            #               'serial, `pll` parallel']
+            # 'mpi_comm': [type(mpi_comm), None, None, None, '-',
+            #               'MPI commuicator for sensitivities']
         }
 
         Struc.__init__(self, name=name, def_opts=def_opts, *args, **kwargs)
@@ -395,7 +393,8 @@ class Bayesian(Struc):
         for key in self.opt_keys:
             lki = self.models[key].get_log_like()
             lk += lki
-            print("Log Like for {:s} is {:f}".format(key, lki))
+            if mpi_print and self.get_option('verb'):
+                print("Log Like for {:s} is {:f}".format(key, lki))
         # end
         return lk 
 
@@ -422,7 +421,8 @@ class Bayesian(Struc):
         for key in sims:
             lk = sims[key]['exp'].\
                 get_log_like(initial_data[key])
-            print("Log Like for {:s} is {:f}".format(key, lk))
+            if mpi_print and self.get_option('verb'):
+                print("Log Like for {:s} is {:f}".format(key, lk))
             log_like += lk
         # end
 
@@ -443,8 +443,11 @@ class Bayesian(Struc):
 
         return dof_vec
     
-    def __call__(self):
+    def __call__(self, comm=None):
         """Determines the best candidate EOS function for the models
+        
+        Args:
+            comm(MPI.intracom): An MPI communicator for sensitities
 
         Return:
            (tuple): length 3, elements are:
@@ -513,7 +516,7 @@ class Bayesian(Struc):
 
             if verb and mpi_print:
                 print('Begining sensitivities calculation')
-            sens_matrix = analysis._get_sens(initial_data)
+            sens_matrix = analysis._get_sens(initial_data, comm=comm)
             if verb and mpi_print:
                 print('End of sensitivities calculation')
 
@@ -635,8 +638,9 @@ class Bayesian(Struc):
             # Calculates the cost of the data for each step
             sorted_data = []
             for i in range(len(x_list)):
-                print('--Step {:d}--'.format(i))
-                print("Log Like for models is {:f}".format(costs[i]))
+                if verb and mpi_print:
+                    print('--Step {:d}--'.format(i))
+                    print("Log Like for models is {:f}".format(costs[i]))
                 sorted_data.append({})
                 for key in analysis.simulations:
                     sorted_data[-1][key] = iter_data[key][i]
@@ -747,7 +751,7 @@ class Bayesian(Struc):
             i += 1
         # end
 
-        sens_matrix = analysis._get_sens(initial_data)
+        sens_matrix = analysis._get_sens(initial_data, comm=comm)
 
         if not conv and mpi_print:
             print("{}: Outer loop could not converge to the given"
@@ -903,7 +907,7 @@ class Bayesian(Struc):
         #p_mat *= 0.5 # DO NOT UNCOMMENT THIS LINE
         # >>>>IMPORTANT<<<<
         
-        solvers.options['show_progress'] = True
+        solvers.options['show_progress'] = (self.get_option('verb') and mpi_print)
         solvers.options['debug'] = False
         solvers.options['maxiters'] = 100  # 100 default
         solvers.options['reltol'] = 1e-6   # 1e-6 default
@@ -1130,7 +1134,7 @@ class Bayesian(Struc):
 
         return data
 
-    def _get_sens(self, initial_data=None):
+    def _get_sens(self, initial_data=None, comm=None):
         """Gets the sensitivity of the simulated experiment to the EOS
 
         The sensitivity matrix is the attribute `self.sens_matrix` which is set
@@ -1148,6 +1152,7 @@ class Bayesian(Struc):
             initial_data(list): The results of each simulation with the current
                 best model. Each element in the list corresponds tho the output
                 from a `__call__` to each element in the `self.simulations` list
+           comm(MPI.Intracom): An MPI communicator for mpi sensitivities
 
         Return:
             None
@@ -1162,21 +1167,22 @@ class Bayesian(Struc):
 
         sens_matrix = {}
         for key in self.simulations:
-            if self.get_option('verb') and mpi_print:
-                print('Getting sens for {:}'.format(key))
-            # end
             sim_i = sims[key]['sim']
+            if self.get_option('verb') and mpi_print:
+                print('Getting sens for {:} using {:}'.format(
+                    key,
+                    sim_i.get_option('sens_mode')))
+            # end
+
             if sim_i.get_option('sens_mode') == 'pll':
                 raise NotImplementedError('Parallel sesnitivity not yet'
                                           ' support multiple models')
                 sens_matrix[key] = sim_i.get_sens_pll(
                     models, opt_keys, initial_data[key])
             elif sim_i.get_option('sens_mode') == 'mpi':
-                raise NotImplementedError('MPI sesnitivity not yet support'
-                                          ' multiple models')                
                 sens_matrix[key] = sim_i.get_sens_mpi(
                     models, opt_keys, initial_data[key],
-                    comm=mpi_comm)
+                    comm=comm)
             elif sim_i.get_option('sens_mode') == 'runjob':
                 # raise NotImplementedError('runjob sesnitivity not yet support'
                 #                           ' multiple models')                           

@@ -52,7 +52,8 @@ from .PhysicsModel import PhysicsModel
 try:
     from .mpi_loop import pll_loop
 except Exception:
-    pass
+    print("Could not load mpi_loop, Ensure that mpi is"
+          " installed on your system")
 # end
 
 # =========================
@@ -312,18 +313,18 @@ class Simulation(Struc):
                     dof[idx : idx + shape])
                 idx += shape
             # end
-            ret_list.append(self(models))
+            ret_list.append(self(models))            
         # end
 
         return ret_list
 
-    def multi_solve_mpi(self, models, model_key, dof_list):
+    def multi_solve_mpi(self, models, model_keys,  dof_list, comm=None):
         """Returns the results from calling the Experiment object for each 
         element of dof_list using mpi
 
         Args:
             models(dict): Dictionary of models
-            model_key(str): The key for the model in the models to be used
+            model_keys(str): The list of key for the models in the dof list
             dof_list(list): A list of numpy array's defining the model DOFs
 
         Returns:
@@ -331,15 +332,37 @@ class Simulation(Struc):
                     corresponding to the elements of dof_list
         """
 
-        models = copy.deepcopy(models)
-        
-        ret_list = []
-        
-        raise NotImplementedError('{:} multi solve using MPI has not been implemented'
-                                  .format(self.get_inform(0)))
+        def eval_fn(x, models, model_keys):
+            """The function which is distributed via mpi
+            """
+            idx = 0
+            model_dct = copy.deepcopy(models)
+            for key in model_keys:
+                shape = models[key].shape()
+                
+                try:
+                    model_dct[key] = models[key].update_dof(
+                        x[idx: idx + shape]
+                    )
+                except Exception as inst:
+                    print("Eror in DOF {:d} for model {:s}"
+                          .format(i, key))
+                # end
+                
+                idx += shape
+            # end
 
-        return ret_list
+            return self(model_dct)
+        # end
 
+        ret_dct = pll_loop(dof_list, eval_fn,
+                           shape=self.shape(),
+                           comm=comm,
+                           models=models,
+                           model_keys=model_keys)
+        
+        return [ret_dct[key] for key in ret_dct]
+        
     def multi_solve_runjob(self, models, model_key, dof_list):
         """Returns the results from calling the Experiment object for each 
         element of dof_list using the runjob script
@@ -385,16 +408,17 @@ class Simulation(Struc):
 
         """
 
+        
         raise NotImplementedError('{:} multi solve using runjob is not available'
                                   .format(self.get_inform(0)))
 
 
-    def get_sens_mpi(self, models, model_key, initial_data=None, comm=None):
+    def get_sens_mpi(self, models, model_keys, initial_data=None, comm=None):
         """MPI evaluation of the model gradients
 
         Args:
-            models(dict): The dictionary of models
-            model_key(str): The key of the model for which the sensitivity is
+            models(dict): The dictionary of model dof to run
+            model_key(str): The list of models for which the sensitivity is
                             desired
         Keyword Args:
             initial_data(np.ndarray): The response for the nominal model DOF, if
@@ -403,49 +427,61 @@ class Simulation(Struc):
 
         """
         models = copy.deepcopy(models)
-        model = models[model_key]
 
         step_frac = self.get_option('fd_step')
 
         if initial_data is None:
             initial_data = self(models)
         # end
-
-        resp_mat = np.zeros((initial_data[0].shape[0],
-                             model.shape()))
-        inp_mat = np.zeros((model.shape(),
-                            model.shape()))
+        
+        ndof = 0
+        for key in model_keys:
+            ndof += models[key].shape()
+        # end
+                
+        resp_mat = np.zeros((initial_data[0].shape[0], ndof))
+        inp_mat = np.zeros((ndof, ndof))
         new_dof_mat = []
-        new_dofs = np.array(copy.deepcopy(model.get_dof()),
-                            dtype=np.float64)
-        # Build the input matrix and a lift of dof's to test
-        for i, coeff in enumerate(model.get_dof()):
-            new_dofs[i] += float(coeff * step_frac)
-            inp_mat[:, i] = (new_dofs - model.get_dof())
-            new_dof_mat.append(copy.deepcopy(new_dofs))
-            new_dofs[i] -= float(coeff * step_frac)
+
+        all_dof = np.zeros((ndof,))
+        idx = 0
+        for key in model_keys:
+            modeli = models[key]
+            shape = modeli.shape()
+            all_dof[idx: idx + shape] = modeli.get_dof()
+            idx += shape
+        # end
+        
+        idx = 0
+        for key in model_keys:
+            modeli = models[key]
+            new_dofs = np.array(copy.deepcopy(modeli.get_dof()))
+            shape = modeli.shape()
+
+            # Get the steps needed for the finite difference sensitivity calculation
+            if key in self.req_models:
+                for i, coeff in enumerate(new_dofs):
+                    step_size = float(coeff * step_frac)
+                    new_dofs[i] += step_size
+                    inp_mat[idx: idx + shape, idx + i] =\
+                        (new_dofs - copy.deepcopy(modeli.get_dof()))
+                    all_dof[idx + i] += step_size
+                    new_dof_mat.append(copy.deepcopy(all_dof))
+                    all_dof[idx + i] -= step_size                    
+                    new_dofs[i] -= step_size
+                # end
+            else:
+                pass
+            # end
+            idx += shape
         # end
 
-        # The function to be evaluated in parallel
-        def get_resp(new_dofi, exp, model_dct, mkey, init_dat):
-            """Class method used in the parallel map function
-            """
-            model_dct[mkey] = model_dct[mkey].update_dof(new_dofi)                
-            return -exp.compare(init_dat[0], init_dat[1][0],
-                                exp(model_dct))
+        resp_list = self.multi_solve_mpi(models, model_keys, new_dof_mat, comm=comm)
 
-        pll_out = pll_loop(new_dof_mat, get_resp,
-                           shape=self.shape(),
-                           comm=comm,
-                           exp=self,
-                           model_dct=models,
-                           mkey=model_key,
-                           init_dat=initial_data)
-
-        for key in pll_out:
-            resp_mat[:,int(key)] = pll_out[key]
-        #end
-        
+        for i, resp in enumerate(resp_list):
+            resp_mat[:, i] = self.compare(resp, initial_data)
+        # end
+                
         sens_matrix = np.linalg.lstsq(inp_mat, resp_mat.T)[0].T
         return np.where(np.fabs(sens_matrix) > self.get_option('fd_tol'),
                         sens_matrix,
@@ -547,7 +583,7 @@ class Simulation(Struc):
                         np.zeros(sens_matrix.shape))
 
         
-    def get_sens(self, models, model_keys, initial_data=None):
+    def get_sens(self, models, model_keys, initial_data=None, verb=False):
         """Gets the sensitivity of the experiment response to the model DOF
 
         Args:
@@ -576,16 +612,16 @@ class Simulation(Struc):
         inp_mat = np.zeros((ndof, ndof))
         
         idx = 0
-        print("Getting sens for ", self.name)
+        if verb: print("Getting sens for ", self.name)
         for key in model_keys:
-            print("\tSolving sens for model, ", key)
+            if verb: print("\tSolving sens for model, ", key)
             modeli = models[key]
             new_dofs = np.array(copy.deepcopy(modeli.get_dof()),
                                 dtype=np.float64)
             shape = models[key].shape()
             if key in self.req_models:
                 for i, coeff in enumerate(modeli.get_dof()):
-                    print('\t\tGetting sens for dof, ', i)
+                    if verb: print('\t\tGetting sens for dof, ', i)
                     new_dofs[i] += float(coeff * step_frac)
                     models[key] = modeli.update_dof(new_dofs)
                     inp_mat[idx : idx + shape, idx + i] =\

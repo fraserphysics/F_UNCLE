@@ -8,12 +8,23 @@ import os
 import argparse
 import pickle
 import time
-
+import copy
 from collections import OrderedDict
 ## External python packages
 import numpy as np
+import numpy.linalg as nplin
+
+import scipy.stats as spstat
+
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
+from matplotlib import rcParams
+rcParams['axes.labelsize'] = 12
+rcParams['xtick.labelsize'] = 10
+rcParams['ytick.labelsize'] = 10
+rcParams['legend.fontsize'] = 9
+rcParams['legend.handlelength'] = 3.0
+
 ## F_UNLCE packages
 from F_UNCLE.Experiments.Sandwich import ToySandwich, ToySandwichExperiment
 from F_UNCLE.Experiments.Stick import Stick, StickExperiment
@@ -29,7 +40,7 @@ str_true  = SimpleStr([101E9, 100.0]) # Youngs modulis for Cu from Hibbeler
 
 eos_model = EOSModel(
     lambda v: 2.56E9/v**3, # famma=3 gas for HE
-    spline_sigma = 0.05,
+    spline_sigma = 0.25,
     spline_max = 2.0
 )
 eos_true = EOSBump()
@@ -44,8 +55,8 @@ sandwich_experiment = ToySandwichExperiment(model=eos_true, rstate=rstate )
 
 stick_simulation = Stick(model_attribute=eos_true)
 stick_experiment = StickExperiment(model=eos_true,
-                                   sigma_t=1E-9,
-                                   sigma_x=2E-3)
+                                   sigma_t=1E-10,
+                                   sigma_x=2E-4)
 
 cylinder_simulation = ToyCylinder()
 cylinder_experiment = ToyCylinderExperiment(
@@ -56,7 +67,7 @@ cylinder_experiment = ToyCylinderExperiment(
 
 simulations = OrderedDict()
 simulations['Sand'] =  [sandwich_simulation, sandwich_experiment]
-#simulations['Stick'] = [stick_simulation, stick_experiment]
+simulations['Stick'] = [stick_simulation, stick_experiment]
 simulations['Cyl'] = [cylinder_simulation, cylinder_experiment]
 
 models = OrderedDict()
@@ -66,7 +77,7 @@ models['strength'] = str_model
 analysis = Bayesian(
     simulations=simulations,
     models=models,
-    opt_keys=['eos', 'strength'],
+    opt_keys=['eos'],
     constrain=True,
     outer_reltol=1E-6,
     precondition=True,
@@ -104,6 +115,108 @@ else:
         sens_matrix = pickle.load(fid)
 # end
 
+simid = 'Cyl'
+filter_fisher = np.where(fisher_matrix[simid]<1E21, fisher_matrix[simid], 0.0)
+original_var = np.sqrt(np.diag(opt_model.models['eos'].get_sigma()))
+
+
+# sigma_aug = filter_fisher + nplin.inv(opt_model.models['eos'].get_sigma())
+# eigval_1, eigvec_1 = nplin.eig(sigma_aug)
+# assert(np.all(eigval_1 > 0.0))
+# assert(np.all(np.isreal(eigval_1)))
+
+# for i in range(eigval_1.shape[0]):
+#     if eigval_1[i] > 1E-21:
+#        eigval_1[i] = eigval_1[i]**-1
+#     else:
+#        eigval_1[i] = 0
+#     # end
+# # end
+# new_var = np.sqrt(np.dot(eigvec_1,
+#                  np.dot(np.diag(eigval_1),
+#                         nplin.inv(eigvec_1)
+#                  )
+# ))
+
+
+new_var = np.diag(np.sqrt(np.diag(
+    nplin.inv(filter_fisher + nplin.inv(opt_model.models['eos'].get_sigma())))))
+
+dof_in = opt_model.models['eos'].get_dof()
+dof_list = np.empty((9, opt_model.models['eos'].shape()))
+sand_data_list = np.empty((9, opt_model.simulations[simid]['exp'].shape()))
+sand_data_list_init = np.empty((9, opt_model.simulations[simid]['exp'].shape()))
+models = copy.deepcopy(opt_model.models)
+knots = np.linspace(
+    models['eos'].get_option('spline_min'),
+    models['eos'].get_option('spline_max'),
+    100)
+fig0 = plt.figure()
+ax00 = fig0.add_subplot(222)
+ax01 = fig0.add_subplot(223)
+ax02 = fig0.add_subplot(224)
+ax03 = fig0.add_subplot(221)
+
+true_knots = models['eos'].get_t()[:-4]
+ax02.semilogy(true_knots, models['eos'].get_dof(), label='Value')
+ax02.semilogy(true_knots, np.sqrt(np.diag(models['eos'].get_sigma())),
+              label='Initial variance')
+ax02.semilogy(true_knots, np.diag(new_var),
+              label='Final variance')
+
+styles = ['r:', 'r--', 'r-.', 'r-', 'k-', 'g-', 'g-.', 'g--', 'g:']
+for j, pcnt in enumerate([0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99]):
+    # Solve for the augmented variance
+    dof_list[j,:] = np.array(
+        [spstat.norm.ppf(pcnt, loc=dof_in[i], scale=new_var[i, i])
+         for i in range(dof_in.shape[0])])
+    
+    models['eos'] = models['eos'].update_dof(dof_list[j, :])
+    data =opt_model.simulations[simid]['sim'](models)
+    sand_data_list[j, :] = opt_model.simulations[simid]['exp'].align(data)[1][0]
+    ax00.plot(1E6 * data[0], 1E-4 * sand_data_list[j, :], styles[j],
+              label='Pcnt = {:f}'.format(pcnt))
+    
+    ax01.semilogy(knots, 1E0 * models['eos'](knots), styles[j],
+              label='{:3.2f}'.format(pcnt))    
+
+    # Use the prior variance
+    dof_list[j,:] = np.array(
+        [spstat.norm.ppf(pcnt, loc=dof_in[i], scale=original_var[i])
+         for i in range(dof_in.shape[0])])
+    
+    models['eos'] = models['eos'].update_dof(dof_list[j, :])
+    data =opt_model.simulations[simid]['sim'](models)
+    sand_data_list_init[j, :] = opt_model.simulations[simid]['exp'].align(data)[1][0]
+    ax03.plot(1E6 * data[0], 1E-4 * sand_data_list_init[j, :], styles[j],
+              label='{:3.2f}'.format(pcnt))
+    
+# end
+
+
+ax00.set_xlabel(r'Time / $\mu$s')
+ax00.set_ylabel(r'Velocity / cm $\mu$s$^{-1}$')
+ax00.set_title('With fisher informaiton')
+
+ax01.set_xlabel(r'Specific Volume / cm$^{3}$ g$^{-1}$')
+ax01.set_ylabel(r'Pressure / Pa')
+ax01.legend(loc='upper right', title='Percentile')
+ax01.set_title('Equation of State')
+
+ax02.set_xlabel(r'Specific Volume / cm$^{3}$ g$^{-1}$')
+ax02.set_ylabel(r'Pressure / Pa')
+ax02.legend(loc='upper right')
+ax02.set_title('Variances')
+
+ax03.set_xlabel(r'Time / $\mu$s')
+ax03.set_ylabel(r'Velocity / cm $\mu$s$^{-1}$')
+ax03.set_title('Prior variance')
+
+
+fig0.tight_layout()
+fig0.savefig('percentiles.pdf')
+
+    
 
 # for key in fisher_data:
 #     fisher = fisher_data[key]
@@ -151,7 +264,6 @@ fig.savefig('eos_comparisson.pdf')
 sand_prior = sandwich_simulation({'eos': eos_model.prior})
 sand_post = sandwich_simulation(opt_model.models)
 sand_exp = sandwich_experiment()
-
 fig = sandwich_simulation.plot(data=[sand_prior, sand_post, sand_exp],
                          labels=['Prior', 'Posterior', 'Experiment'],
                          linestyles=['-k', '--r', '-.g'])
@@ -170,19 +282,19 @@ fig = cylinder_simulation.plot(data=[cyl_prior, cyl_post, cyl_exp],
 fig.savefig('cyl_results.pdf')
 
 
-## Plot the sensitivity of the cylinder to isen
-fig = EOSModel.plot_sens_matrix(sens_matrix, 'Cyl', opt_model.models, 'eos')
-fig.savefig('cyl_eos_sens.pdf')
+# ## Plot the sensitivity of the cylinder to isen
+# fig = EOSModel.plot_sens_matrix(sens_matrix, 'Cyl', opt_model.models, 'eos')
+# fig.savefig('cyl_eos_sens.pdf')
 
-fig = SimpleStr.plot_sens_matrix(sens_matrix, 'Cyl', opt_model.models, 'strength')
-fig.savefig('cyl_str_sens.pdf')
+# fig = SimpleStr.plot_sens_matrix(sens_matrix, 'Cyl', opt_model.models, 'strength')
+# fig.savefig('cyl_str_sens.pdf')
 
-## Plot the sensitivity of the sandwich to isen
-fig = EOSModel.plot_sens_matrix(sens_matrix, 'Sand', opt_model.models, 'eos')
-fig.savefig('sand_eos_sens.pdf')
+# ## Plot the sensitivity of the sandwich to isen
+# fig = EOSModel.plot_sens_matrix(sens_matrix, 'Sand', opt_model.models, 'eos')
+# fig.savefig('sand_eos_sens.pdf')
 
-fig = SimpleStr.plot_sens_matrix(sens_matrix, 'Sand', opt_model.models, 'strength')
-fig.savefig('sand_str_sens.pdf')
+# fig = SimpleStr.plot_sens_matrix(sens_matrix, 'Sand', opt_model.models, 'strength')
+# fig.savefig('sand_str_sens.pdf')
 
 
 ## Get the fisher information

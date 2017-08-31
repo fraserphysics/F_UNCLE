@@ -20,7 +20,7 @@ class NoiseModel(Struc):
         
         Struc.__init__(self, name="Noise Model")
     
-    def __call__(self, times, values, rstate=None):
+    def __call__(self, times, values, lmb = 20, rstate=None):
         """Returns a random vector based 
 
         Args:
@@ -42,9 +42,22 @@ class NoiseModel(Struc):
             raise ValueError('{:} can only generate 1d noise'
                              .format(self.get_inform(1)))
         # end
-        ampl = 0.75 * values
         
-        corr = np.diag(np.ones((shape[0],)))
+        ampl = values
+        
+        corr = np.eye(shape[0])
+
+        # for i in range(shape[0]):
+        #     x_list = times[i] - times
+        #     var = 1E-2
+        #     x_list[i] = 0.0            
+        #     corr[i, :] = np.exp(-0.5 * (x_list/var)**2)
+        # # Test that the correlation matrix is positive definite
+        # eig = np.linalg.eigvalsh(corr)
+        # assert(eig.shape[0] == corr.shape[0])
+        # assert(np.all(np.isreal(eig)))
+        # assert(np.all(eig >= -1E-10))
+
         var = np.diag(ampl * np.ones((shape[0],)))
         sigma = np.dot(np.dot(np.sqrt(var), corr), np.sqrt(var))
         
@@ -53,6 +66,7 @@ class NoiseModel(Struc):
                                                size=1,
                                                random_state=rstate)
 
+        assert(np.all(np.isfinite(noise)))
         bias = 0.0
-
+        
         return noise + bias

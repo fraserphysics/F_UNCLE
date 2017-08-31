@@ -26,13 +26,12 @@ To Do:
 import numpy as np
 
 try:
-    pass
-#    from mpi4py import MPI
+    from mpi4py import MPI
 except Exception as inst:
     pass
 # end
 
-def pll_loop(x, func, shape=None, comm=None, *args, **kwargs):
+def pll_loop(x, func, shape, comm=None, verb=False, *args, **kwargs):
     """
     Uses MPI to evaluate `func' for each value of x and returns a dictionary of the results
     - Uses Static Process Management (SPM)
@@ -51,6 +50,7 @@ def pll_loop(x, func, shape=None, comm=None, *args, **kwargs):
     """
     # print('Entering the MPI loop')
     if comm is None:
+        if verb: print('Generating new communicator')
         try:
             comm = MPI.COMM_WORLD
         except:
@@ -61,46 +61,44 @@ def pll_loop(x, func, shape=None, comm=None, *args, **kwargs):
     # end
     nproc = comm.Get_size()
     myrank = comm.Get_rank()
+    if verb: print("Hello from rank %d of %d"%(myrank, nproc))
     Barrier = comm.barrier
-    Send = comm.Send
-    Recv = comm.Recv
+    Send = comm.send
+    Recv = comm.recv
     Bcast = comm.bcast
 
     myxval = range(myrank, len(x), nproc)
     out_data = {}
 
     # The actuall paralell loop
-    send_buf = np.empty((shape, len(myxval)))
+    send_buf = []#np.empty((shape, len(myxval)), dtype=np.float64)
     for j, i in enumerate(myxval):
-        print('evaluating variable {:d} on rank {:d}'.format(i, myrank))
-        send_buf[:,j] = func(x[i], *args, **kwargs)
+        if verb: print('evaluating variable {:d} on rank {:d}'.format(i, myrank))
+        send_buf.append(func(x[i], *args, **kwargs))
     #end
     
     # Send and receive the data
     if myrank != 0:
-        print('sending from rank {:d} to rank {:d}'.format(myrank, 0))        
-        Send(send_buf, dest=0, tag = 1)
+        if verb: print('sending from rank {:d} to rank {:d}'.format(myrank, 0))        
+        req = Send(send_buf, dest=0, tag = 1)
     else:
         for j, i in enumerate(myxval):
-            out_data[i] = send_buf[:,j]
+            out_data[i] = send_buf[j]
         #end
     # end
-    import time
-    time.sleep(2)
-    Barrier()
+
     if myrank == 0:
-        p_results = {}
-        for proc in xrange(1, nproc):
-            proc_xval = range(myrank, len(x), nproc)
-            rec_buff = np.empty((shape, len(proc_xval)))
-            print('recieving from rank {:d} on rank {:d}'.format(proc, myrank))
-            
+        if verb: print('rank 0 begining to recieve')
+        for proc in range(1, nproc):
+            proc_xval = range(proc, len(x), nproc)
+            rec_buff = np.empty((shape, len(proc_xval)), dtype=np.float64)           
             try:
-                Recv(rec_buff, source=proc, tag=1)
+                rec_buff = Recv(source=proc, tag=1)
+                #rec_buff = req.wait()
+                if verb: print('recieving from rank {:d} on rank {:d}'.format(proc, myrank))                
                 for j, i in enumerate(proc_xval):
-                    out_data[i] = rec_buff[:,j]
+                    out_data[i] = rec_buff[j]
                 # end
-                #p_results.append(Recv(source=proc, tag=1))
             except MPI.Exception as inst:
                 print("rank %d failed recieving from proc %d"%(myrank, proc))
                 print(type(inst))
@@ -109,18 +107,7 @@ def pll_loop(x, func, shape=None, comm=None, *args, **kwargs):
         #end
     #end
 
-
-    # Organize the data
-    if myrank == 0:
-        # for proc in xrange(nproc-1):
-        #     for i in p_results[proc].keys():
-        #         out_data[i] = p_results[proc][i]
-        #     #end
-        # #end
-        print('broadcasting from rank {:d} to rank {:d}'.format(0, myrank))    
-        out_data = Bcast(out_data, root=0)
-#        print(out_data)
-    #end
+    out_data = Bcast(out_data, root=0)
     Barrier()    
     
     return out_data
@@ -132,7 +119,7 @@ def expensive_func(x, *args, **kwargs):
     A function to evaluate to test the paralell abilities
     """
     fact = x
-    for i in xrange(x-1):
+    for i in range(x-1):
         fact *= (x-(i+1))
     #end
     time.sleep(1)
@@ -166,25 +153,11 @@ if __name__ == "__main__":
     # > Test the speedup obtained from the paralell function
 
     import time
-    x = range(2,300, 1)
+    x = range(2,4, 1)
     to = time.time()
-    y = pll_loop(x, expensive_func)
+    y = pll_loop(x, expensive_func, shape=1)
 
     if MPI.COMM_WORLD.Get_rank() == 0:
         print("Time taken ", time.time()-to)
     #end
 
-    # Test 2
-    # ------
-    # > Test the ability to handle complex io
-
-    x = [[1,2],[3,4],[5,6],[7,8]]
-    param = {'kw1' : 'potatoe'}
-    y = pll_loop(x, complex_io, p = param)
-
-    if MPI.COMM_WORLD.Get_rank() == 0:
-        for key in y:
-            dct = y[key]
-            print('out1 ', dct['out1'], ' out2 ', dct['out2'], ' out3 ', dct['out3'])
-        #end
-    # #end

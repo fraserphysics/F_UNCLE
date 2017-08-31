@@ -96,7 +96,7 @@ class Stick(Simulation):
                       'The position of the first sensor on the rate stick'],
             'x_max': [float, 17.7, 0.0, None, 'cm',
                       'The position of the last sensor on the rate stick'],
-            'n_x': [int, 7, 0, None, '',
+            'n_x': [int, 700, 0, None, '',
                     'Number of sensor positions']
         }
 
