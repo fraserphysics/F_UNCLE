@@ -1,28 +1,12 @@
 #sudo: required
-
-#before_install:
-#  - sudo apt-get update -qq
-#  - sudo apt-get install -qq liblapack-dev libopenblas-dev libatlas-dev gfortran
-
-language: python
-python:
-  - '2.7'
-  - '3.5'
-# command to install dependencies
-install:
-#  - "pip install -r pip_req.txt"
-   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh
-     -O miniconda.sh; else wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
-     -O miniconda.sh; fi
-   - bash miniconda.sh -b -p $HOME/miniconda
-   - export PATH="$HOME/miniconda/bin:$PATH"
-   - hash -r
-   - conda config --set always_yes yes --set changeps1 no
-   - conda update -q conda
-   - echo $TRAVIS_PYTHON_VERSION
-   - conda info -a
-   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy pandas scipy cvxopt matplotlib pytest
-   - source activate test-environment
-   
-# command to run tests
-script: 'mkdir -p ~/.config/matplotlib/ && echo backend : PDF > ~/.config/matplotlib/matplotlibrc && pytest F_UNCLE'
+test:
+  script:
+  - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - conda create -q -n test-environment python=3.5 --file pip_req.txt
+  - source activate test-environment
+  - conda install --file pip_test_req.txt
+  - mkdir -p ~/.config/matplotlib/
+  - echo backend : PDF > ~/.config/matplotlib/matplotlibrc
+  - pytest F_UNCLE'
