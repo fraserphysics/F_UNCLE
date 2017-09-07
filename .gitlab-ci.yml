@@ -1,4 +1,9 @@
-test:default:
+stages:
+  - build
+  - test
+
+makefuncle:
+  stage:build
   script:
     - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
     - bash miniconda.sh -b -p $HOME/miniconda
@@ -6,8 +11,27 @@ test:default:
     - conda config --set always_yes yes --set changeps1 no
     - conda update -q conda
     - conda create -q -n test-environment python=3.5 --file pip_req.txt
-    - source activate test-environment
-    - conda install --file pip_test_req.txt
     - mkdir -p ~/.config/matplotlib/
     - 'echo backend : PDF > ~/.config/matplotlib/matplotlibrc'
+    - source activate test-environment
+    - python setup.py develop
+
+testfuncle:
+  stage: test
+  script:
+    - conda install --file pip_test_req.txt
     - pytest F_UNCLE
+  
+teststyle:
+  stage: test
+  script:
+    - conda install --file pip_test_req.txt
+    - pep8 F_UNCLE
+    
+testdocs:
+  stage: test
+  script:
+    - conda install --file pip_doc_req.txt
+    - cd docs
+    - make html
+       
