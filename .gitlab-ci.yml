@@ -8,5 +8,5 @@ test:default:
     - source activate test-environment
     - conda install --file pip_test_req.txt
     - mkdir -p ~/.config/matplotlib/
-    - echo 'backend : PDF' > ~/.config/matplotlib/matplotlibrc
+    - echo 'backend PDF' > ~/.config/matplotlib/matplotlibrc
     - pytest F_UNCLE
