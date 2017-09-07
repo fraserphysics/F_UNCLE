@@ -23,7 +23,7 @@ teststyle:
   stage: test
   script:
     - conda install --file pip_test_req.txt
-    - pep8 F_UNCLE
+    - pep8 --max-line-length=80 --ignore=W503,E701 --exclude=test* F_UNCLE/
   allow_failure: true    
     
 testdocs:
