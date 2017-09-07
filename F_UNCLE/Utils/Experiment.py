@@ -83,7 +83,6 @@ class Experiment(Struc):
     mean_fn = None
     var_fn = None
 
-
     def __init__(self, name="Data Experiment", *args, **kwargs):
         """Loads the data and performs pre-processing activities
         """
@@ -91,17 +90,17 @@ class Experiment(Struc):
         # name: type, default, min, max, units, note
         def_opts = {
             'data_bounds': [tuple, (0, 1E21), None, None, '-',
-                              'The bounds for the spline to represent the '
-                              'data'],
+                            'The bounds for the spline to represent the '
+                            'data'],
             'n_knots': [int, 200, 5, None, '-',
                         'The number of knots to represent the data'],
             'n_smooth': [int, 0, 0, None, '-',
-                        'The number of knots to smooth over'],            
+                         'The number of knots to smooth over'],
             'exp_var': [float, 1E-2, 0.0, 1.0, '-',
                         'Percent variance in the data'],
             'exp_corr': [float, 0.0, 0.0, 1.0, '-',
-                        'Correlation in the data'],
-              
+                         'Correlation in the data'],
+
         }
 
         if 'def_opts' in kwargs:
@@ -129,13 +128,13 @@ class Experiment(Struc):
         # process only those within a certain time of the experimental
         # data trigger
         self.window = self.get_window()
-        
+
     def get_window(self):
         """Creates a 'window' to consider only a selection of the data slice
 
         Default window goes between tau + bounds[0] and tau + bounds[1]
-        
-        Args: 
+
+        Args:
             None
 
         Return:
@@ -144,8 +143,8 @@ class Experiment(Struc):
 
         return np.where((self.data[0] <=
                          self.tau_exp + self.get_option('data_bounds')[1])
-                        &(self.data[0] >=
-                          self.tau_exp + self.get_option('data_bounds')[0]))
+                        & (self.data[0] >=
+                           self.tau_exp + self.get_option('data_bounds')[0]))
 
     def simple_trigger(self, x, y):
         """This is the most basic trigger object for data which does not need
@@ -161,7 +160,6 @@ class Experiment(Struc):
         always returns zero
         """
 
-        
         self.trigger = self.simple_trigger
 
         return
@@ -200,17 +198,17 @@ class Experiment(Struc):
         # If smoothing knots > 0 then apply Gaussian
         # smoothing. Otherwise smooth with LSQ splines
         if n_width > 0:
-            width = knotlist[n_width]-knotlist[0]
+            width = knotlist[n_width] - knotlist[0]
             d = np.empty((len(knotlist), len(x_data)))
             for i in range(len(knotlist)):
-                d[i,:] = x_data - knotlist[i]
+                d[i, :] = x_data - knotlist[i]
             # end
             g = np.where(d * d / (2 * width * width) < 50.0,
                          -d * d / (2 * width * width),
-                         -50.0) # Gaussian weight matrix
+                         -50.0)  # Gaussian weight matrix
             g = np.exp(g)
-           
-            norm = g.sum(axis=1)             # Normalization vector
+
+            norm = g.sum(axis=1)  # Normalization vector
 
             mean_fn = IUSpline(
                 knotlist,
@@ -237,17 +235,17 @@ class Experiment(Struc):
                 x_data,
                 y_data,
                 knotlist,
-                ext = 3
+                ext=3
             )
-            
+
             var_fn = LSQSpline(
                 x_data,
                 (y_data - mean_fn(x_data))**2,
                 knotlist,
-                ext = 3
+                ext=3
             )
         # end
-        
+
         return mean_fn, var_fn
 
     def __call__(self):
@@ -283,7 +281,9 @@ class Experiment(Struc):
 
         return\
             self.data[0][self.window],\
-            [self.data[1][self.window], self.mean_fn(self.data[0][self.window]), self.data[2],
+            [self.data[1][self.window],
+             self.mean_fn(self.data[0][self.window]),
+             self.data[2],
              ['vel data', 'vel fn', 'variance']],\
             {'mean_fn': self.mean_fn, 'var_fn': self.var_fn,
              'trigger': self.trigger}
@@ -316,7 +316,7 @@ class Experiment(Struc):
         """
         tau = sim_data[2]['tau']
         epsilon = self.data[1][self.window]\
-                  - sim_data[2]['mean_fn'](self.data[0][self.window] - tau)
+            - sim_data[2]['mean_fn'](self.data[0][self.window] - tau)
         return epsilon
 
     def align(self, sim_data, plot=False, fig=None):
@@ -364,16 +364,16 @@ class Experiment(Struc):
         """
 
         tau_sim = self.trigger(sim_data[0], sim_data[1][0])
-        #print('tau_sim_calc      us', tau_sim)
+        # print('tau_sim_calc      us', tau_sim)
         # Trigger returns the time shift to align the simulations with
         # t=0 To align the simulations with the experiments, we need
         # the time shift which brings the experiments back to t=0. To
         # convert from experiment time to simulation time
-        #t_sim = t_exp - tau_exp + tau_sim
-        #t_sim = t_exp - (tau_exp - tau_sim)
-        #t_sim = t_exp - tau
-        tau = self.tau_exp - tau_sim 
-        sim_data[2]['tau'] = tau        
+        # t_sim = t_exp - tau_exp + tau_sim
+        # t_sim = t_exp - (tau_exp - tau_sim)
+        # t_sim = t_exp - tau
+        tau = self.tau_exp - tau_sim
+        sim_data[2]['tau'] = tau
         sim_data[2]['t_0'] = self.tau_exp
         sim_data[2]['trigger'] = copy.deepcopy(self.trigger)
 
@@ -423,7 +423,6 @@ class Experiment(Struc):
             (self.data[1][self.window] * self.get_option('exp_var'))**2,
             1E-12))
 
-
     def _check_finite(self, data):
         """Removes Nan from data
         """
@@ -461,19 +460,18 @@ class Experiment(Struc):
                          __init__
             *kwargs(list): Variable length list of keyword args passed from
                          __init__
-        
+
         Return:
-            (tuple): The data, elements are 
-         
+            (tuple): The data, elements are
+
                 0. (np.ndarray): The independent variable
                 1. (np.ndarray): The **single** dependent variable
                 2. (np.ndarray or None): The variance of the dependent
-                   variable if available 
+                   variable if available
         """
-        
+
         raise NotImplementedError("Must be implemented in a child of the"
                                   "Experiment class")
-
 
     def get_pq(self, models, opt_key, sim_data, sens_matrix,
                scale=False):
@@ -482,8 +480,8 @@ class Experiment(Struc):
         Args:
            models(dict): The dictionary of models
            opt_key(str): The key for the model being optimized
-           sim_data(list): Length three list corresponding to the `__call__` from
-                           a Experiment object
+           sim_data(list): Length three list corresponding to the `__call__`
+                           from an Experiment object
            sens_matrix(np.ndarray): The sensitivity matrix
 
         Keyword Arguments:
@@ -505,8 +503,8 @@ class Experiment(Struc):
         """Gets the log likelihood of the current simulation
 
         Args:
-           sim_data(list): Length three list corresponding to the `__call__` from
-                           a Experiment object
+           sim_data(list): Length three list corresponding to the `__call__`
+                           from an Experiment object
            experiment(Experiment): A valid Experiment object
 
         Return:
@@ -517,7 +515,7 @@ class Experiment(Struc):
                                   ' statistical model for the data. Use a child'
                                   ' of Experiment which has implemented a model'
                                   .format(self.get_inform(1)))
-    
+
     def get_fisher_matrix(self, sens_matrix):
         """Returns the fisher information matrix of the simulation
 
@@ -533,11 +531,11 @@ class Experiment(Struc):
         """
 
         sigma = inv(self.get_sigma())
-        
+
         return np.dot(sens_matrix.T, np.dot(sigma, sens_matrix))
-    
-    def parse_datafile(self, folder, filename, root_dir, header_lines, delimiter,
-                       indepcol, depcols, varcols):
+
+    def parse_datafile(self, folder, filename, root_dir, header_lines,
+                       delimiter, indepcol, depcols, varcols):
         """Parser to read experimental datafiles
 
         Args:
@@ -566,20 +564,21 @@ class Experiment(Struc):
         # end
         if varcols is not None:
             return data[:, indepcol],\
-                data[:, depcols][:,0],\
+                data[:, depcols][:, 0],\
                 data[:, varcols]
         else:
             return data[:, indepcol],\
-                data[:, depcols][:,0],\
+                data[:, depcols][:, 0],\
                 np.nan * np.ones(data.shape[0])
-    
+
+
 class GaussianExperiment(Experiment):
     """Class to represent experimental data which is modeled as being
     normally distributed
     """
-    
+
     def get_pq(self, models, opt_keys, sim_data, sens_matrix,
-           scale=False):
+               scale=False):
         """Generates the P and q matrix for the Bayesian analysis
 
         Args:
@@ -599,7 +598,6 @@ class GaussianExperiment(Experiment):
 
         """
 
-
         epsilon = self.compare(sim_data)
 
         p_mat = np.dot(np.dot(sens_matrix.T,
@@ -608,7 +606,7 @@ class GaussianExperiment(Experiment):
         q_mat = -np.dot(np.dot(epsilon,
                                inv(self.get_sigma())),
                         sens_matrix)
-        #pdb.set_trace()
+
         # q_mat = -np.dot(np.dot(epsilon.shape,
         #                        inv(self.get_sigma())),
         #                 sens_matrix)
@@ -618,12 +616,12 @@ class GaussianExperiment(Experiment):
             for key in opt_keys:
                 ndof += models[key].shape()
             # end
-            scale_vec = np.zeros(2*(ndof,))
+            scale_vec = np.zeros(2 * (ndof,))
             idx = 0
             for key in opt_keys:
                 shape = models[key].shape()
                 scale_vec[idx: idx + shape, idx: idx + shape]\
-                          = models[key].get_scaling()
+                    = models[key].get_scaling()
                 idx += shape
             # end
             p_mat = np.dot(scale_vec, np.dot(p_mat, scale_vec))
@@ -636,8 +634,8 @@ class GaussianExperiment(Experiment):
         """Gets the log likelihood of the current simulation
 
         Args:
-           sim_data(list): Length three list corresponding to the `__call__` from
-                           a Experiment object
+           sim_data(list): Length three list corresponding to the `__call__`
+                           from a Experiment object
            experiment(Experiment): A valid Experiment object
 
         Return:

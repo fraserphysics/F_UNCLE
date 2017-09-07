@@ -88,7 +88,7 @@ the results for a single experiment performed under a single set of
 conditions.
 
    - :py:func:`F_UNCLE.Utils.Experiment.Experiment.__call__`: Returns
-     a tuple with the following elements: 
+     a tuple with the following elements:
 
       0. The independent variable of the simulation (i.e. time)
 
@@ -111,7 +111,7 @@ conditions.
     - :py:func:`F_UNCLE.Utils.Experiment.Experiment.get_fisher_matrix`:
       This returns the fisher information matrix of the experiment given
       the simulation's sensitivity matrix
-      
+
 The `Experiment` object provides some internal routines to ease
 comparison of simulations and experiments
 
@@ -160,7 +160,7 @@ computer simulation which is dependent on a PhysicsModel
       is evaluated at the independent data points of the provided
       `initial_data` and the deltas for each finite difference step
       are evaluated using the `compare` method.
-      
+
 Optimization Methods
 ....................
 
@@ -170,25 +170,6 @@ associated Simulations.
 
 :py:class:`F_UNCLE.Opt.Bayesian.Bayesian`:
 
-    
+
 
 """
-
-# from pyStruc import Struc
-# from pyContainer import Container
-# from pyIsentrope import Isentrope
-# from pyIsentrope import EOSBump
-# from pyIsentrope import EOSModel
-# from pyIsentrope import Spline
-# from pyExperiment import Experiment
-
-# __all__ = ['Struc', 'Container']
-# def start():
-#    """This starts the module
-#    """
-
-
-###---------------
-### Local Variables:
-### mode: rst
-### End:

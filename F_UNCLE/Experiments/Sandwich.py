@@ -66,7 +66,7 @@ class ToySandwich(Simulation):
     **Units**
 
     This model is based on the CGS units system
-    
+
 
     **Diagram**
 
@@ -102,12 +102,12 @@ class ToySandwich(Simulation):
             'x_f': [float, 1E21, 0.0, None, 'cm',
                     'Final thickness of HE'],
             't_cu': [float, 0.102, 0.0, None, 'cm',
-                    'Initial thickness of Cu'],            
+                     'Initial thickness of Cu'],
             'rho_cu': [float, 8.924, 0.0, None, 'g cm-3',
-                  'Mass of projectile'],
+                       'Mass of projectile'],
             'rho_he': [float, 2.75, 0.0, None, 'g cm-3',
-                        'The density of the HE reactants'
-                        'the projectile'],
+                       'The density of the HE reactants'
+                       'the projectile'],
             'sigma': [float, 1.0e0, 0.0, None, 'cm s-1',
                       'Variance attributed to v measurements'],
             't_min': [float, 0.0e-6, 0.0, None, 'sec',
@@ -119,7 +119,7 @@ class ToySandwich(Simulation):
         }
 
         Simulation.__init__(self, {'eos': Isentrope}, name=name,
-                                   def_opts=def_opts, *args, **kwargs)
+                            def_opts=def_opts, *args, **kwargs)
 
     def _on_check_models(self, models):
         """Checks that the model is valid
@@ -162,8 +162,9 @@ class ToySandwich(Simulation):
 
         """
         rho_cu = self.get_option('rho_cu')
-        t_cu = self.get_option('t_cu')        
-        vol_he = 1E2 * posn / (self.get_option('rho_he') * self.get_option('x_i'))
+        t_cu = self.get_option('t_cu')
+        vol_he = 1E2 * posn / (self.get_option('rho_he')
+                               * self.get_option('x_i'))
         # print('vol {:} g cm-3'.format(vol_he))
         # 0.1 converts the resulting acceleration into m s**-2
         if eos.get_option('basis') == 'dens':
@@ -171,7 +172,7 @@ class ToySandwich(Simulation):
         else:
             return 0.1 * eos(vol_he) / (rho_cu * t_cu)
         # end
-        
+
     def _shoot(self, eos):
         """ Run a simulation and return the results: t, [x,v]
 
@@ -197,7 +198,7 @@ class ToySandwich(Simulation):
         t_max = self.get_option('t_max')
         n_t = self.get_option('n_t')
         x_i = 1E-2 * self.get_option('x_i')  # cm to m
-        x_f = 1E-2 * self.get_option('x_f')  # cm to m  
+        x_f = 1E-2 * self.get_option('x_f')  # cm to m
 
         def diffeq(state, time):
             """vector field for integration
@@ -215,13 +216,12 @@ class ToySandwich(Simulation):
                F((position,velocity),t) = \frac{d}{dt} (position,velocity)
 
             """
-            # print("t{:f}, pos {:f} vel {:f}".format(time*1E6, state[0], state[1]))
             if time < 0:
                 return np.zeros(2)
             if state[0] > x_f:  # beyond end of gun barrel, muzzle
                 accel = 0.0
             else:
-                accel = self._get_accel(eos, state[0]) 
+                accel = self._get_accel(eos, state[0])
             return np.array([state[1], accel])
 
         time_list = np.linspace(t_min, t_max, n_t)
@@ -338,8 +338,10 @@ class ToySandwich(Simulation):
         """
 
         if axes is None:
-            fig = plt.figure()
-            ax1 = plt.gca()
+            if fig is None:
+                fig = plt.figure()
+            # end
+            ax1 = fig.gca()
         elif isinstance(axes, plt.Axes):
             fig = None
             ax1 = axes
@@ -364,14 +366,15 @@ class ToySandwich(Simulation):
                      1E-4 * (data[0][1][0] - data[1][1][0]),
                      err_style)
             # ax1.plot(None, None, err_style, label='Error')
-            
+
             ax2.set_ylabel(r'Error / cm $\mu$s$^{-1}$')
         # end
 
         ax1.legend(loc='best')
 
         return fig
-    
+
+
 class ToySandwichExperiment(GaussianExperiment):
     """A class representing pseudo experimental data for a gun show
     """
@@ -386,11 +389,11 @@ class ToySandwichExperiment(GaussianExperiment):
 
         noise_model = NoiseModel()
         noisedata = noise_model(simdata[0], simdata[1][0], rstate=rstate)
-        
+
         return simdata[0], simdata[1][0] + noisedata,\
             np.zeros(simdata[0].shape)
     # end
-        
+
     def get_sigma(self):
         """Returns the co-variance matrix
 
@@ -401,11 +404,12 @@ class ToySandwichExperiment(GaussianExperiment):
         # dx = np.zeros((self.data[0][self.window].shape[0],))
         # var = self.get_option('exp_corr')
         # lmb = 10
-        # dx[1:] = self.data[0][self.window][1:] - self.data[0][self.window][:-1]
+        # dx[1:] = self.data[0][self.window][1:]\
+        #    - self.data[0][self.window][:-1]
         # dx[0] = dx[1]
-        
+
         # idx = self.window[0][0]
-        # times = self.data[0][self.window]        
+        # times = self.data[0][self.window]
         # for i in range(corr.shape[0]):
         #     # # cor[i, :] = (2 * np.pi * (lmb * dx[i])**2)**-0.5\
         #     # #             * np.exp(-0.5 * (self.data[0][self.window]
@@ -417,8 +421,7 @@ class ToySandwichExperiment(GaussianExperiment):
         #     #              / (np.pi * lmb * x_list)
         #     # corr[i, i] = 1.0
         #     x_list = (times[i] - times) / (times.max() - times.min())
-            
-            
+
         #     corr[i, :] = np.exp(-(x_list/var)**2)
         #     #assert(np.all())
         # eig = np.linalg.eigvalsh(corr)
@@ -429,8 +432,9 @@ class ToySandwichExperiment(GaussianExperiment):
         # assert(np.all(eig >= 0.0))
         corr = np.eye(self.shape())
         sigma = np.diag(np.ones(self.shape())
-                       * np.fabs(self.data[1][self.window]) * self.get_option('exp_var'))
-       
+                        * np.fabs(self.data[1][self.window])
+                        * self.get_option('exp_var'))
+
         assert(np.all(np.isfinite(corr)))
         retval = np.dot(np.sqrt(sigma), np.dot(corr, np.sqrt(sigma)))
         assert(np.all(np.isfinite(retval)))

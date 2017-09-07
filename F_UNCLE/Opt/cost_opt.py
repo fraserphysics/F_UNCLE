@@ -36,6 +36,7 @@ from ..Utils.PhysicsModel import PhysicsModel
 from ..Utils.Struc import Struc
 from .Bayesian import Bayesian
 
+
 class CostOpt(Bayesian):
     '''Code for experimenting with alternative optimization algorithms
 
@@ -204,11 +205,7 @@ if __name__ == '__main__':
 
     # 4. Create the analysis object
     analysis = CostOpt(
-        simulations={
-            'Gun': [gun_simulation, gun_experiment]
-            # 'Stick': [stick_simulation, stick_experiment]
-            #'Sphere': [sphere_simulation, sphere_experiment]
-            },
+        simulations={'Gun': [gun_simulation, gun_experiment]},
         models={'eos': eos_model, 'strength': Ptw()},
         opt_key='eos',
         constrain=True,

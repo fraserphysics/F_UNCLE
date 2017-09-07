@@ -36,11 +36,6 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-# Allows the unicode type when running in python3
-try:
-    unicode
-except NameError:
-    unicode = str
 
 # =========================
 # Python Standard Libraries
@@ -61,6 +56,18 @@ from numpy.linalg import inv
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 import matplotlib.gridspec as gridspec
+
+from cvxopt import matrix, solvers
+
+# =========================
+# Custom Packages
+# =========================
+
+from ..Utils.Simulation import Simulation
+from ..Utils.Experiment import Experiment
+from ..Utils.PhysicsModel import PhysicsModel
+from ..Utils.Struc import Struc
+
 try:
     from mpi4py import MPI
     mpi_comm = MPI.COMM_WORLD
@@ -73,23 +80,18 @@ try:
 except ImportError as inst:
     mpi_print = True
 # end
-        
-        
-from cvxopt import matrix, solvers
+
+# Allows the unicode type when running in python3
+try:
+    unicode
+except NameError:
+    unicode = str
 # end
-
-# =========================
-# Custom Packages
-# =========================
-
-from ..Utils.Simulation import Simulation
-from ..Utils.Experiment import Experiment
-from ..Utils.PhysicsModel import PhysicsModel
-from ..Utils.Struc import Struc
 
 # =========================
 # Main Code
 # =========================
+
 
 class Bayesian(Struc):
     """A class for performing Bayesian inference on a model given data
@@ -178,7 +180,7 @@ class Bayesian(Struc):
                           'Flag to constrain the optimization'],
             'precondition': [bool, True, None, None, '-',
                              'Flag to scale the problem'],
-            'pickle_sens' :[bool, False, None, None, '-',
+            'pickle_sens': [bool, False, None, None, '-',
                             'Flag to save sens matrix each iteration'],
             'debug': [bool, False, None, None, '-',
                       'Flag to print debug information'],
@@ -192,22 +194,22 @@ class Bayesian(Struc):
 
         self.models, self.simulations = self._check_inputs(models, simulations)
 
-        if opt_keys is None and len(self.models)>1:
+        if opt_keys is None and len(self.models) > 1:
             raise IOError("{:} Must define opt key if more than one model"
                           "used".format(self.get_inform(1)))
         elif isinstance(opt_keys, (unicode, str)):
-            opt_keys=[opt_keys]
+            opt_keys = [opt_keys]
         elif opt_keys is None:
-            opt_keys=[list(self.models.keys())[0]]
+            opt_keys = [list(self.models.keys())[0]]
         # end
-        
+
         for key in opt_keys:
             if key not in self.models:
                 raise KeyError("{:} Opt key {:} is not in models dict"
                                .format(self.get_inform(1), key))
             # end
         # end
-        self.opt_keys = opt_keys        
+        self.opt_keys = opt_keys
     # end
 
     def _check_inputs(self, models, simulations):
@@ -220,7 +222,7 @@ class Bayesian(Struc):
         elif len(models) > 1 and not isinstance(models, OrderedDict):
             raise TypeError('001b {:}, model must be provided as an ordered'
                             ' dictionary when there is more than 1 model'
-                            .format(self.get_inform(1)))            
+                            .format(self.get_inform(1)))
         elif not np.all([isinstance(models[key], PhysicsModel)
                          for key in models]):
             raise TypeError('002 {:}, all models must be a PhysicsModel type'
@@ -369,7 +371,7 @@ class Bayesian(Struc):
         for key in self.opt_keys:
             dof_model += self.models[key].shape()
         # end
-        
+
         dof_sim = 0
         for key in self.simulations:
             dof_sim += self.simulations[key]['exp'].shape()
@@ -396,7 +398,7 @@ class Bayesian(Struc):
             if mpi_print and self.get_option('verb'):
                 print("Log Like for {:s} is {:f}".format(key, lki))
         # end
-        return lk 
+        return lk
 
     def sim_log_like(self, initial_data):
         r"""Gets the log likelihood of the simulations given the data
@@ -427,9 +429,10 @@ class Bayesian(Struc):
         # end
 
         return log_like
+
     def get_opt_dof(self):
         """Returns a vector of the model DOF for the optimization
-        
+
         """
 
         dof_vec = np.empty((self.shape()[1],))
@@ -442,10 +445,10 @@ class Bayesian(Struc):
         # end
 
         return dof_vec
-    
+
     def __call__(self, comm=None):
         """Determines the best candidate EOS function for the models
-        
+
         Args:
             comm(MPI.intracom): An MPI communicator for sensitities
 
@@ -466,7 +469,7 @@ class Bayesian(Struc):
                    keys are simulation keys
 
         """
-        #FixMe: "intitial_data" misspelled and not used
+
         def outer_loop_iteration(analysis, log_like, intitial_data, itn):
             """Performs a single step of the outer loop optimization
 
@@ -524,7 +527,7 @@ class Bayesian(Struc):
                 with open("./sens_iter{:02d}.pkl".format(itn), 'wb') as fid:
                     pickle.dump(sens_matrix, fid)
             # end
-            
+
             if verb and mpi_print:
                 print('Begining local optimization')
 
@@ -542,14 +545,13 @@ class Bayesian(Struc):
                     idx += shape
                 # end
                 d_hat = np.dot(scale_vect, d_hat)
-                #print('x scaled', d_hat)
             # end
 
             if verb and mpi_print:
                 print('End of local optimization')
                 print('Start of line search')
-            
-            # Finds the optimal step in the d_hat direction 
+
+            # Finds the optimal step in the d_hat direction
             n_steps = 7
             costs = np.zeros(n_steps)
             iter_data = []
@@ -558,42 +560,41 @@ class Bayesian(Struc):
             x_list = np.linspace(0, max_step, n_steps)
             dof_list = []
             analysis_list = []
-            
+
             # Builds the list of dof values to test and gets the prior cost
-            plot_lsearch=self.get_option('debug')
+            plot_lsearch = self.get_option('debug')
             if plot_lsearch:
                 fig = plt.figure()
                 search_ax = {}
                 for i, key in enumerate(opt_keys):
-                    search_ax[key] = fig.add_subplot(1,len(opt_keys),i+1)                    
+                    search_ax[key] = fig.add_subplot(1, len(opt_keys), i + 1)
                     model_dict[key].prior.plot(
                         axes=search_ax[key],
                         labels=['Prior'],
                         linestyles=['-'],
                         vrange=(0.1, 0.8),
-                        log=False                        
-                )
+                        log=False)
             # end
-            
+
             for i, x_i in enumerate(x_list):
                 dof_list.append(initial_dof + x_i * d_hat)
                 idx = 0
-                    
+
                 for key in opt_keys:
                     shape = model_dict[key].shape()
                     model_dict[key] = model_dict[key].update_dof(
-                        dof_list[-1][idx : idx + shape])
+                        dof_list[-1][idx: idx + shape])
                     # print(model_dict[key])
                     idx += shape
                 # end
-                
+
                 if plot_lsearch:
                     for key in opt_keys:
                         model_dict[key].plot(
                             axes=search_ax[key],
                             labels=['Step {:02d}'.format(i)],
                             linestyles=['-'],
-                            vrange=(0.1, 0.8),                            
+                            vrange=(0.1, 0.8),
                             log=False
                         )
                     fig.savefig('lineSearch_itn{:02d}.pdf'.format(itn))
@@ -608,7 +609,7 @@ class Bayesian(Struc):
                 # end
                 fig.savefig('lineSearch_itn{:02d}.pdf'.format(itn))
             # end
-            
+
             # Evaluates each simulation at each dof step
             # Note: This approach makes use of the multi_solve method
             #       which helps accelerate the solution when using a
@@ -655,32 +656,40 @@ class Bayesian(Struc):
                         ax9 = fig.add_subplot(121)
                         ax10 = fig.add_subplot(122)
                         exp_data = analysis.simulations[key]['exp']()
-                        ax9.plot(exp_data[0], exp_data[1][0], '*', ms=3, label='Experiment')
+                        ax9.plot(exp_data[0], exp_data[1][0], '*', ms=3,
+                                 label='Experiment')
                         sim_times = np.linspace(
                             exp_data[0].min(),
                             exp_data[0].max(),
                             200)
                         for i, data in enumerate(iter_data[key]):
-                            epsilon = analysis.simulations[key]['exp'].compare(data)
-                            sigma = analysis.simulations[key]['exp'].get_sigma()
-                            ax9.plot(sim_times, data[2]['mean_fn'](sim_times - data[2]['tau']),
-                                     label = "step %02d"%i)
+                            epsilon = analysis.simulations[key]['exp']\
+                                .compare(data)
+                            sigma = analysis.simulations[key]['exp']\
+                                .get_sigma()
+                            ax9.plot(sim_times,
+                                     data[2]['mean_fn'](
+                                         sim_times - data[2]['tau']),
+                                     label="step %02d" % i)
+
                             ax10.plot(exp_data[0],
-                                      0.5 * np.dot(epsilon**2, np.linalg.inv(sigma)),
+                                      0.5 * np.dot(epsilon**2,
+                                                   np.linalg.inv(sigma)),
                                       '*', ms=3,
-                                      label = "sigma %02d"%i)
+                                      label="sigma %02d" % i)
                         # end
                         ax9.legend(loc="best")
                         ax10.legend(loc="best")
-                        fig.savefig("{:}-itn{:02d}_search_res.pdf".format(key,itn))
+                        fig.savefig("{:}-itn{:02d}_search_res.pdf"
+                                    .format(key, itn))
                         plt.close(fig)
                     except Exception:
                         pass
                     # end
                 # end
-                    
+
             # end
-                       
+
             # Updates the model dof to the optimal value
             besti = np.argmax(costs)
 
@@ -691,7 +700,7 @@ class Bayesian(Struc):
                       'End of iteration {:02d}'.format(str(costs), besti, itn))
 
             return (analysis_list[besti],
-                    new_log_like, # costs[besti],
+                    new_log_like,  # costs[besti],
                     sorted_data[besti],
                     analysis.get_opt_dof(),
                     False)
@@ -726,14 +735,13 @@ class Bayesian(Struc):
 
             with open('prior_model.pkl', 'wb') as fid:
                 pickle.dump(analysis.models, fid)
-            # end                
-            
+            # end
 
         while not conv and i < maxiter:
             if verb and mpi_print:
                 print('Iter {:d} of {:d}'.format(i, maxiter))
             # end
-                       
+
             analysis, log_like, initial_data, model_dof, conv =\
                 outer_loop_iteration(analysis, log_like, initial_data, i)
             history.append(log_like)
@@ -742,12 +750,12 @@ class Bayesian(Struc):
             if self.get_option('pickle_sens'):
                 with open('models_iter{:02d}.pkl'.format(i), 'wb') as fid:
                     pickle.dump(analysis.models, fid)
-                # end                
+                # end
 
                 with open('sim_data_iter{:02d}.pkl'.format(i), 'wb') as fid:
                     pickle.dump(initial_data, fid)
                 # end
-            # end            
+            # end
             i += 1
         # end
 
@@ -767,7 +775,7 @@ class Bayesian(Struc):
             fisher = analysis.simulations[key]['exp']\
                              .get_fisher_matrix(sens_matrix[key])
             fisher_all += fisher
-            fisher_data[key] = fisher 
+            fisher_data[key] = fisher
         # end
         fisher_data['All'] = fisher_all
         if self.get_option('pickle_sens'):
@@ -775,7 +783,7 @@ class Bayesian(Struc):
                 pickle.dump(fisher_data, fid)
             # end
         # end
-               
+
         dof_hist = np.array(dof_hist)
         history = np.array(history)
 
@@ -783,7 +791,7 @@ class Bayesian(Struc):
             fisher_data
 
     @staticmethod
-    def fisher_decomposition(fisher_dct, simid,  models, mkey, tol=1E-3):
+    def fisher_decomposition(fisher_dct, simid, models, mkey, tol=1E-3):
         """Calculate a spectral decomposition of the fisher information matrix
 
         Args:
@@ -833,7 +841,7 @@ class Bayesian(Struc):
             # end
         # end
         model = models[mkey]
-        
+
         # Spectral decomposition of info matrix and sort by eigenvalues
         eig_vals, eig_vecs = np.linalg.eigh(
             fisher[idx: idx + shape, idx: idx + shape]
@@ -848,20 +856,20 @@ class Bayesian(Struc):
         n_vecs = max(len(np.where(vals > vals[0] * tol)[0]), 3)
 
         # Find range of v that includes support of eigenfunctions
-        #knots = self.models[self.opt_key].get_t()
+        # knots = self.models[self.opt_key].get_t()
         knots = model.get_t()
         v_min = knots[0]
         v_max = knots[-1]
         vol = np.logspace(np.log10(v_min), np.log10(v_max), len(knots) * 100)
         funcs = []
-        for eig , vec in zip(vals[:n_vecs], vecs[:n_vecs]):
+        for eig, vec in zip(vals[:n_vecs], vecs[:n_vecs]):
             new_model = model.\
                 set_c(vec * model.get_dof())
             funcs.append(new_model(vol))
             if funcs[-1][np.argmax(np.fabs(funcs[-1]))] < 0:
                 funcs[-1] *= -1
             # end
-            funcs[-1] = np.array(funcs[-1]) *  1/max(funcs[-1])
+            funcs[-1] = np.array(funcs[-1]) * 1 / max(funcs[-1])
         funcs = np.array(funcs)
 
         return vals[:n_vals], vecs, funcs, vol
@@ -892,22 +900,24 @@ class Bayesian(Struc):
         p_mat += tmp[0]
         q_vec += tmp[1]
 
-
         n_dof = self.shape()[1]
 
-        # If the convex approximateion is too smooth, you have reached an optimum
-        # if np.linalg.matrix_rank(p_mat, tol=np.finfo(np.float64).eps) < n_dof\
+        # If the convex approximateion is too smooth, you have reached an
+        # optimum
+        # if np.linalg.matrix_rank(p_mat,
+        #                          tol=np.finfo(np.float64).eps) < n_dof\
         #    and np.linalg.matrix_rank(p_mat, tol=1E-21) == n_dof:
         #     return {'x':np.zeros((n_dof,))}
-        
+
         # >>>>IMPORTANT<<<<
         # The formulation shows a factor of 1/2 applied to the P matrix but
-        # CVXOPT *already* applies this factor to the P matrix, so the following
-        # line, if uncommneted, does it twice. DO NOT DO THIS
-        #p_mat *= 0.5 # DO NOT UNCOMMENT THIS LINE
+        # CVXOPT *already* applies this factor to the P matrix, so the
+        # following line, if uncommneted, does it twice. DO NOT DO THIS
+        # p_mat *= 0.5 # DO NOT UNCOMMENT THIS LINE
         # >>>>IMPORTANT<<<<
-        
-        solvers.options['show_progress'] = (self.get_option('verb') and mpi_print)
+
+        solvers.options['show_progress'] = (self.get_option('verb')
+                                            and mpi_print)
         solvers.options['debug'] = False
         solvers.options['maxiters'] = 100  # 100 default
         solvers.options['reltol'] = 1e-6   # 1e-6 default
@@ -917,7 +927,7 @@ class Bayesian(Struc):
         # >>Supressed plotting routine to show the constraint matrix
         # fig = plt.figure()
         # ax9 = fig.add_subplot(121)
-        # ax8 = fig.add_subplot(122)        
+        # ax8 = fig.add_subplot(122)
         # opt_model = self.models[self.opt_key]
         # n_end = opt_model.get_option('spline_end')
         # rho_unique = opt_model.get_t()[n_end -1 : 1 - n_end]
@@ -925,17 +935,16 @@ class Bayesian(Struc):
         # for i in xrange(opt_model.shape()):
         #     ax9.plot(rho_unique, g_mat[:n_rho, i])
         #     ax8.plot(rho_unique, g_mat[n_rho:2*n_rho, i])
-        #     ax9.plot(rho_unique, g_mat[2 * n_rho:, i])            
+        #     ax9.plot(rho_unique, g_mat[2 * n_rho:, i])
         # fig.savefig('gmat{:f}.pdf'.format(time.time()))
         # >>Supressed plotting routine to show the constraint matrix
-        
+
         try:
             # return{'x':np.dot(np.linalg.inv(p_mat),-q_vec)}
             if constrain:
                 sol = solvers.qp(matrix(p_mat), matrix(q_vec),
                                  matrix(g_mat), matrix(h_vec),
-                                 intervals={'x':np.zeros(g_mat.shape[1])}
-                )
+                                 intervals={'x': np.zeros(g_mat.shape[1])})
             else:
                 sol = solvers.qp(matrix(p_mat), matrix(q_vec))
             # end
@@ -944,13 +953,13 @@ class Bayesian(Struc):
             print("G " + str(g_mat.shape))
             print("P " + str(p_mat.shape))
             print("h " + str(h_vec.shape))
-            print("q " + str(q_vec.shape))           
+            print("q " + str(q_vec.shape))
             pdb.post_mortem()
-            
+
         # >>Supressed plotting routine to show the constraints and their values
         #   at the optimal point
 #         fig = plt.figure()
-#         ax2 = fig.add_subplot(111)        
+#         ax2 = fig.add_subplot(111)
 #         opt_model = self.models[self.opt_key]
 #         rho_unique = opt_model.get_t()[3:-3]
 #         n_unique = rho_unique.shape[0]
@@ -963,11 +972,11 @@ class Bayesian(Struc):
 #         ax2.plot(rho_unique,
 #                  np.dot(g_mat, d_hat)[n_unique: 2 * n_unique],
 #                  '-o',
-#                  label='Positivity value')       
+#                  label='Positivity value')
 #         ax2.plot(rho_unique,
 #                  np.dot(g_mat, d_hat)[2 * n_unique:],
 #                  '-o',
-#                  label='Density Convecity value')       
+#                  label='Density Convecity value')
 #         ax2.plot(rho_unique,
 #                  h_vec[:n_unique],
 #                  '--o',
@@ -978,7 +987,7 @@ class Bayesian(Struc):
 #                  label='Positivity limit')
 #         ax2.legend(loc='best')
 #         fig.savefig('function_constraints{:f}.pdf'.format(time.time()))
-        
+
         if sol['status'] != 'optimal':
             for key, value in sol.items():
                 print(key, value)
@@ -999,14 +1008,14 @@ class Bayesian(Struc):
             gmat_list.append(g_tmp)
             hvec_list.append(h_tmp)
         # end
-        
+
         gmat = np.zeros((ncon, self.shape()[1]))
         hvec = np.zeros((ncon,))
 
         idx_dof = 0
         idx_con = 0
         for i in range(len(hvec_list)):
-            shape_con, shape_dof = gmat_list[i].shape            
+            shape_con, shape_dof = gmat_list[i].shape
             gmat[idx_con: idx_con + shape_con,
                  idx_dof: idx_dof + shape_dof] = gmat_list[i]
             hvec[idx_con: idx_con + shape_con] = hvec_list[i]
@@ -1027,7 +1036,7 @@ class Bayesian(Struc):
                 0. (np.ndarray): `p`, a nxn matrix where n is the model DOF
                 1. (np.ndarray): `q`, a nx1 matrix where n is the model DOF
         """
-        
+
         pmat = np.zeros(2 * (self.shape()[1],), np.float64)
         qvec = np.zeros((self.shape()[1],), np.float64)
         idx = 0
@@ -1041,7 +1050,7 @@ class Bayesian(Struc):
         # end
 
         return pmat, qvec
-            
+
     def _get_sim_pq(self, initial_data, sens_matrix):
         """Gets the QP contributions from the model
 
@@ -1051,8 +1060,9 @@ class Bayesian(Struc):
              This implementation is only for spline models of EOS
 
         Args:
-           initial_data(list): A list of the initial results from the simulations
-                               in the same order as in the `sim` list
+           initial_data(list): A list of the initial results from the
+                               simulations in the same order as in the
+                               `sim` list
            sens_matrix(np.ndarray): The sensitivity matrix
 
         Return:
@@ -1062,7 +1072,7 @@ class Bayesian(Struc):
                 1. (np.ndarray): `q`, a nx1 matrix where n is the model DOF
 
         """
-        debug = False#self.get_option('debug')
+        debug = False  # self.get_option('debug')
         sims = self.simulations
 
         p_mat = np.zeros((self.shape()[1], self.shape()[1]))
@@ -1075,12 +1085,12 @@ class Bayesian(Struc):
         if debug:
             # Debugging creates plots of the P and Q matricies
             fig = plt.figure()
-            ax1 = fig.gca()        
+            ax1 = fig.gca()
             fig2 = plt.figure()
-            ax2 = fig2.gca()        
+            ax2 = fig2.gca()
 
-            knots = self.models[self.opt_key].get_t()\
-                    [:-self.models[self.opt_key]. get_option('spline_end')]
+            knots = self.models[self.opt_key].get_t()[
+                :-self.models[self.opt_key].get_option('spline_end')]
         for key in sims:
             p_tmp, q_tmp = sims[key]['exp'].get_pq(
                 self.models,
@@ -1109,7 +1119,7 @@ class Bayesian(Struc):
         """Generates a set of data at each experimental data-point
 
         For each pair of simulations and experiments, generates the
-        the simulation response, aligning it with the experimental 
+        the simulation response, aligning it with the experimental
         data
 
         Args:
@@ -1160,14 +1170,16 @@ class Bayesian(Struc):
         sims = self.simulations
         models = self.models
         opt_keys = self.opt_keys
-        
+
         if initial_data is None:
             initial_data = self.get_data()
         # end
 
+        t0 = time.time()
         sens_matrix = {}
         for key in self.simulations:
             sim_i = sims[key]['sim']
+            t1 = time.time()
             if self.get_option('verb') and mpi_print:
                 print('Getting sens for {:} using {:}'.format(
                     key,
@@ -1185,12 +1197,24 @@ class Bayesian(Struc):
                     comm=comm)
             elif sim_i.get_option('sens_mode') == 'runjob':
                 # raise NotImplementedError('runjob sesnitivity not yet support'
-                #                           ' multiple models')                           
+                #                           ' multiple models')
                 sens_matrix[key] = sim_i.get_sens_runjob(
                     models, opt_keys, initial_data[key])
             else:
                 sens_matrix[key] = sim_i.get_sens(
                     models, opt_keys, initial_data[key])
+
+            if self.get_option('verb') and mpi_print:
+                print('Sensitivity calculation for {:} using {:} took {:4.3f}s'
+                      .format(
+                          key,
+                          sim_i.get_option('sens_mode'),
+                          time.time() - t1))
+
+        if self.get_option('verb') and mpi_print:
+            print('Total sensitivity calculation took {:4.3f}s'
+                  .format(
+                      time.time() - t0))
         # end
 
         return sens_matrix
@@ -1225,7 +1249,7 @@ class Bayesian(Struc):
         .. math::
 
           f \in \mathcal{R}^m \\
-          \mu \in \mathcal{R}^m  
+          \mu \in \mathcal{R}^m
         """
 
         raise NotImplementedError('The Get Hessian method does not yet support'
@@ -1245,7 +1269,7 @@ class Bayesian(Struc):
         # end
 
         return hessian
-    
+
     def plot_fisher_data(self, fisher_data, axes=None, fig=None,
                          linestyles=[], labels=[]):
         """
@@ -1344,9 +1368,3 @@ class Bayesian(Struc):
         # ax1.set_ylabel('Spline knot value')
         # ax1.set_xlabel('Iteration number')
         # fig.savefig('EOS_convergence.pdf')
-
-
-###---------------
-### Local Variables:
-### mode: python
-### End:

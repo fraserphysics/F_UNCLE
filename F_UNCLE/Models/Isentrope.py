@@ -122,14 +122,14 @@ class Isentrope(GaussianModel):
             'basis': [str, 'vol', None, None, '',
                       "The basis of the isentrope, can be `volume` or"
                       " `density`"],
-            'cj_vol_range': [tuple, (0.25,0.58), None, None, 'cm**3 g**-1',
+            'cj_vol_range': [tuple, (0.25, 0.58), None, None, 'cm**3 g**-1',
                              "Range of specific volumes for CJ search"],
             'vcj_lower': [float, 5.0E5, 0.0, None, 'cm s-1',
                           "Lower bound on the CJ velocity used in"
                           "bracketing search"],
-            'vcj_upper':[float, 11.0E5, 0.0, None, 'cm s-1',
-                         "Upper bound on the CJ velocity used in"
-                         " bracketing search"]
+            'vcj_upper': [float, 11.0E5, 0.0, None, 'cm s-1',
+                          "Upper bound on the CJ velocity used in"
+                          " bracketing search"]
         }
 
         if 'def_opts' in kwargs:
@@ -190,18 +190,11 @@ class Isentrope(GaussianModel):
             d_min = 1.05 * np.sqrt(-10 * eos.derivative(1)(v_max) * vol_0**2)
             d_max = 0.95 * np.sqrt(-10 * eos.derivative(1)(v_min) * vol_0**2)
         else:
-            d_min = 1.05 * np.sqrt(10 * eos.derivative(1)(v_max**-1)/v_max**2 * vol_0**2)
-            d_max = 0.95 * np.sqrt(10 * eos.derivative(1)(v_min**-1)/v_min**2 * vol_0**2)
-        
-        # if eos.get_option('basis').lower()[:3] == 'vol':
-        #     v_min = eos.get_option('spline_min')
-        #     v_max = eos.get_option('spline_max')
-        # elif eos.get_option('basis').lower()[:3] == 'den':
-        #     v_min = eos.get_option('spline_max')**-1
-        #     v_max = eos.get_option('spline_min')**-1
-        # else:
-        #     raise IOError('{0} Unknown Isentrope basis, must be `vol` or `den`'
-        #                   .format(self.get_inform(1)))
+            d_min = 1.05 * np.sqrt(10 * eos.derivative(1)(v_max**-1)
+                                   / v_max**2 * vol_0**2)
+            d_max = 0.95 * np.sqrt(10 * eos.derivative(1)(v_min**-1)
+                                   / v_min**2 * vol_0**2)
+        # end
 
         # R is Rayleigh line
         def rayl_line(vel, vol, vol_0, p_0):
@@ -244,9 +237,8 @@ class Isentrope(GaussianModel):
                               args=(vel, eos, vol_0))
             except Exception as inst:
                 print("brentq failed on slope search")
-                #pdb.set_trace()
                 raise inst
-            
+
         def error(vel, eos, vol_0, p_0):
             r'''Calculate difference between pressure on isentrope at solution
             and on Rayleigh line'''
@@ -264,16 +256,11 @@ class Isentrope(GaussianModel):
                 p_cj = eos(vol_cj)
             else:
                 p_cj = eos(vol_cj**-1)
-            #end
+            # end
 
         except Exception as inst:
             print("brentq failed on velocity search")
-            #pdb.set_trace()
             raise inst
-            # print(inst)
-            # import pdb
-            # pdb.set_trace()
-
 
         return vel_cj, vol_cj, float(p_cj), rayl_line
 
@@ -302,20 +289,16 @@ class Isentrope(GaussianModel):
         """
 
         if axes is None:
-            fig = plt.figure()
-            ax1 = fig.gca()
+            if figure is None:
+                figure = plt.figure()
+            # end
+            ax1 = figure.gca()
         elif isinstance(axes, plt.Axes):
             fig = None
             ax1 = axes
         else:
             raise TypeError("{} axis must be a matplotlib Axis object"
                             .format(self.get_inform(1)))
-
-        if isinstance(figure, plt.Figure):
-            fig = figure
-            ax1 = fig.gca()
-            
-        # end
 
         # v_spec = np.logspace(np.log10(self.get_option('spline_min')),\
         #                 np.log10(self.get_option('spline_max')),\
@@ -337,7 +320,7 @@ class Isentrope(GaussianModel):
             x_data = v_spec**-1
             y_data = self(x_data)
         # end
-        
+
         if log:
             ax1.semilogy(x_data,
                          y_data,
@@ -351,15 +334,15 @@ class Isentrope(GaussianModel):
         # end
 
         ax1.set_ylabel(r'Pressure / Pa')
-        
+
         if self.get_option('basis') == 'dens':
             ax1.set_xlabel(r'Density / g cm$^{-3}$')
         else:
             ax1.set_xlabel(r'Specific volume / cm$^3$g$^{-1}$')
 
         # ax1.set_xlim((0.2,1.0))
-        # ax1.set_ylim((0.0,1E11))        
-            
+        # ax1.set_ylim((0.0,1E11))
+
         # if vrange is not None:
         #     ax1.set_xlim((min(x_data), max(x_data)))
 
@@ -372,17 +355,17 @@ class Isentrope(GaussianModel):
 
                 vol_list = np.linspace(0.8 * cj_dens**-1, rho0**-1, 50)
 
-                ax1.plot(vol_list, 0.1*(rho0*detvel)**2
-                         * (rho0**-1 - vol_list) + pres0 )
+                ax1.plot(vol_list, 0.1 * (rho0 * detvel)**2
+                         * (rho0**-1 - vol_list) + pres0)
             # end
         except Exception as inst:
             pass
 
         # ax1.set_xlabel(r'Specific volume
-        #/ $\si{\cubic\centi\meter\per\gram}$')
+        # / $\si{\cubic\centi\meter\per\gram}$')
         # ax1.set_ylabel(r'Pressure / $\si{\pascall}$')
 
-        return fig
+        return figure
 
     def get_constraints(self, scale=False):
         r"""Returns the G and h matrices corresponding to the model
@@ -501,10 +484,9 @@ class Spline(IU_Spline):
                    evaluated at all knots
                 3. list-(n-4) of unique knot locations
         """
-        valfn=[]
-        d1fn=[]
-        d2fn=[]
-        
+        valfn = []
+        d1fn = []
+        d2fn = []
 
         knot_unique = self.get_t()[:]
         initial_c = self.get_c(spline_end=4)
@@ -523,7 +505,7 @@ class Spline(IU_Spline):
         # end
 
         return valfn, d1fn, d2fn, knot_unique, knot_span
-    
+
     def get_t(self):
         """Gives the knot locations
 
@@ -553,7 +535,7 @@ class Spline(IU_Spline):
         # end
 
         return copy.deepcopy(self._eval_args[1][:-spline_end])
-        #return copy.deepcopy(self._eval_args[1][spline_end:])
+
     def set_c(self, c_in, spline_end=None):
         """Updates the new spline with updated coefficients
 
@@ -580,7 +562,7 @@ class Spline(IU_Spline):
 
         c_new = np.zeros(self._eval_args[1].shape)
         c_new[:-spline_end] = c_in
-        #c_new[spline_end:] = c_in
+
         new_spline = copy.deepcopy(self)
         new_spline._eval_args = (new_spline._eval_args[0],
                                  c_new,
@@ -782,7 +764,7 @@ class EOSModel(Spline, Isentrope):
     def _get_knot_spacing(self):
         """Returns a list of knot locations based on the spline parameters
         """
-        
+
         if self.get_option('spacing').lower() == 'log':
             # if self.get_option('basis') == 'dens':
             #     vol = np.logspace(np.log10(self.get_option('spline_max')**-1),
@@ -797,7 +779,7 @@ class EOSModel(Spline, Isentrope):
             vol = np.logspace(np.log10(self.get_option('spline_min')),
                               np.log10(self.get_option('spline_max')),
                               self.get_option('spline_N'))
-            
+
         elif self.get_option('spacing').lower() == 'lin':
             vol = np.linspace(self.get_option('spline_min'),
                               self.get_option('spline_max'),
@@ -807,6 +789,7 @@ class EOSModel(Spline, Isentrope):
                            "accepted".format(self.get_inform(1)))
         # end
         return vol
+
     def get_scaling(self):
         """Returns a scaling matrix to make the dofs of the same scale
 
@@ -818,8 +801,8 @@ class EOSModel(Spline, Isentrope):
             (np.ndarray): A nxn matrix where n is the number of model DOFs.
 
         """
-        
-        dev = self.get_dof()# * self.get_option('spline_sigma')
+
+        dev = self.get_dof()  # * self.get_option('spline_sigma')
 
         return np.diag(dev)
 
@@ -943,15 +926,14 @@ class EOSModel(Spline, Isentrope):
         # end
         for isen, lbl in zip(isentropes, labels):
             axes.plot(v_list, isen(v_list**-1) - self.prior(v_list),
-                      label=lbl,
-                     )
+                      label=lbl)
         # end
 
         axes.legend(loc='best')
         axes.set_xlabel(r'Specific Volume / ${cm}^3{g}^{-1}$')
         axes.set_ylabel(r'Pressure difference / Pa')
         return axes
-    
+
     @staticmethod
     def plot_sens_matrix(sens_matrix, simid, models, mkey,
                          fig=None):
@@ -959,10 +941,10 @@ class EOSModel(Spline, Isentrope):
 
         Args:
             sens_matrix(dict): Dictionary of sensitivity matrices
-            simid(str): Key for simulation 
-            models(OrderedDict): Ordered dictionary of models 
+            simid(str): Key for simulation
+            models(OrderedDict): Ordered dictionary of models
             mkey(str): Key in models corresponding to the EOSModel
-        
+
         Keyword Args
             fig(plt.Figure): A valid matplotlib figure on which to plot.
                              If `None`, creates a new figure
@@ -977,7 +959,7 @@ class EOSModel(Spline, Isentrope):
         if mkey not in models:
             raise IndexError('mkey not in the models'
                              ' dictionary')
-        
+
         # end
 
         if fig is None:
@@ -985,7 +967,7 @@ class EOSModel(Spline, Isentrope):
         else:
             fig = fig
         # end
-        
+
         model = models[mkey]
 
         idx = 0
@@ -999,7 +981,7 @@ class EOSModel(Spline, Isentrope):
         # end
 
         model_sens = sens_matrix[simid][:, idx: idx + shape]
-        
+
         gs = gridspec.GridSpec(2, 6,
                                width_ratios=[6, 1, 6, 1, 6, 1])
 
@@ -1016,10 +998,7 @@ class EOSModel(Spline, Isentrope):
         for i in range(10):
             ax1.plot(model_sens[:, i],
                      style[i], label="{:4.3f}".format(knot_post[i]))
-            #legend.labelspacing  : 0.5      # the vertical space between the legend entries
-#legend.handlelength  : 2.0      # the length of the legend lines
-#legend.handleheight  : 0.7      # the height of the legend handle
-#legend.handletextpad : 0.8      # the space between the legend line and legend text
+
         ax1.legend(bbox_to_anchor=(1.05, 1),
                    loc=2,
                    borderaxespad=0.,
@@ -1148,13 +1127,14 @@ class EOSModel(Spline, Isentrope):
         ax1.legend(loc='best')
         return fig
 
+
 class DensityEOS(EOSModel):
     """An density based EOSModel
     """
 
     def get_constraints(self, scale=False):
         """Returns the G and h matrices corresponding to the model
-        
+
         This overloads the constraints from the base isentrope
         to allow the off-isentrope behavior to be considered
 
@@ -1163,16 +1143,16 @@ class DensityEOS(EOSModel):
 
         Return:
             (tuple):
-        
+
                 (np.ndarray): n x m matrix of linear constraints `G`
                 (np.ndarray): m vector of linear constraints `h`
 
-        
+
         Method
         ======
 
         The linear inequality constraints take the form of
-        
+
         .. math::
 
             G * x \\leq  h
@@ -1222,16 +1202,16 @@ class DensityEOS(EOSModel):
         if not self.get_option('basis') == 'dens':
             return Isentrope.get_constraints(self, scale=scale)
         # end
-        
+
         c_model = copy.deepcopy(self)
-        spline_end=c_model.get_option('spline_end')
+        spline_end = c_model.get_option('spline_end')
         initial_coefs = c_model.get_dof()          # Truncated to free variables
         dim = len(c_model.prior.get_dof())
         assert len(initial_coefs) == dim
         rho_all = c_model.get_t()      # Not truncated
-        rho_unique = rho_all[spline_end - 1 : 1 - spline_end]
+        rho_unique = rho_all[spline_end - 1: 1 - spline_end]
         n_rho = len(rho_unique)
-        n_constraints = 2*n_rho
+        n_constraints = 2 * n_rho
 
         G_mat = np.zeros((n_constraints, dim))
         tmp_coeffs = np.zeros(dim)           # Scratch coefficient array
@@ -1239,32 +1219,25 @@ class DensityEOS(EOSModel):
             tmp_coeffs[k] = 1.0
             # set_c returns a new isentrope without calling _on_update
             tmp_spline = c_model.set_c(tmp_coeffs)
-            G_mat[:n_rho,k] = -1 * rho_unique**3\
-                              * (tmp_spline.derivative(2)(rho_unique) * rho_unique
-                                 + 2 * tmp_spline.derivative(1)(rho_unique))
-            G_mat[n_rho: 2 * n_rho,k] = -tmp_spline(rho_unique)
-            #G_mat[2 * n_rho:, k] = -tmp_spline.derivative(2)(rho_unique)
+            G_mat[:n_rho, k] = -1 * rho_unique**3\
+                * (tmp_spline.derivative(2)(rho_unique)
+                   * rho_unique
+                   + 2 * tmp_spline.derivative(1)(rho_unique))
+            G_mat[n_rho: 2 * n_rho, k] = -tmp_spline(rho_unique)
 
             tmp_coeffs[k] = 0.0
         # end
         h_vec = -np.dot(G_mat, initial_coefs)
-        
-        #scaleVec = np.maximum(scale, scale.max()*1e-15)
+
+        # scaleVec = np.maximum(scale, scale.max()*1e-15)
         # Scale to make |h[i]| = 1 for all i
         HI = np.diag(np.fabs(h_vec)**-1)
-        h_vec = np.dot(HI,h_vec)
-        G_mat = np.dot(HI,G_mat)
+        h_vec = np.dot(HI, h_vec)
+        G_mat = np.dot(HI, G_mat)
 
         if scale:
             # If P is preconditioned, must modify G
             G_mat = np.dot(G_mat, c_model.get_scaling())
         # end
-        
+
         return G_mat, h_vec
-    
-    
-#-------------------------
-# Local Variables:
-# eval: (python-mode)
-# eval: (flycheck-mode)
-# End:

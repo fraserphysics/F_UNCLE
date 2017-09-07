@@ -151,7 +151,7 @@ class Gun(Simulation):
         }
 
         Simulation.__init__(self, {'eos': Isentrope}, name=name,
-                                   def_opts=def_opts, *args, **kwargs)
+                            def_opts=def_opts, *args, **kwargs)
 
     def _on_check_models(self, models):
         """Checks that the model is valid
@@ -202,7 +202,7 @@ class Gun(Simulation):
         else:
             return eos(posn * area / mass_he) * area * 1E-4
         # end
-        
+
     def _shoot(self, eos):
         """ Run a simulation and return the results: t, [x,v]
 
@@ -443,7 +443,7 @@ class GunExperiment(GaussianExperiment):
         return simdata[0], simdata[1][0],\
             np.zeros(simdata[0].shape)
     # end
-        
+
     def get_sigma(self):
         """Returns the co-variance matrix
 

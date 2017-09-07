@@ -93,8 +93,8 @@ class Sphere(Simulation):
         }
 
         Simulation.__init__(self, {'eos': Isentrope, 'strength': Ptw},
-                                   name=name, def_opts=def_opts,
-                                   *args, **kwargs)
+                            name=name, def_opts=def_opts,
+                            *args, **kwargs)
 
     def _on_check_models(self, models):
         """Checks that the model is valid
@@ -206,7 +206,7 @@ class Sphere(Simulation):
 
         return t_list,\
             [data[:, 1], data[:, 0], data[:, 2], v_spec, pres, stress, strain],\
-            {'mean_fn': IUSpline(t_list, data[:,1])}
+            {'mean_fn': IUSpline(t_list, data[:, 1])}
 
     def compare(self, data1, data2):
         """Compares a set of experimental data to the model
@@ -218,7 +218,7 @@ class Sphere(Simulation):
         """
 
         return data2[1][0] - data1[2]['mean_fn'](data2[0] + data2[2]['tau'])
-    
+
     def shape(self, *args, **kwargs):
         """Gives the length of the independent variable vector
 
@@ -324,10 +324,11 @@ class Sphere(Simulation):
 
         return out_str
 
+
 class SphereExperiment(GaussianExperiment):
     """A class representing pseudo experimental data for a stick
     """
-       
+
     def _get_data(self, model=None, ptw=None, *args, **kwargs):
         """Creates a simulated set of experimental data from a user provided
         model
@@ -340,6 +341,3 @@ class SphereExperiment(GaussianExperiment):
         return simdata[0], simdata[1][0],\
             np.zeros(simdata[0].shape)
     # end
-
-    
-    

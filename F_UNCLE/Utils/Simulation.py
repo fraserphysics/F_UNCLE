@@ -57,7 +57,7 @@ except Exception:
 # end
 
 # =========================
-# Main Code
+# main Code
 # =========================
 
 
@@ -85,8 +85,8 @@ class Simulation(Struc):
     """
     def __init__(self, req_models, name='Simulation', *args, **kwargs):
         """Instantiates the object.
-        
-        Args: 
+
+        Args:
             req_models(dict): A dictionary in the form {key: type} of the names
                               and types of the mandatory physics models this
                               Experiment uses
@@ -102,11 +102,8 @@ class Simulation(Struc):
                     'fd_tol': [float, 1E-21, 0.0, 1.0, '',
                                'Minimum threshold for sensitivities'],
                     'fd_step': [float, 2E-2, 0.0, 1.0, '-',
-                               'Fraction of DOF value for finite difference'
-                               'sensitivity step size']
-        }
-
-
+                                'Fraction of DOF value for finite difference'
+                                'sensitivity step size']}
 
         if 'def_opts' in kwargs:
             def_opts.update(kwargs.pop('def_opts'))
@@ -126,7 +123,6 @@ class Simulation(Struc):
         else:
             self.req_models = req_models
         # end
-
 
     def get_sigma(self, models, *args, **kwargs):
         """Gets the co-variance matrix of the experiment
@@ -163,7 +159,7 @@ class Simulation(Struc):
         raise NotImplementedError('{} has no shape specified'
                                   .format(self.get_inform(1)))
 
-    def __call__(self, models=None, *args,  **kwargs):
+    def __call__(self, models=None, *args, **kwargs):
         """Runs the simulation.
 
         .. note::
@@ -188,10 +184,11 @@ class Simulation(Struc):
                  most important quantity. By default, comparisons to other
                  data-sets are made to element zero. The length of each
                  element of this list must be equal to the length of the
-                 independent variable vector. The last element of this list is 
+                 independent variable vector. The last element of this list is
                  the labels for the previous elements
-              2. (dict): A dictionary of other attributes of the simulation result.
-                 The composition of this dictionary is problem dependent
+              2. (dict): A dictionary of other attributes of the simulation
+                         result. The composition of this dictionary is
+                         problem dependent
         """
 
         return self._on_call(*self.check_models(models), **kwargs)
@@ -229,10 +226,10 @@ class Simulation(Struc):
 
     def compare(self, simdata1, simdata2):
         """Compares a the results of two Experiments
-        
+
         The comparison is made by comparing the results of simdata1
-        and simdata2 at each independent variable in simdata2. 
-        
+        and simdata2 at each independent variable in simdata2.
+
         The difference is evaluated as simdata2 **less** simdata1
 
         .. note::
@@ -259,8 +256,8 @@ class Simulation(Struc):
 
         Args:
            model(PhysicsModel): The model being analyzed
-           sim_data(list): Length three list corresponding to the `__call__` from
-                           a Experiment object
+           sim_data(list): Length three list corresponding to the `__call__`
+                           from an Experiment object
            experiment(Experiment): A valid Experiment object
            sens_matrix(np.ndarray): The sensitivity matrix
 
@@ -278,8 +275,8 @@ class Simulation(Struc):
 
         Args:
            model(PhysicsModel): The model under investigation
-           sim_data(list): Length three list corresponding to the `__call__` from
-                           a Experiment object
+           sim_data(list): Length three list corresponding to the `__call__`
+                           from an Experiment object
            experiment(Experiment): A valid Experiment object
 
         Return:
@@ -287,9 +284,9 @@ class Simulation(Struc):
         """
 
         return NotImplemented
-    
+
     def multi_solve(self, models, opt_keys, dof_list):
-        """Returns the results from calling the Experiment object for each 
+        """Returns the results from calling the Experiment object for each
         element of dof_list
 
         Args:
@@ -298,28 +295,29 @@ class Simulation(Struc):
             dof_list(list): A list of numpy array's defining the model DOFs
 
         Returns:
-            (list): A list of outputs to __call___ for the experiment 
+            (list): A list of outputs to __call___ for the experiment
                     corresponding to the elements of dof_list
         """
 
         models = copy.deepcopy(models)
-        
+
         ret_list = []
         for dof in dof_list:
             idx = 0
             for key in opt_keys:
                 shape = models[key].shape()
                 models[key] = models[key].update_dof(
-                    dof[idx : idx + shape])
+                    dof[idx: idx + shape])
                 idx += shape
             # end
-            ret_list.append(self(models))            
+            ret_list.append(self(models))
         # end
 
         return ret_list
 
-    def multi_solve_mpi(self, models, model_keys,  dof_list, comm=None):
-        """Returns the results from calling the Experiment object for each 
+    def multi_solve_mpi(self, models, model_keys, dof_list, comm=None,
+                        verb=False):
+        """Returns the results from calling the Experiment object for each
         element of dof_list using mpi
 
         Args:
@@ -328,7 +326,7 @@ class Simulation(Struc):
             dof_list(list): A list of numpy array's defining the model DOFs
 
         Returns:
-            (list): A list of outputs to __call___ for the experiment 
+            (list): A list of outputs to __call___ for the experiment
                     corresponding to the elements of dof_list
         """
 
@@ -339,7 +337,6 @@ class Simulation(Struc):
             model_dct = copy.deepcopy(models)
             for key in model_keys:
                 shape = models[key].shape()
-                
                 try:
                     model_dct[key] = models[key].update_dof(
                         x[idx: idx + shape]
@@ -348,7 +345,7 @@ class Simulation(Struc):
                     print("Eror in DOF {:d} for model {:s}"
                           .format(i, key))
                 # end
-                
+
                 idx += shape
             # end
 
@@ -358,17 +355,23 @@ class Simulation(Struc):
         ret_dct = pll_loop(dof_list, eval_fn,
                            shape=self.shape(),
                            comm=comm,
+                           verb=verb,
                            models=models,
                            model_keys=model_keys)
-        
-        return [ret_dct[key] for key in ret_dct]
-        
+
+        out_list = []
+        for i in range(len(ret_dct)):
+            out_list.append(ret_dct[i])
+        # end
+
+        return out_list
+
     def multi_solve_runjob(self, models, model_key, dof_list):
-        """Returns the results from calling the Experiment object for each 
+        """Returns the results from calling the Experiment object for each
         element of dof_list using the runjob script
 
         .. note::
-        
+
              runjob is an internal LANL code
 
         Args:
@@ -377,22 +380,22 @@ class Simulation(Struc):
             dof_list(list): A list of numpy array's defining the model DOFs
 
         Returns:
-            (list): A list of outputs to __call___ for the experiment 
+            (list): A list of outputs to __call___ for the experiment
                     corresponding to the elements of dof_list
         """
 
         models = copy.deepcopy(models)
-        
-        ret_list = []
-        
-        raise NotImplementedError('{:} multi solve using runjob is not available'
-                                  .format(self.get_inform(0)))
 
+        ret_list = []
+
+        raise NotImplementedError('{:} multi solve using runjob is not'
+                                  ' available'
+                                  .format(self.get_inform(0)))
         return ret_list
 
     def get_sens_runjob(self, models, model_key, initial_data=None):
         """Uses runjob for  evaluation of the model gradients
-        
+
         .. note::
 
             runjob is an internal LANL code
@@ -408,10 +411,9 @@ class Simulation(Struc):
 
         """
 
-        
-        raise NotImplementedError('{:} multi solve using runjob is not available'
+        raise NotImplementedError('{:} multi solve using runjob is not'
+                                  ' available'
                                   .format(self.get_inform(0)))
-
 
     def get_sens_mpi(self, models, model_keys, initial_data=None, comm=None):
         """MPI evaluation of the model gradients
@@ -421,8 +423,8 @@ class Simulation(Struc):
             model_key(str): The list of models for which the sensitivity is
                             desired
         Keyword Args:
-            initial_data(np.ndarray): The response for the nominal model DOF, if
-                it is `None`, it is calculated when this method is called
+            initial_data(np.ndarray): The response for the nominal model DOF,
+                if it is `None`, it is calculated when this method is called
             comm(): A MPI communicator
 
         """
@@ -433,12 +435,12 @@ class Simulation(Struc):
         if initial_data is None:
             initial_data = self(models)
         # end
-        
+
         ndof = 0
         for key in model_keys:
             ndof += models[key].shape()
         # end
-                
+
         resp_mat = np.zeros((initial_data[0].shape[0], ndof))
         inp_mat = np.zeros((ndof, ndof))
         new_dof_mat = []
@@ -451,14 +453,15 @@ class Simulation(Struc):
             all_dof[idx: idx + shape] = modeli.get_dof()
             idx += shape
         # end
-        
+
         idx = 0
         for key in model_keys:
             modeli = models[key]
             new_dofs = np.array(copy.deepcopy(modeli.get_dof()))
             shape = modeli.shape()
 
-            # Get the steps needed for the finite difference sensitivity calculation
+            # Get the steps needed for the finite difference sensitivity
+            # calculation
             if key in self.req_models:
                 for i, coeff in enumerate(new_dofs):
                     step_size = float(coeff * step_frac)
@@ -467,7 +470,7 @@ class Simulation(Struc):
                         (new_dofs - copy.deepcopy(modeli.get_dof()))
                     all_dof[idx + i] += step_size
                     new_dof_mat.append(copy.deepcopy(all_dof))
-                    all_dof[idx + i] -= step_size                    
+                    all_dof[idx + i] -= step_size
                     new_dofs[i] -= step_size
                 # end
             else:
@@ -476,123 +479,28 @@ class Simulation(Struc):
             idx += shape
         # end
 
-        resp_list = self.multi_solve_mpi(models, model_keys, new_dof_mat, comm=comm)
+        resp_list = self.multi_solve_mpi(models, model_keys, new_dof_mat,
+                                         comm=comm)
 
         for i, resp in enumerate(resp_list):
-            resp_mat[:, i] = self.compare(resp, initial_data)
+            resp_mat[:, i] = -self.compare(resp, initial_data)
         # end
-                
+
         sens_matrix = np.linalg.lstsq(inp_mat, resp_mat.T)[0].T
         return np.where(np.fabs(sens_matrix) > self.get_option('fd_tol'),
                         sens_matrix,
                         np.zeros(sens_matrix.shape))
 
-    def get_sens_pll(self, models, model_key, initial_data=None):
-        """Parallel evaluation of each model's sensitivities
-
-        Args:
-            models(dict): The dictionary of models
-            model_key(str): The key of the model for which the sensitivity is
-                            desired
-        Keyword Args:
-            initial_data(np.ndarray): The response for the nominal model DOF, if
-                it is `None`, it is calculated when this method is called
-        """
-
-        import concurrent.futures
-
-        models = copy.deepcopy(models)
-        model = models[model_key]
-
-        step_frac = self.get_option('fd_step')
-
-        if initial_data is None:
-            initial_data = self(models)
-        # end
-
-        resp_mat = np.zeros((initial_data[0].shape[0],
-                             model.shape()))
-        inp_mat = np.zeros((model.shape(),
-                            model.shape()))
-        new_dof_mat = []
-        new_dofs = np.array(copy.deepcopy(model.get_dof()),
-                            dtype=np.float64)
-
-        for i, coeff in enumerate(model.get_dof()):
-            new_dofs[i] += float(coeff * step_frac)
-            inp_mat[:, i] = (new_dofs - model.get_dof())
-            new_dof_mat.append(copy.deepcopy(new_dofs))
-            new_dofs[i] -= float(coeff * step_frac)
-        # end
-            
-        # with concurrent.futures.ThreadPoolExecutor(max_workers=50)\
-        #      as executor:
-        #     for i, resp in enumerate(executor.map(
-        #             Experiment._get_resp,
-        #             new_dof_mat,
-        #             [copy.deepcopy(self) for i in range(len(new_dof_mat))],
-        #             [copy.deepcopy(models) for i in range(len(new_dof_mat))],
-        #             [copy.deepcopy(model_key) for i in range(len(new_dof_mat))],
-        #             [copy.deepcopy(initial_data) for i in range(len(new_dof_mat))],
-        #             )):
-        #         resp_mat[:, i] = resp
-        #     # end                
-        # # end
-        def _get_resp(new_dofi, sim, model_dct, mkey, init_dat):
-            """Class method used in the parallel map function
-            """
-            model_dct[mkey] = model_dct[mkey].update_dof(new_dofi)   
-            return -sim.compare(sim(model_dct),
-                                init_dat)
-        # end
-        
-        with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
-            futures = {}
-            for i, coeff in enumerate(model.get_dof()):
-                new_dofs[i] += float(coeff * step_frac)
-                inp_mat[:, i] = (new_dofs - model.get_dof())
-                futures[executor.submit(
-                    _get_resp,
-                    new_dofs,
-                    copy.deepcopy(self),
-                    copy.deepcopy(models),
-                    copy.deepcopy(model_key),
-                    copy.deepcopy(initial_data))] = i
-
-                new_dofs[i] -= float(coeff * step_frac)
-            # end
-
-            for ftr in concurrent.futures.as_completed(futures):
-                i = futures[ftr]
-
-                try:
-                    resp = ftr.result()
-                except Exception as exc:
-                    raise RuntimeError('{:s} sensitivities generated an'
-                                       ' exception {:s}'.
-                                       format(self.get_inform(1), exc))
-                else:
-                    resp_mat[:, i] = resp
-                # end
-            # end
-        # end
- 
-        sens_matrix = np.linalg.lstsq(inp_mat, resp_mat.T)[0].T
-        return np.where(np.fabs(sens_matrix) > self.get_option('fd_tol'),
-                        sens_matrix,
-                        np.zeros(sens_matrix.shape))
-
-        
     def get_sens(self, models, model_keys, initial_data=None, verb=False):
         """Gets the sensitivity of the experiment response to the model DOF
 
         Args:
             models(dict): The dictionary of models
-            model_keys(list): The list of model keys for which the sensitivity is
-                              desired
+            model_keys(list): The list of model keys for which the sensitivity
+                              is desired
         Keyword Args:
-            initial_data(np.ndarray): The response for the nominal model DOF, if
-                it is `None`, it is calculated when this method is called
+            initial_data(np.ndarray): The response for the nominal model DOF,
+                if it is `None`, it is calculated when this method is called
 
         """
 
@@ -607,10 +515,10 @@ class Simulation(Struc):
         for key in model_keys:
             ndof += models[key].shape()
         # end
-        
+
         resp_mat = np.zeros((initial_data[0].shape[0], ndof))
         inp_mat = np.zeros((ndof, ndof))
-        
+
         idx = 0
         if verb: print("Getting sens for ", self.name)
         for key in model_keys:
@@ -624,20 +532,20 @@ class Simulation(Struc):
                     if verb: print('\t\tGetting sens for dof, ', i)
                     new_dofs[i] += float(coeff * step_frac)
                     models[key] = modeli.update_dof(new_dofs)
-                    inp_mat[idx : idx + shape, idx + i] =\
+                    inp_mat[idx: idx + shape, idx + i] =\
                         (new_dofs - modeli.get_dof())
                     resp_mat[:, idx + i] = -self.compare(
-                        self(models),                
+                        self(models),
                         initial_data)
                     new_dofs[i] -= float(coeff * step_frac)
                 # end
                 models[key] = modeli.update_dof(new_dofs)
             else:
-                # If the simulation is not sensitive to the model, keep all entries
-                # equal to zero
+                # If the simulation is not sensitive to the model, keep all
+                # entries equal to zero
                 pass
             # end
-            idx += shape                    
+            idx += shape
         # end
 
         sens_matrix = np.linalg.lstsq(inp_mat, resp_mat.T)[0].T
@@ -655,7 +563,7 @@ class Simulation(Struc):
             \frac{\partial^2 f_i}{\partial \mu_1^2} &
             \frac{\partial^2 f_i}{\partial \mu_1 \partial \mu_2}&
             \ldots & \frac{\partial^2 f_i}{\partial \mu_1 \partial \mu_n}\\
-            
+
             \frac{\partial^2 f_i}{\partial \mu_2 \partial \mu_1}&
             \frac{\partial^2 f_i}{\partial \mu_2^2}&
             \ldots & \frac{\partial^2 f_i}{\partial \mu_2 \partial \mu_n}\\
@@ -705,6 +613,3 @@ class Simulation(Struc):
         # end
 
         return hessian
-
-
-

@@ -12,19 +12,21 @@ import numpy as np
 from ..Utils.PhysicsModel import GaussianModel
 from ..Utils.Struc import Struc
 
+
 class SimpleStr(GaussianModel):
     """Simplified strength model
     """
-    coeff = np.array([0.0, 0.0]) # The model coefficients
+    coeff = np.array([0.0, 0.0])  # The model coefficients
     prior = None
-    
-    def __init__(self, prior_coeff, name='Simple Strength Model', *args, **kwargs):
+
+    def __init__(self, prior_coeff, name='Simple Strength Model',
+                 *args, **kwargs):
         """
         """
         def_opts = {
-            'sigma': [float, 0.005 , 0, None, '',
+            'sigma': [float, 0.005, 0, None, '',
                       "Normalized variance for each coefficeint"],
-            }
+        }
 
         if 'def_opts' in kwargs:
             def_opts.update(kwargs.pop('def_opts'))
@@ -32,19 +34,19 @@ class SimpleStr(GaussianModel):
 
         self.coeff = np.array(prior_coeff)
 
-        Struc.__init__(self, name, def_opts = def_opts, *args, **kwargs)
+        Struc.__init__(self, name, def_opts=def_opts, *args, **kwargs)
 
         self.update_dof(prior_coeff)
-            
+
         self.prior = copy.deepcopy(self)
 
-    def plot(self, axes = None, labels=['Coeff'], linestyles=['ok'],
+    def plot(self, axes=None, labels=['Coeff'], linestyles=['ok'],
              *args, **kwargs):
         """
         """
         axes.plot(self.get_dof(), linestyles[0], label=labels[0])
     # end
-    
+
     def get_sigma(self, *args, **kwargs):
         """
         """
@@ -58,9 +60,9 @@ class SimpleStr(GaussianModel):
 
     def get_constraints(self, scale=False):
         g_mat = np.zeros(2 * (self.shape(),))
-        h_vec = np.ones((self.shape(),))        
+        h_vec = np.ones((self.shape(),))
         return g_mat, h_vec
-    
+
     def shape(self):
         """
         """
@@ -78,12 +80,12 @@ class SimpleStr(GaussianModel):
         new_model.coeff = np.array(dof_in)
 
         return new_model
-    
+
     def __call__(self, epsilon, epsilon_dot, *args, **kwargs):
         """Calculates the stress corresonding to the strain
-        
+
         .. math::
-        
+
             \sigma = A \epsilon + B \dot{\epsilon}
 
         Args:
@@ -96,7 +98,7 @@ class SimpleStr(GaussianModel):
         """
 
         return self.coeff[0] * epsilon + self.coeff[1] * epsilon_dot
-    
+
     def get_dof(self):
         """
         """
@@ -111,10 +113,8 @@ class SimpleStr(GaussianModel):
         out_str += "Degrees of Freedom\n"
         out_str += "==================\n\n"
 
-        out_str += "Elastic Modulus          {:4.3e} GPa\n".format(dof[0]/1E9)
+        out_str += "Elastic Modulus          {:4.3e} GPa\n".format(dof[0] / 1E9)
         out_str += "Strain rate dependency   {:4.3e} GPa s-1\n\n"\
-                   .format(dof[1]/1E9)        
+                   .format(dof[1] / 1E9)
 
         return out_str
-
-    

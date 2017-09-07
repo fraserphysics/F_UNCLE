@@ -52,6 +52,7 @@ from ..Utils.PhysicsModel import PhysicsModel
 # Main Code
 # =========================
 
+
 class Ptw(PhysicsModel):
     """PTW Flow stress model
 
@@ -82,8 +83,7 @@ class Ptw(PhysicsModel):
             'materials': [list,
                           ['Cu', 'U', 'Ta', 'V', 'Mo', 'Be', 'SS_304',
                            'SS_21-6-9'],
-                          None, None, 'None', 'List of available materials'
-                         ],
+                          None, None, 'None', 'List of available materials'],
             'temp_check': [float, 300.0, 0.0, 2E3, 'K',
                            'Dummy option to check temp input'],
             'str_rt_chk': [float, 0.0, 0.0, 1E12, 's**-1',
@@ -132,8 +132,8 @@ class Ptw(PhysicsModel):
 
         Args:
            temp(float): Temperature, in degrees Kelvin
-	   strain_rate(float): Strain rate, in sec**-1
-	   material(str): Key for material type
+       strain_rate(float): Strain rate, in sec**-1
+       material(str): Key for material type
         Keyword Args:
            **overrides(dict): Passed as a chain of keyword arguments. These
                               arguments override any material property
@@ -353,9 +353,9 @@ class Ptw(PhysicsModel):
              (0.20, 0.56, 0.23, 0.23, 0.23, 0.23, 0.23, 0.23),
              (0.43, 0.72, 0.48, np.nan, 0.41, np.nan, 0.66, 0.37),
              (8.933, 19.07, 16.75, np.nan, np.nan, np.nan, np.nan, np.nan),
-             (64.54, 238.04, 180.948, np.nan, np.nan, np.nan, np.nan, np.nan)
-            ], dtype={'names': self.get_option('materials'),
-                      'formats': ['f8'] * 8})
+             (64.54, 238.04, 180.948, np.nan, np.nan, np.nan, np.nan, np.nan)],
+            dtype={'names': self.get_option('materials'),
+                   'formats': ['f8'] * 8})
 
         self.set_option('matname', material)
         self.set_option('theta', mat_data[material][0])
@@ -412,10 +412,3 @@ class Ptw(PhysicsModel):
         }
 
         return melt_temp[self.get_option('matname')] + 273.15
-
-
-#-------------------------
-# Local Variables:
-# eval: (python-mode)
-# eval: (flycheck-mode)
-# End:

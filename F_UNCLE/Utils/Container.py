@@ -87,13 +87,13 @@ class Container(Struc):
 
     def _on_str(self, *args, **kwargs):
         out_str = '\nContents\n........\n'
-        
+
         for key in self._contents:
             out_str += "{:}\t{:}\n".format(key, self._contents[key])
         # end
 
         return out_str
-    
+
     def clear(self):
         """Deletes all the container contents
 
@@ -210,9 +210,8 @@ class Container(Struc):
 if __name__ == '__main__':
     a = ['apple', 'bear', 'canary']
 
-    my_iter=Container('test iterable')
+    my_iter = Container('test iterable')
 
     for i in range(len(a)):
         my_iter[i] = a[i]
     print(my_iter)
-

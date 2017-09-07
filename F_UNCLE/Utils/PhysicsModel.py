@@ -196,16 +196,16 @@ class PhysicsModel(Struc):
     def _on_update_dof(self, model):
         """An extra method to perform special post-processing tasks when the DOF has
         been updated
-        
+
         Args:
             model(PhysicsModel): The new physics model
-        
+
         Return:
             (PhyscisModel): The post-processed model
         """
 
         return NotImplemented
-        
+
     def get_dof(self):
         """Returns the model degrees of freedom
 
@@ -242,10 +242,10 @@ class PhysicsModel(Struc):
 
         Args:
             sens_matrix(dict): Dictionary of sensitivity matrices
-            simid(str): Key for simulation 
-            models(OrderedDict): Ordered dictionary of models 
+            simid(str): Key for simulation
+            models(OrderedDict): Ordered dictionary of models
             mkey(str): Key in models corresponding to the EOSModel
-        
+
         Keyword Args
             fig(plt.Figure): A valid matplotlib figure on which to plot.
                              If `None`, creates a new figure
@@ -267,7 +267,7 @@ class PhysicsModel(Struc):
         else:
             fig = fig
         # end
-        ax = fig.gca()        
+        ax = fig.gca()
 
         model = models[mkey]
 
@@ -286,14 +286,14 @@ class PhysicsModel(Struc):
         for j in range(shape):
             ax.plot(model_sens[:, j], label='{:02d}'.format(j))
         # end
-        
+
         ax.set_ylabel('Sensitivity')
-        ax.set_xlabel('Model resp. indep. var.')        
+        ax.set_xlabel('Model resp. indep. var.')
         ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
         ax.get_legend().set_title("DOF")
-        
+
         return fig
-    
+
     def get_log_like(self):
         """Returns the log likelihood of the model
         """
@@ -321,9 +321,8 @@ class GaussianModel(PhysicsModel):
         """Returns the log likelihood of the model, given the prior
         """
         return float(-0.5 * np.dot(np.dot(self.get_dof() - self.prior.get_dof(),
-                                    inv(self.get_sigma())),
-                             self.get_dof() - self.prior.get_dof()))
-
+                                   inv(self.get_sigma())),
+                                   self.get_dof() - self.prior.get_dof()))
 
     def get_pq(self, scale=False):
         """Returns the P and q matrix components for the model
@@ -343,6 +342,3 @@ class GaussianModel(PhysicsModel):
         else:
             return prior_var, -np.dot(prior_delta, prior_var)
         # end
-
-
-

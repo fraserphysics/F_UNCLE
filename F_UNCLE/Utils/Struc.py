@@ -398,7 +398,7 @@ class Struc(object):
 
     def write_tex_var(self, name, value, units):
         """Returns a string which will define a variable in latex
-        
+
         Args:
 
             name(str): The variable name, do not include the leading slash
@@ -415,7 +415,6 @@ class Struc(object):
                 '{{\\SI{{{:s}}}{{{:s}}}}}\n'\
                 .format(name, value, units)
 
-        
     def plot(self, axes=None, fig=None, linestyles=[], labels=[]):
         """Plots the object
 

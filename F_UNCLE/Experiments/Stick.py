@@ -101,7 +101,7 @@ class Stick(Simulation):
         }
 
         Simulation.__init__(self, {'eos': Isentrope}, name=name,
-                                   def_opts=def_opts, *args, **kwargs)
+                            def_opts=def_opts, *args, **kwargs)
 
     def _on_check_models(self, models):
         """Checks that the model is valid
@@ -175,9 +175,9 @@ class Stick(Simulation):
 
                    0. (np.ndarray): The arrival `n` times at each sensor
                    1. (list): The lables
-        
+
                 2. (dict): The other solution data
-                   - 'mean_fn'(Function): A function returning shock arrival 
+                   - 'mean_fn'(Function): A function returning shock arrival
                                           time as a function of position
                    - 'vel_CJ'(float): The detonation velocity
                    - 'vol_CJ'(float): The specific volume at the_CJ point
@@ -229,7 +229,6 @@ class Stick(Simulation):
 
         """
 
-
         err = simdata2[1][0] - simdata1[2]['mean_fn'](simdata2[0])
 
         return np.where(np.fabs(err) > np.finfo(float).eps,
@@ -254,15 +253,15 @@ class Stick(Simulation):
             fig(plt.Figure): The figure on which to plot *ignored*
             data(list): The output from a call to Stick
             level(int): Specifies what to plot
-		1. Plots the EOS with the Raylight line intersecting the CJ point
-		2. Plots the output from a simulation
+        1. Plots the EOS with the Raylight line intersecting the CJ point
+        2. Plots the output from a simulation
             linestyles(list): Format strings for the trends, entries as follow
-		0. Stlye for the best fit EOS OR The data trend
+        0. Stlye for the best fit EOS OR The data trend
                 1. Style for the Rayleigh line
                 2. Style for the CJ point
                 3. Style for the initial condiations
             labels(list): Strings for the legend
-		0. 'Fit EOS' (Change to Data for level 2 plot)
+        0. 'Fit EOS' (Change to Data for level 2 plot)
                 1. 'Rayleigh line'
                 2. 'v_o, p_o'
                 3. 'Initial point'
@@ -279,7 +278,7 @@ class Stick(Simulation):
             v_min = eos.get_option('spline_min')
             v_max = eos.get_option('spline_max')
         # end
-        
+
         v_0 = self.get_option('vol_0')
 
         if axes is None:
@@ -301,13 +300,13 @@ class Stick(Simulation):
             # v_eos = np.logspace(np.log10(v_min), np.log10(v_max), 30)
             v_eos = np.linspace(v_min, v_max, 30)
             ax1.plot(v_eos, rayl_line(vel_cj, v_eos, v_0, 0.0), linestyles[1],
-                     label="Rayl Line {:4.3f} km/s".format(vel_cj/1E5))
+                     label="Rayl Line {:4.3f} km/s".format(vel_cj / 1E5))
             ax1.plot(vol_cj, p_cj, linestyles[2], label=labels[2])
             ax1.plot(v_0, 0.0, linestyles[3], label=labels[3])
             if vrange is not None:
                 ax1.set_xlim(*vrange)
             # end
-            ax1.set_ylim(bottom=0.0, top = None)
+            ax1.set_ylim(bottom=0.0, top=None)
         elif level == 2:
             ax1.plot(data[0], 1E6 * data[1][0], linestyles[0], label=labels[0])
             ax1.set_xlabel("Sensor position / cm")
@@ -315,6 +314,7 @@ class Stick(Simulation):
         # end
 
         return fig
+
 
 class StickExperiment(GaussianExperiment):
     """A class representing pseudo experimental data for a stick
@@ -331,8 +331,9 @@ class StickExperiment(GaussianExperiment):
                         'Variance attributed to x positions']
         }
 
-        GaussianExperiment.__init__(self, name=name, def_opts=def_opts, *args, **kwargs)
-        
+        GaussianExperiment.__init__(self, name=name, def_opts=def_opts,
+                                    *args, **kwargs)
+
     def _get_data(self, model=None, *args, **kwargs):
         """Creates a simulated set of experimental data from a user provided
         model
@@ -346,9 +347,9 @@ class StickExperiment(GaussianExperiment):
             np.zeros(simdata[0].shape)
     # end
 
-    def get_splines(self,*args, **kwargs):
+    def get_splines(self, *args, **kwargs):
         return Spline(self.data[0], self.data[1]), None
-    
+
     def get_sigma(self):
         """Returns the co-variance matrix
 
@@ -357,6 +358,4 @@ class StickExperiment(GaussianExperiment):
 
         return np.diag(np.ones(self.shape())
                        * (self.get_option('sigma_t')**2
-                          + (self.get_option('sigma_x') / self.detvel)**2)
-        )
-    
+                          + (self.get_option('sigma_x') / self.detvel)**2))
