@@ -37,3 +37,19 @@ PTW
    :special-members:
 
    
+Random Varialbe
+...............
+
+.. autoclass:: F_UNCLE.Models.RandomVariable.RandomVariable
+   :members:
+   :private-members:
+   :special-members:
+
+
+Random Process
+..............
+
+.. autoclass:: F_UNCLE.Models.RandomProcess.RandomProcess
+   :members:
+   :private-members:
+   :special-members:

@@ -43,6 +43,15 @@ Spline
    :private-members:
    :special-members:
 
+Noise Model
+...........
+
+.. autoclass:: F_UNCLE.Utils.NoiseModel.NoiseModel
+   :members:
+   :private-members:
+   :special-members:
+
+
 .. Container
 .. .........
 

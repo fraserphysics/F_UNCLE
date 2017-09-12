@@ -8,14 +8,15 @@ import numpy as np
 
 from ..Opt.Bayesian import Bayesian
 
+
 def plot_fisher_matrix(sens_matrix, exp, model, fig, lines=None):
     """
     """
 
     fisher = exp.get_fisher_matrix(sens_matrix)
-    
+
     fisher_data = Bayesian.fisher_decomposition(fisher, model, tol=1E-3)
-    
+
     ax1 = fig.add_subplot(211)
     ax2 = fig.add_subplot(212)
 
@@ -48,12 +49,12 @@ def plot_fisher_matrix(sens_matrix, exp, model, fig, lines=None):
     ax2.get_legend().set_title("Eigen-\nfunctions", prop={'size': 7})
     ax2.set_xlabel(r"Density / g cm$^{-3}$ ")
     ax2.set_ylabel("Eigenfunction response / Pa")
-    
+
     fig.tight_layout()
 
     return fig
 
-    
+
 def plot_sens_matrix(sens_matrix, exp,  model=None, axes=None, fig=None,
                      labels=[], linestyles=[]):
     """Prints the sensitivity matrix
@@ -62,7 +63,7 @@ def plot_sens_matrix(sens_matrix, exp,  model=None, axes=None, fig=None,
         model(PhysicsModel): The model the sensitivity is in respect to
         exp(Experiment): The experiment the matrix is compared to
         sens_matrix(np.ndarray): The sensitivity matrix
-    
+
     Keyword Args:
         axes(plt.Axes): The axes object *Ignored*
         fig(plt.Figure): A valid matplotlib figure on which to plot.
@@ -135,7 +136,6 @@ def plot_sens_matrix(sens_matrix, exp,  model=None, axes=None, fig=None,
     #              style[i - 50], label="{:4.3f}".format(knot_post[i]))
     # ax6.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 
-    
     # ax5.get_legend().set_title("knots",
     #   prop = {'size':rcParams['legend.fontsize']})
 

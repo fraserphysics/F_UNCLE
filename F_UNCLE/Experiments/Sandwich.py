@@ -114,7 +114,7 @@ class ToySandwich(Simulation):
                       'Range of times for t2v spline'],
             't_max': [float, 10.0e-6, 0.0, None, 'sec',
                       'Range of times for t2v spline'],
-            'n_t': [int, 512, 0, None, '',
+            'n_t': [int, 1 * 512, 0, None, '',
                     'Number of times for t2v spline']
         }
 
@@ -388,7 +388,7 @@ class ToySandwichExperiment(GaussianExperiment):
         simdata = sim({'eos': model})
 
         noise_model = NoiseModel()
-        noisedata = noise_model(simdata[0], simdata[1][0], rstate=rstate)
+        noisedata = noise_model(simdata[0], 0.1 * simdata[1][0], rstate=rstate)
 
         return simdata[0], simdata[1][0] + noisedata,\
             np.zeros(simdata[0].shape)
@@ -399,43 +399,26 @@ class ToySandwichExperiment(GaussianExperiment):
 
         see :py:meth:`F_UNCLE.Utils.Experiment.Experiment.get_sigma`
         """
-
-        # corr = np.zeros(2 * (self.data[0][self.window].shape[0],))
-        # dx = np.zeros((self.data[0][self.window].shape[0],))
-        # var = self.get_option('exp_corr')
-        # lmb = 10
-        # dx[1:] = self.data[0][self.window][1:]\
-        #    - self.data[0][self.window][:-1]
-        # dx[0] = dx[1]
-
-        # idx = self.window[0][0]
-        # times = self.data[0][self.window]
-        # for i in range(corr.shape[0]):
-        #     # # cor[i, :] = (2 * np.pi * (lmb * dx[i])**2)**-0.5\
-        #     # #             * np.exp(-0.5 * (self.data[0][self.window]
-        #     # #                       - self.data[0][idx + i])**2\
-        #     # #                      / (lmb * dx[i])**2)
-        #     # x_list = (times[i] - times) / (times.max() - times.min())
-        #     # x_list[i] = 1.0
-        #     # corr[i, :] = np.sin(np.pi * lmb * x_list)\
-        #     #              / (np.pi * lmb * x_list)
-        #     # corr[i, i] = 1.0
-        #     x_list = (times[i] - times) / (times.max() - times.min())
-
-        #     corr[i, :] = np.exp(-(x_list/var)**2)
-        #     #assert(np.all())
-        # eig = np.linalg.eigvalsh(corr)
-
-        # # Ensure the correlation matrix is positive definite
-        # assert(eig.shape[0] == corr.shape[0])
-        # assert(np.all(np.isreal(eig)))
-        # assert(np.all(eig >= 0.0))
         corr = np.eye(self.shape())
-        sigma = np.diag(np.ones(self.shape())
-                        * np.fabs(self.data[1][self.window])
-                        * self.get_option('exp_var'))
+        var = 1E-6 * self.get_option('exp_corr')
+        times = self.data[0][self.window]
+        for i in range(corr.shape[0]):
+            x_list = (times[i] - times)
+            corr[i, :] = np.exp(-0.5 * (x_list/var)**2) 
+        eig, vect = np.linalg.eig(corr)
+        eig = np.real(eig)
+        eig = np.where(eig>0, eig, 0.0)
 
-        assert(np.all(np.isfinite(corr)))
+        assert eig.shape[0] == corr.shape[0], "Too few eigenvalues"
+        assert np.all(np.isreal(eig)), "Imaginary eigenvalues"
+        assert np.all(eig >= 0.0), "Negative eigenvalues {:}".format(eig)
+        corr = np.dot(vect.T, np.dot(np.diag(eig), vect))
+        
+        sigma = np.diag(np.ones(self.shape())
+                        * (np.fabs(self.data[1][self.window])
+                           * self.get_option('exp_var'))**2)
+        assert np.all(np.isfinite(sigma))
+
         retval = np.dot(np.sqrt(sigma), np.dot(corr, np.sqrt(sigma)))
-        assert(np.all(np.isfinite(retval)))
+        assert np.all(np.isfinite(retval))
         return retval
