@@ -26,10 +26,17 @@ teststyle:
     - pep8 --max-line-length=80 --ignore=W503,E701,E731 --exclude=test* F_UNCLE/
   allow_failure: true    
     
-testdocs:
-  stage: test
+
+pages:
   script:
     - conda install --file pip_doc_req.txt
     - cd docs
     - make html
+    - mv _build/html/ public/
+  artifacts:
+    paths:
+      - public
+  only:
+    - master
+
        
