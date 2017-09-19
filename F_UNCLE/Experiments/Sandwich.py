@@ -40,7 +40,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import odeint
-
+from scipy.interpolate import LSQUnivariateSpline as LSQSpline
 # =========================
 # Custom Packages
 # =========================
@@ -400,25 +400,59 @@ class ToySandwichExperiment(GaussianExperiment):
         see :py:meth:`F_UNCLE.Utils.Experiment.Experiment.get_sigma`
         """
         corr = np.eye(self.shape())
-        var = 1E-6 * self.get_option('exp_corr')
-        times = self.data[0][self.window]
-        for i in range(corr.shape[0]):
-            x_list = (times[i] - times)
-            corr[i, :] = np.exp(-0.5 * (x_list/var)**2) 
-        eig, vect = np.linalg.eig(corr)
-        eig = np.real(eig)
-        eig = np.where(eig>0, eig, 0.0)
 
+        datax = self.data[0][self.window]
+        datay = self.data[1][self.window]
+        knots = np.linspace(
+            datax[1],
+            datax[-2],
+            25
+        )
+
+        smooth =  LSQSpline(
+            x=datax,
+            y=datay,
+            t=knots,
+            w=None,
+            k=3,
+            ext=3,
+            check_finite=True
+        )
+
+        var = np.sum((smooth(datax) - datay)**2/datax.shape[0])
+        var *= np.diag(np.ones(datax.shape[0], dtype=np.float64))
+
+        corr = np.eye(datax.shape[0], dtype=np.float64)
+        corr_time = self.get_option('exp_corr') * 1E-6
+        eps = np.finfo(np.float64).eps
+
+        for i in range(datax.shape[0]):
+            exponent = 0.5 * ((datax[i] - datax) / corr_time)**2
+            corr[i, :] = np.where(exponent> np.log(eps),
+                                  np.exp(-exponent),
+                                  0.0)
+
+        # end
+
+        # Test that the correlation matrix is positive definite
+        eig, vect = np.linalg.eigh(corr)
+
+        eig = np.where(eig > eig.max() * eps, eig, 0.0)
         assert eig.shape[0] == corr.shape[0], "Too few eigenvalues"
         assert np.all(np.isreal(eig)), "Imaginary eigenvalues"
         assert np.all(eig >= 0.0), "Negative eigenvalues {:}".format(eig)
-        corr = np.dot(vect.T, np.dot(np.diag(eig), vect))
-        
-        sigma = np.diag(np.ones(self.shape())
-                        * (np.fabs(self.data[1][self.window])
-                           * self.get_option('exp_var'))**2)
-        assert np.all(np.isfinite(sigma))
 
-        retval = np.dot(np.sqrt(sigma), np.dot(corr, np.sqrt(sigma)))
-        assert np.all(np.isfinite(retval))
-        return retval
+        for i in range(vect.shape[1]):
+            if eig[i] == 0:
+                pass
+                #vect[:,i] = 0.0
+            # end
+        # end
+
+        corr = np.dot(vect.T, np.dot(np.diag(eig), vect))
+
+        sigma = np.dot(np.sqrt(var).T, np.dot(corr, np.sqrt(var)))
+
+        import pdb
+        pdb.set_trace()
+        return sigma

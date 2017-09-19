@@ -448,6 +448,7 @@ class Isentrope(GaussianModel):
 
         hscale = np.abs(h_vec)
         hscale = np.maximum(hscale, hscale.max() * 1e-15)
+
         # Scale to make |h[i]| = 1 for all i
         HI = np.diag(1.0 / hscale)
         h_vec = np.dot(HI, h_vec)
@@ -466,7 +467,7 @@ class Spline(IU_Spline):
     Child of the scipy.interpolate.InterpolatedUnivariateSpline class
     which provides access to details to the knots which are treated as
     degrees of freedom
-"""
+    """
     def get_basis_functions(self):
         """Extracts the basis functions for the value and 1st and 2nd der
 
@@ -802,7 +803,7 @@ class EOSModel(Spline, Isentrope):
 
         """
 
-        dev = self.get_dof()  # * self.get_option('spline_sigma')
+        dev = 2.56E9 / self.get_t()[:-4]**3  # * self.get_option('spline_sigma')
 
         return np.diag(dev)
 
