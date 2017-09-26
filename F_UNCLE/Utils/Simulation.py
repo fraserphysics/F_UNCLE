@@ -353,7 +353,7 @@ class Simulation(Struc):
         # end
 
         ret_dct = pll_loop(dof_list, eval_fn,
-                           shape=self.shape(),
+                           shape=1,
                            comm=comm,
                            verb=verb,
                            models=models,

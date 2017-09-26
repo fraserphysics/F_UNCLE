@@ -44,6 +44,7 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from scipy.interpolate import InterpolatedUnivariateSpline as IU_Spline
 from scipy.optimize import brentq
+
 # For scipy.interpolate.InterpolatedUnivariateSpline. See:
 # https://github.com/scipy/scipy/blob/v0.14.0/scipy/interpolate/fitpack2.py
 
@@ -52,7 +53,7 @@ from scipy.optimize import brentq
 # Custom Packages
 # =========================
 from ..Utils.PhysicsModel import GaussianModel
-
+from . import gram
 
 # =========================
 # Main Code
@@ -111,11 +112,11 @@ class Isentrope(GaussianModel):
         """
 
         def_opts = {
-            'spline_N': [int, 50, 7, None, '',
+            'spline_N': [int, 20, 7, None, '',
                          "Number of knots in the EOS spline"],
-            'spline_min': [float, 0.1, 0.0, None, 'cm**3/g',
+            'spline_min': [float, 3.5**-1, 0.0, None, 'cm**3/g',
                            "Minimum value of volume modeled by EOS"],
-            'spline_max': [float, 1.0, 0.0, None, 'cm**3/g',
+            'spline_max': [float, 1.5**-1, 0.0, None, 'cm**3/g',
                            "Maximum value of volume modeled by EOS"],
             'spline_end': [float, 4, 0, None, '',
                            "Number of zero nodes at end of spline"],
@@ -468,7 +469,7 @@ class Spline(IU_Spline):
     which provides access to details to the knots which are treated as
     degrees of freedom
     """
-    def get_basis_functions(self):
+    def get_basis(self):
         """Extracts the basis functions for the value and 1st and 2nd der
 
         Args:
@@ -485,27 +486,18 @@ class Spline(IU_Spline):
                    evaluated at all knots
                 3. list-(n-4) of unique knot locations
         """
-        valfn = []
-        d1fn = []
-        d2fn = []
+        basis = []
 
-        knot_unique = self.get_t()[:]
-        initial_c = self.get_c(spline_end=4)
-        tmp_c = np.zeros(initial_c.shape)
-
-        knot_span = np.linspace(knot_unique[0],
-                                knot_unique[-1],
-                                200)
-        for i in range(len(initial_c)):
-            tmp_c[i] = 1.0
-            new_spline = self.set_c(tmp_c, spline_end=4)
-            valfn.append(new_spline(knot_span))
-            d1fn.append(new_spline.derivative(1)(knot_span))
-            d2fn.append(new_spline.derivative(2)(knot_span))
-            tmp_c[i] = 0.0
+        knot_unique = self._get_knot_spacing()#self.get_t()[3:-4]
+        shape = len(knot_unique)
+        spline = Spline(knot_unique, np.zeros((shape, )))
+        coeff = spline.get_c(spline_end=4) * 0.0
+        for i in range(len(knot_unique)):
+            coeff[i] = 1.0
+            basis.append(spline.set_c(coeff, spline_end=4))
+            coeff[i] = 0.0
         # end
-
-        return valfn, d1fn, d2fn, knot_unique, knot_span
+        return basis
 
     def get_t(self):
         """Gives the knot locations
@@ -569,35 +561,6 @@ class Spline(IU_Spline):
                                  c_new,
                                  new_spline._eval_args[2])
         return new_spline
-
-    def get_basis(self, indep_vect, spline_end=None):
-        """Returns the matrix of basis functions of the spline
-
-        Args:
-            indep_vect(np.ndarray): A vector of the independent variables over
-                which the basis function should be calculated
-
-        Keyword Args:
-           spline_end(int): The number of fixed nodes at the end of the spline
-
-        Return:
-            (np.ndarray):
-                The n x m matrix of basis functions where the n rows
-                are the response over the independent variable vector to a unit
-                step in the m'th spline coefficient
-        """
-
-        initial_c = self.get_c(spline_end=spline_end)
-        tmp_c = np.zeros(initial_c.shape)
-        basis = np.zeros((len(initial_c), len(indep_vect)))
-        for j in range(len(tmp_c)):
-            tmp_c[j] = 1.0
-            tmp_spline = self.set_c(tmp_c, spline_end=spline_end)
-            basis[j, :] = tmp_spline.__call__(indep_vect)
-            tmp_c[j] = 0.0
-        # end
-
-        return basis
 
 
 class EOSBump(Isentrope):
@@ -758,7 +721,14 @@ class EOSModel(Spline, Isentrope):
 
         knots = self._get_knot_spacing()
         Spline.__init__(self, knots, p_fun(knots), ext=0)
-
+        # basis = self.get_basis()
+        # v_min = self.get_option('spline_min')
+        # v_max = self.get_option('spline_max')
+        # print("Building Gram matrix")
+        # gmat = gram.gram(basis, gram.k_v, v_min, v_max)
+        # eps = np.finfo(np.float64).eps
+        # self.gram = np.where(gmat > gmat.max() * eps, gmat, 0.0)
+        # print("Gram matrix complete")
         self = self._on_update_dof(self)
         self.prior = copy.deepcopy(self)
 
@@ -790,6 +760,36 @@ class EOSModel(Spline, Isentrope):
                            "accepted".format(self.get_inform(1)))
         # end
         return vol
+
+    def get_kernel(self, alpha, beta):
+        """
+        """
+        shape = self.shape()
+
+        kernel = np.zeros((shape, shape))
+        knots = self.get_t()[: -self.get_option('spline_end')]
+
+        for i in range(shape):
+            exponent = (np.log(knots / knots[i]))**2/(2.0 * alpha**2)
+            kernel[i, :] = np.where(
+                exponent < 5,
+                beta / (alpha * np.sqrt(2 * np.pi)) * np.exp(-exponent),
+                0.0)
+        # end
+
+        eigs, vects = np.linalg.eigh(kernel)
+
+        eps = np.finfo(np.float64).eps
+
+        eigs = np.where(np.fabs(eigs) > eigs.max() * eps, eigs, 0)
+        #assert np.all(eigs >= 0)
+
+        kernel = np.dot(vects.T, np.dot(np.diag(eigs), vects))
+        knots = knots.reshape((shape, 1))
+        mu_vect = 2.56E9 / knots**3
+
+        return np.dot(mu_vect, np.dot(mu_vect.T, kernel))
+
 
     def get_scaling(self):
         """Returns a scaling matrix to make the dofs of the same scale
@@ -837,7 +837,12 @@ class EOSModel(Spline, Isentrope):
         sigma = self.get_option('spline_sigma')
 
         return np.diag((sigma * self.prior.get_dof())**2)
+        # alpha = 3/self.shape()\
+        #         * np.log(self.get_option('spline_max')
+        #                  /self.get_option('spline_min'))
 
+        # beta = np.log(1 + self.get_option('spline_sigma'))
+        return self.gram
     def get_dof(self, *args, **kwargs):
         """Returns the spline coefficients as the model degrees of freedom
 

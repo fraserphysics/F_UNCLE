@@ -55,7 +55,7 @@ class NoiseModel(Struc):
         eps = np.finfo(np.float64).eps
         for i in range(shape[0]):
             exponent = 0.5 * ((times[i] - times) / cor_time)**2
-            corr[i, :] = np.where(exponent> np.log(eps),
+            corr[i, :] = np.where(exponent < np.log(eps),
                                   np.exp(-exponent),
                                   0.0)
 
@@ -65,7 +65,7 @@ class NoiseModel(Struc):
         # Test that the correlation matrix is positive definite
         eig, vect = np.linalg.eigh(corr)
 
-        eig = np.where(eig > eig.max() * eps, eig, 0.0)
+        eig = np.where(np.fabs(eig) > eig.max() * eps, eig, 0.0)
         assert eig.shape[0] == corr.shape[0], "Too few eigenvalues"
         assert np.all(np.isreal(eig)), "Imaginary eigenvalues"
         assert np.all(eig >= 0.0), "Negative eigenvalues {:}".format(eig)

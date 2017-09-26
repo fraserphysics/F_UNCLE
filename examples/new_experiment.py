@@ -54,7 +54,9 @@ str_true  = SimpleStr([101E9, 100.0]) # Youngs modulis for Cu from Hibbeler
 eos_model = EOSModel(
     lambda v: 2.56E9/v**3, # famma=3 gas for HE
     spline_sigma = 0.25,
-    spline_max = 2.0
+    spline_min = 1.0,
+    spline_max = 100.0,
+    spacing='log'
 )
 eos_true = EOSBump()
 

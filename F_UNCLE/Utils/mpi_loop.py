@@ -24,11 +24,12 @@ import time
 try:
     from mpi4py import MPI
 except Exception as inst:
+    print('Cannot load mpi4py')
     pass
 # end
 
 
-def pll_loop(x, func, shape, comm=None, verb=False, *args, **kwargs):
+def pll_loop(x, func, shape, comm=None, verb=False, args=(), **kwargs):
     """
     Uses MPI to evaluate `func' for each value of x and returns a dictionary of
     the results
@@ -95,7 +96,7 @@ def pll_loop(x, func, shape, comm=None, verb=False, *args, **kwargs):
         if verb: print('rank 0 begining to recieve')
         for proc in range(1, nproc):
             proc_xval = range(proc, len(x), nproc)
-            rec_buff = np.empty((shape, len(proc_xval)), dtype=np.float64)
+            #rec_buff = np.empty((shape, len(proc_xval)), dtype=np.float64)
             try:
                 rec_buff = Recv(source=proc, tag=1)
                 if verb: print('recieving from rank {:d} on rank {:d}'
@@ -150,6 +151,7 @@ def complex_io(x, p={}, *args, **kwargs):
     return out
 
 if __name__ == "__main__":
+    pass
     # from mpi4py import MPI
 
     # # Test 1

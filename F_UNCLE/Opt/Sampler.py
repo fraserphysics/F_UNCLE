@@ -85,22 +85,22 @@ class Sampler(Bayesian):
         # Calculate map from N(0,I) to N(0,E)
         a_mat = np.dot(np.linalg.inv(vects), np.dot(np.diag(np.sqrt(eigs)), vects))
 
-        lim = np.dot(np.linalg.inv(np.dot(a_mat, G)), h))
+        lim = np.dot(np.linalg.inv(np.dot(a_mat, G)),h)
         import pdb
         pdb.set_trace()
         count = 0
         x = np.zeros((model.shape(),) )
-        for i in range(model.shape())
-            v = spstat.norm.rvs(
-                loc=None,
-                scale=1,
-                random_state=None)
-            x[i] = v
-            if np.all(v < lim):
-                break
-            else:
-                print(count, len(np.where(v > lim)[0]))
-                count += 1
+        # for i in range(model.shape()):
+        #     v = spstat.norm.rvs(
+        #         loc=None,
+        #         scale=1,
+        #         random_state=None)
+        #     x[i] = v
+        #     if np.all(v < lim):
+        #         break
+        #     else:
+        #         print(count, len(np.where(v > lim)[0]))
+        #         count += 1
         # for j, pcnt in enumerate(pcnt_list):
         #     feasible=False
         #     count=0
