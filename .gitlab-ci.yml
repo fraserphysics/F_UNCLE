@@ -19,18 +19,18 @@ before_script:
   - source activate test-environment
   - python setup.py develop
 
-# testfuncle:
-#  stage: test
-#  script:
-#    - conda install --file pip_test_req.txt
-#    - pytest F_UNCLE
+testfuncle:
+  stage: test
+  script:
+    - conda install --file pip_test_req.txt
+    - pytest F_UNCLE
   
-# teststyle:
-#  stage: test
-#  script:
-#    - conda install --file pip_test_req.txt
-#    - pep8 --max-line-length=80 --ignore=W503,E701,E731 --exclude=test* F_UNCLE/
-#  allow_failure: true    
+teststyle:
+  stage: test
+  script:
+    - conda install --file pip_test_req.txt
+    - pep8 --max-line-length=80 --ignore=W503,E701,E731 --exclude=test* F_UNCLE/
+  allow_failure: true    
     
 
 pages:
