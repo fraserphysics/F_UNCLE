@@ -1,3 +1,8 @@
+variables:
+  HTTPS_PROXY: "https://proxyout.lanl.gov:8080"
+  HTTP_PROXY: "http://proxyout.lanl.gov:8080"
+  NO_PROXY: "*.lanl.gov,lanl.gov"
+
 stages:
   - test
   - deploy
