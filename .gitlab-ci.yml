@@ -1,21 +1,18 @@
 stages:
-  - build
   - test
   - deploy
 
-build:
-  stage: build
-  script:
-    - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-    - bash miniconda.sh -b -p $HOME/miniconda
-    - export PATH="$HOME/miniconda/bin:$PATH"
-    - conda config --set always_yes yes --set changeps1 no
-    - conda update -q conda
-    - conda create -q -n test-environment python=3.5 --file pip_req.txt
-    - mkdir -p ~/.config/matplotlib/
-    - 'echo backend : PDF > ~/.config/matplotlib/matplotlibrc'
-    - source activate test-environment
-    - python setup.py develop
+before_script:
+  - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  - conda create -q -n test-environment python=3.5 --file pip_req.txt
+  - mkdir -p ~/.config/matplotlib/
+  - 'echo backend : PDF > ~/.config/matplotlib/matplotlibrc'
+  - source activate test-environment
+  - python setup.py develop
 
 testfuncle:
   stage: test
