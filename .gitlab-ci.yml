@@ -40,9 +40,11 @@ pages:
     - mkdir .public
     - cd docs
     - make html
+    - ls -l _build/html
     - cp -r _build/html/ ../.public/
     - cd ..
     - mv .public public
+    - ls -l public
   artifacts:
     paths:
       - public
