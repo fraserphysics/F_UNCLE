@@ -32,10 +32,12 @@ pages:
   stage: deploy
   script:
     - conda install --file pip_doc_req.txt
-    - mkdir public
+    - mkdir .public
     - cd docs
     - make html
-    - mv _build/html/ ../public/
+    - cp -r _build/html/ ../.public/
+    - cd ..
+    - mv .public public
   artifacts:
     paths:
       - public
