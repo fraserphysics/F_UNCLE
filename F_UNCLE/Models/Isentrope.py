@@ -721,14 +721,14 @@ class EOSModel(Spline, Isentrope):
 
         knots = self._get_knot_spacing()
         Spline.__init__(self, knots, p_fun(knots), ext=0)
-        # basis = self.get_basis()
-        # v_min = self.get_option('spline_min')
-        # v_max = self.get_option('spline_max')
-        # print("Building Gram matrix")
-        # gmat = gram.gram(basis, gram.k_v, v_min, v_max)
-        # eps = np.finfo(np.float64).eps
-        # self.gram = np.where(gmat > gmat.max() * eps, gmat, 0.0)
-        # print("Gram matrix complete")
+        basis = self.get_basis()
+        v_min = self.get_option('spline_min')
+        v_max = self.get_option('spline_max')
+        print("Building Gram matrix")
+        gmat = gram.gram(basis, gram.k_v, v_min, v_max)
+        eps = np.finfo(np.float64).eps
+        self.gram = np.where(gmat > gmat.max() * eps, gmat, 0.0)
+        print("Gram matrix complete")
         self = self._on_update_dof(self)
         self.prior = copy.deepcopy(self)
 
@@ -834,9 +834,9 @@ class EOSModel(Spline, Isentrope):
                 of the model
         """
 
-        sigma = self.get_option('spline_sigma')
+        # sigma = self.get_option('spline_sigma')
 
-        return np.diag((sigma * self.prior.get_dof())**2)
+        # return np.diag((sigma * self.prior.get_dof())**2)
         # alpha = 3/self.shape()\
         #         * np.log(self.get_option('spline_max')
         #                  /self.get_option('spline_min'))
