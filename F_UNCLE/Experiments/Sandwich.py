@@ -400,59 +400,59 @@ class ToySandwichExperiment(GaussianExperiment):
         see :py:meth:`F_UNCLE.Utils.Experiment.Experiment.get_sigma`
         """
         corr = np.eye(self.shape())
+        return corr * self.get_option('exp_var') * self.data[1][self.window].mean()
+        # datax = self.data[0][self.window]
+        # datay = self.data[1][self.window]
+        # knots = np.linspace(
+        #     datax[1],
+        #     datax[-2],
+        #     25
+        # )
 
-        datax = self.data[0][self.window]
-        datay = self.data[1][self.window]
-        knots = np.linspace(
-            datax[1],
-            datax[-2],
-            25
-        )
+        # smooth =  LSQSpline(
+        #     x=datax,
+        #     y=datay,
+        #     t=knots,
+        #     w=None,
+        #     k=3,
+        #     ext=3,
+        #     check_finite=True
+        # )
 
-        smooth =  LSQSpline(
-            x=datax,
-            y=datay,
-            t=knots,
-            w=None,
-            k=3,
-            ext=3,
-            check_finite=True
-        )
+        # var = np.sum((smooth(datax) - datay)**2/datax.shape[0])
+        # var *= np.diag(np.ones(datax.shape[0], dtype=np.float64))
 
-        var = np.sum((smooth(datax) - datay)**2/datax.shape[0])
-        var *= np.diag(np.ones(datax.shape[0], dtype=np.float64))
+        # corr = np.eye(datax.shape[0], dtype=np.float64)
+        # corr_time = self.get_option('exp_corr') * 1E-6
+        # eps = np.finfo(np.float64).eps
 
-        corr = np.eye(datax.shape[0], dtype=np.float64)
-        corr_time = self.get_option('exp_corr') * 1E-6
-        eps = np.finfo(np.float64).eps
+        # for i in range(datax.shape[0]):
+        #     exponent = 0.5 * ((datax[i] - datax) / corr_time)**2
+        #     corr[i, :] = np.where(exponent> np.log(eps),
+        #                           np.exp(-exponent),
+        #                           0.0)
 
-        for i in range(datax.shape[0]):
-            exponent = 0.5 * ((datax[i] - datax) / corr_time)**2
-            corr[i, :] = np.where(exponent> np.log(eps),
-                                  np.exp(-exponent),
-                                  0.0)
+        # # end
 
-        # end
+        # # Test that the correlation matrix is positive definite
+        # eig, vect = np.linalg.eigh(corr)
 
-        # Test that the correlation matrix is positive definite
-        eig, vect = np.linalg.eigh(corr)
+        # eig = np.where(eig > eig.max() * eps, eig, 0.0)
+        # assert eig.shape[0] == corr.shape[0], "Too few eigenvalues"
+        # assert np.all(np.isreal(eig)), "Imaginary eigenvalues"
+        # assert np.all(eig >= 0.0), "Negative eigenvalues {:}".format(eig)
 
-        eig = np.where(eig > eig.max() * eps, eig, 0.0)
-        assert eig.shape[0] == corr.shape[0], "Too few eigenvalues"
-        assert np.all(np.isreal(eig)), "Imaginary eigenvalues"
-        assert np.all(eig >= 0.0), "Negative eigenvalues {:}".format(eig)
+        # for i in range(vect.shape[1]):
+        #     if eig[i] == 0:
+        #         pass
+        #         #vect[:,i] = 0.0
+        #     # end
+        # # end
 
-        for i in range(vect.shape[1]):
-            if eig[i] == 0:
-                pass
-                #vect[:,i] = 0.0
-            # end
-        # end
+        # corr = np.dot(vect.T, np.dot(np.diag(eig), vect))
 
-        corr = np.dot(vect.T, np.dot(np.diag(eig), vect))
+        # sigma = np.dot(np.sqrt(var).T, np.dot(corr, np.sqrt(var)))
 
-        sigma = np.dot(np.sqrt(var).T, np.dot(corr, np.sqrt(var)))
-
-        import pdb
-        pdb.set_trace()
-        return sigma
+        # import pdb
+        # pdb.set_trace()
+        # return sigma

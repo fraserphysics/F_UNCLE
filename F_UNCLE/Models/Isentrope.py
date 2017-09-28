@@ -112,11 +112,11 @@ class Isentrope(GaussianModel):
         """
 
         def_opts = {
-            'spline_N': [int, 20, 7, None, '',
+            'spline_N': [int, 50, 7, None, '',
                          "Number of knots in the EOS spline"],
-            'spline_min': [float, 3.5**-1, 0.0, None, 'cm**3/g',
+            'spline_min': [float, 0.1, 0.0, None, 'cm**3/g',
                            "Minimum value of volume modeled by EOS"],
-            'spline_max': [float, 1.5**-1, 0.0, None, 'cm**3/g',
+            'spline_max': [float, 1.0, 0.0, None, 'cm**3/g',
                            "Maximum value of volume modeled by EOS"],
             'spline_end': [float, 4, 0, None, '',
                            "Number of zero nodes at end of spline"],
