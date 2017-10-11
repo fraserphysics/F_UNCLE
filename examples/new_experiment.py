@@ -85,7 +85,7 @@ cylinder_experiment = ToyCylinderExperiment(
     )
 
 simulations = OrderedDict()
-#simulations['Sand'] =  [sandwich_simulation, sandwich_experiment]
+simulations['Sand'] =  [sandwich_simulation, sandwich_experiment]
 #simulations['Stick'] = [stick_simulation, stick_experiment]
 simulations['Cyl'] = [cylinder_simulation, cylinder_experiment]
 
