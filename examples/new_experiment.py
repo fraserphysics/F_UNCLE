@@ -54,8 +54,9 @@ str_true  = SimpleStr([101E9, 100.0]) # Youngs modulis for Cu from Hibbeler
 eos_model = EOSModel(
     lambda v: 2.56E9/v**3, # famma=3 gas for HE
     spline_sigma = 0.25,
-    spline_min = 1.0,
-    spline_max = 100.0,
+    spline_min = 5.5**-1,
+    spline_max = 2.0,
+    spline_N = 20,
     spacing='log'
 )
 eos_true = EOSBump()
@@ -102,7 +103,7 @@ analysis = Bayesian(
     debug=False,
     verb=True,
     sens_mode='ser',
-    maxiter=6
+    maxiter=1
 )
 
 to = time.time()
@@ -115,185 +116,98 @@ samp = Sampler(opt_model.models, opt_model.simulations, fisher_matrix)
 
 
 for simid in ['Cyl']:# ['Sand', 'Stick', 'Cyl']:
-    dof_list, data_list = samp(simid, 'eos')
+    new_var = samp.cramer_rao(opt_model.models['eos'], fisher_matrix[simid])
+    pcnt_list, dof_list, data_list = samp.pointwise_bounds(simid, 'eos')
+    eigval, eigvec, eigfun = samp.spectral_decomp(simid, 'eos')
+
     models= opt_model.models
-#     # Create the fisher information matrix
-#     filter_fisher = fisher_matrix[simid]
-#     sigma_aug = filter_fisher
-
-#     original_var = np.sqrt(np.diag(opt_model.models['eos'].get_sigma()))
-
-#     # Check that the fisher information matrix is positive semi-definate
-#     eigval_1, eigvec_1 = nplin.eigh(sigma_aug)
-#     print(eigval_1)
-#     assert(np.all(eigval_1 >= -1E21))
-#     assert(np.all(np.isreal(eigval_1)))
-
-#     eigs, vects, funcs, vol = Bayesian.fisher_decomposition(
-#         {simid:filter_fisher},
-#         simid,
-#         opt_model.models,
-#         'eos'
-#     )
-
-#     # Invert the degenerate eigenvalue matrix
-#     for i in range(eigval_1.shape[0]):
-#         if eigval_1[i]/eigval_1.max() > 1E-6 and eigval_1[i] > 1E-21:
-#            eigval_1[i] = np.sqrt(eigval_1[i]**-1)
-#         else:
-#            eigval_1[i] = original_var[i,i]
-#         # end
-#     # end
-#     print(eigval_1)
-
-#     # Create the new variance matrix using the Cramer Rao bound
-#     new_var = np.dot(eigvec_1,
-#                      np.dot(np.diag(eigval_1),
-#                             eigvec_1.T
-#                      ))
-
-#     # Use the prior variance when there is not information
-#     #new_var = np.diag(np.where(np.diag(new_var) == 0.0, original_var, np.diag(new_var)))
-#     eigval_2, eigvec_2 = nplin.eigh(new_var)
-
-#     pcnt_list = [0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99]
-#     dof_in = opt_model.models['eos'].get_dof()
-#     dof_list = np.empty((9, opt_model.models['eos'].shape()))
-#     sand_data_list = np.empty((9, opt_model.simulations[simid]['exp'].shape()))
-#     sand_data_list_init = np.empty((9, opt_model.simulations[simid]['exp'].shape()))
-#     models = copy.deepcopy(opt_model.models)
 
     knots = np.linspace(
         models['eos'].get_option('spline_min'),
         models['eos'].get_option('spline_max'),
         100)
 
-#     # Evaluate the simulations at each credible level
-#     for j, pcnt in enumerate(pcnt_list):
-#         # Solve for the augmented variance
-#         feasible = False
-#         count = 0
-#         while not feasible and count < 1:
-#             scale = spstat.norm.ppf(pcnt, loc=0, scale=1)
-#             #print(scale)
-#             dof_list[j,:] = scale * np.diag(new_var) + dof_in
-#             #dof_list[j, :] = np.array(
-#             #    [spstat.norm.ppf(pcnt, loc=dof_in[i], scale=new_var[i, i])
-#             #    for i in range(dof_in.shape[0])])
+    true_knots = models['eos']._get_knot_spacing()
 
-#             models['eos'] = models['eos'].update_dof(dof_list[j, :])
-#             G, h = models['eos'].get_constraints(scale=False)
-#             conval = np.dot((dof_list[j, :] - dof_in), G)
-#             err = np.where(conval <= h, 0.0, conval - h )
-#             feasible = np.all(err == 0)
-#             if feasible and count>0:
-#                 print(models['eos'].derivative(2)(knots))
-#                 assert(np.all(models['eos'].derivative(2)(knots) > 0))
-#                 #print(np.dot(err, err))
-#             # if count%10 == 0 and not feasible:
-#             #     print('no feasible point found in {:03d} draws'.format(count))
-#             # if feasible:
-#             #     print('feasible point found on draw {:03d}'.format(count))
-#             count += 1
-#             #feasible = True
-#             #break
-#         # end
-#         data =opt_model.simulations[simid]['sim'](models)
-#         sand_data_list[j, :] = opt_model.simulations[simid]['exp'].align(data)[1][0]
-
-#         # Use the prior variance
-#         tmp_dof = np.array(
-#             [spstat.norm.ppf(pcnt, loc=dof_in[i], scale=original_var[i])
-#              for i in range(dof_in.shape[0])])
-#         models['eos'] = models['eos'].update_dof(tmp_dof)
-#         data =opt_model.simulations[simid]['sim'](models)
-#         sand_data_list_init[j, :] = opt_model.simulations[simid]['exp'].align(data)[1][0]
-#     # end
+    data = opt_model.simulations[simid]['exp']()
 
     fig00 = plt.figure(figsize = fig_half)
     fig01 = plt.figure(figsize = fig_half)
-    fig001 = plt.figure(figsize = fig_half)
-    fig002 = plt.figure(figsize = fig_half)
-    fig02 = plt.figure(figsize = fig_golden)
-    fig03 = plt.figure()
+    fig02 = plt.figure(figsize = fig_half)
+    fig03 = plt.figure(figsize = fig_half)
+    fig04 = plt.figure(figsize = fig_half)
+    fig05 = plt.figure(figsize = fig_half)
+
     ax00 = fig00.gca()
     ax01 = fig01.gca()
-    ax001 = fig001.gca()
-    ax002 = fig002.gca()
     ax02 = fig02.gca()
     ax03 = fig03.gca()
+    ax04 = fig04.gca()
 
-    # true_knots = models['eos'].get_t()[:-4]
+
     # models['eos'] = models['eos'].update_dof(dof_in)
-    # ax02.semilogy(true_knots, models['eos'].get_dof(), label='Value')
-    # ax02.semilogy(true_knots, np.sqrt(np.diag(models['eos'].get_sigma())),
-    #               label='Initial variance')
-    # ax02.semilogy(true_knots, np.diag(new_var),
-    #               label='Final variance')
+    ax00.semilogy(true_knots, models['eos'].get_dof(), '-', label='Value')
+    ax00.semilogy(true_knots, np.sqrt(np.diag(models['eos'].get_sigma())),
+                  ls = ':',
+                  label='Initial variance')
+    ax00.semilogy(true_knots, np.sqrt(np.diag(new_var)),
+                  '-',
+                  label='Final variance')
 
-    data = opt_model.simulations[simid]['exp']()
     styles = ['r:', 'r--', 'r-.', 'r-', 'k-', 'g-', 'g-.', 'g--', 'g:']
-    for j, dof in enumerate(dof_list):
-        print(dof_list[j])
+    for j in range(dof_list.shape[0]):
         model = models['eos'].update_dof(dof_list[j])
-        ax00.plot(1E6 * data[0], 1E-4 * data_list[j, :], styles[j],
-                  label='Pcnt = {:f}'.format(.0))
+        ax01.plot(1E6 * data[0], 1E-4 * data_list[j, :], styles[j],
+                  label='Pcnt = {:f}'.format(pcnt_list[j]))
 
-    #     models['eos'] = models['eos'].update_dof(dof_list[j, :])
-        ax01.semilogy(knots, 1E0 * model(knots), styles[j],
-                  label='{:3.2f}'.format(0.0))
-
-    #     ax03.plot(1E6 * data[0], 1E-4 * sand_data_list_init[j, :], styles[j],
-    #               label='{:3.2f}'.format(pcnt))
-
-    # # end
-
-    # ax001.semilogy(eigs/1E9, 'sk')
-    # for i in range(funcs.shape[0]):
-    #     ax002.plot(vol, funcs[i],
-    #              label="{:d}".format(i))
+        ax02.semilogy(knots, 1E0 * model(knots), styles[j],
+                      label='{:3.2f}'.format(pcnt_list[j]))
     # end
-    # ax2.axvline(opt_model.models['eos'].state_cj.dens)
-    # ax2.axvline(opt_model.models['eos'].get_option('rho_0'))
-    ax001.xaxis.set_major_locator(MultipleLocator(1))
-    ax001.xaxis.set_major_formatter(FormatStrFormatter('%d'))
-    ax001.set_xlabel('Eigenvalue rank')
-    ax001.set_ylabel('Eigenvalue')
-    ax002.set_xlabel(r'Density / g cm$^{-3}$')
-    ax002.set_ylabel(r'Presure / Pa')
-    #ax002.legend(loc='upper right', title='Eigenvalue\nrank')
-    #ax002.get_legend().get_title().set_fontsize(str(rcParams['legend.fontsize']))
-    ax00.set_xlabel(r'Time / $\mu$s')
-    ax00.set_ylabel(r'Velocity / cm $\mu$s$^{-1}$')
 
-    ax01.set_xlabel(r'Specific Volume / cm$^{3}$ g$^{-1}$')
-    ax01.set_ylabel(r'Pressure / Pa')
-    ax01.legend(loc='upper right', title='Percentile')
+    ax03.plot(eigval, 'sk')
+
+    for k, func in enumerate(eigfun):
+        ax04.plot(knots, func(knots), label='{:02d}'.format(k))
+    # end
+
+    ax03.set_xlabel('Eigenvalue rank / -')
+    ax03.set_ylabel(r'Eigenvalue nuber / Pa$^2$')
+
+    ax04.set_xlabel(r'Specific Volume / cm$^{3}$ g$^{-1}$')
+    ax04.set_ylabel(r'Eigenfunction / Pa')
+    ax04.legend(loc='best', title='Eig. No.')
+
+
+    ax01.set_xlabel(r'Time / $\mu$s')
+    ax01.set_ylabel(r'Velocity / cm $\mu$s$^{-1}$')
 
     ax02.set_xlabel(r'Specific Volume / cm$^{3}$ g$^{-1}$')
     ax02.set_ylabel(r'Pressure / Pa')
-    ax02.legend(loc='upper right')
+    ax02.legend(loc='upper right', title='Percentile')
 
-    ax03.set_xlabel(r'Time / $\mu$s')
-    ax03.set_ylabel(r'Velocity / cm $\mu$s$^{-1}$')
+    ax00.set_xlabel(r'Specific Volume / cm$^{3}$ g$^{-1}$')
+    ax00.set_ylabel(r'Pressure / Pa')
+    ax00.legend(loc='upper right')
+
 
     fig00.tight_layout()
     fig01.tight_layout()
     fig02.tight_layout()
-    fig001.tight_layout()
-    fig002.tight_layout()
+    fig03.tight_layout()
+    fig04.tight_layout()
 
-    fig001.savefig("{:}/{:}_fisher_eval{:}".format(figdir, simid, figtype))
-    fig002.savefig("{:}/{:}_fisher_efun{:}".format(figdir, simid, figtype))
-    fig01.savefig("{:}/{:}_fisher_modvar{:}".format(figdir, simid, figtype))
-    fig00.savefig("{:}/{:}_fisher_simvar{:}".format(figdir,simid, figtype))
 
-    fig02.savefig("{:}/{:}_fisher_var{:}".format(figdir, simid, figtype))
+    fig00.savefig("{:}/{:}_fisher_modvar{:}".format(figdir, simid, figtype))
+    fig01.savefig("{:}/{:}_fisher_sim_pointwise{:}".format(figdir, simid, figtype))
+    fig02.savefig("{:}/{:}_fisher_mod_pointwise{:}".format(figdir, simid, figtype))
+    fig03.savefig("{:}/{:}_fisher_eigval{:}".format(figdir, simid, figtype))
+    fig04.savefig("{:}/{:}_fisher_eigfun{:}".format(figdir, simid, figtype))
+
     plt.close(fig00)
     plt.close(fig01)
-    plt.close(fig001)
-    plt.close(fig002)
-    plt.close(fig002)
+    plt.close(fig02)
+    plt.close(fig03)
+    plt.close(fig04)
 # end
 
 

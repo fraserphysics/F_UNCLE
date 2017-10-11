@@ -44,7 +44,7 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from scipy.interpolate import InterpolatedUnivariateSpline as IU_Spline
 from scipy.optimize import brentq
-
+import scipy.integrate as spint
 # For scipy.interpolate.InterpolatedUnivariateSpline. See:
 # https://github.com/scipy/scipy/blob/v0.14.0/scipy/interpolate/fitpack2.py
 
@@ -721,37 +721,100 @@ class EOSModel(Spline, Isentrope):
 
         knots = self._get_knot_spacing()
         Spline.__init__(self, knots, p_fun(knots), ext=0)
+
+        #self.gram = self.get_gram()
+
+        self = self._on_update_dof(self)
+        self.prior = copy.deepcopy(self)
+
+    def get_gram(self):
+        """Creates the gramm matrix
+
+        Args:
+            None
+
+        Return:
+            (np.ndarray) A nxn gram matrix where n is the numer of knots
+        """
+
+        def kernel(tau, alpha, beta):
+            """Gaussian kernel
+            """
+            return beta/(alpha*np.sqrt(2*np.pi)) * np.exp(-tau**2/(2*alpha**2))
+
+        def mu_v(vol, const=2.56E9, gamma=3):
+            """This is the mean function
+            """
+            return const * vol**-gamma
+
+        def k_v(vol_i, vol_j, alpha=0.05, beta=0.05):
+            """
+            """
+            tau = np.log(vol_i / vol_j)
+            return mu_v(vol_i) * mu_v(vol_j) * kernel(tau, alpha, beta)
+
+        def inner_k(fun1, fun2, kernel, v_min, v_max):
+            """
+            """
+
+            def first(f, k, v):
+                '''  \int_v_min^v_max f(x)k(x,v) dx
+                '''
+                return spint.quad(
+                    lambda x: f(x) * k(x, v),
+                    v_min,
+                    v_max)[0]
+            # end
+
+            return spint.quad(
+                lambda y: first(fun1, kernel, y) * fun2(y),
+                v_min,
+                v_max)[0]
+
         basis = self.get_basis()
         v_min = self.get_option('spline_min')
         v_max = self.get_option('spline_max')
         print("Building Gram matrix")
-        gmat = gram.gram(basis, gram.k_v, v_min, v_max)
+        #gmat = gram.gram(basis, gram.k_v, v_min, v_max)
+        n = len(basis)
+        gmat = np.empty((n,n))
+        for i, f in enumerate(basis):
+            for j, g in enumerate(basis):
+                if j < i:  # Exploit symmetry because inner_k is slow
+                    gmat[i,j] = gmat[j,i]
+                else:
+                    print(i, j)
+                    gmat[i,j] = inner_k(f,g,k_v, v_min, v_max)
+            # end
+
         eps = np.finfo(np.float64).eps
-        self.gram = np.where(gmat > gmat.max() * eps, gmat, 0.0)
-        print("Gram matrix complete")
-        self = self._on_update_dof(self)
-        self.prior = copy.deepcopy(self)
+        gmat = np.where(gmat > gmat.max() * eps, gmat, 0.0)
+
+        print(gmat)
+        eigs, evec = np.linalg.eigh(gmat)
+        print(eigs)
+        assert eigs.shape[0] == gmat.shape[0], 'Missing eigenvalues'
+        assert np.all(eigs > 0), 'Gram matrix has negative eigenvalues'
+
+        return gmat
 
     def _get_knot_spacing(self):
         """Returns a list of knot locations based on the spline parameters
+
+        If the option `spacing` is 'lin', uses linear spacing
+                                   'log', uses log spacing
+
+        Places 'spline_N' knots between 'spline_min' and 'spline_max'
         """
 
-        if self.get_option('spacing').lower() == 'log':
-            # if self.get_option('basis') == 'dens':
-            #     vol = np.logspace(np.log10(self.get_option('spline_max')**-1),
-            #                       np.log10(self.get_option('spline_min')**-1),
-            #                       self.get_option('spline_N'))
-            #     vol = vol[::-1]**-1
-            # else:
-            #     vol = np.logspace(np.log10(self.get_option('spline_min')),
-            #                       np.log10(self.get_option('spline_max')),
-            #                       self.get_option('spline_N'))
-            # # end
+        space_key = self.get_option('spacing').lower()[:3]
+
+        if space_key == 'log':
             vol = np.logspace(np.log10(self.get_option('spline_min')),
                               np.log10(self.get_option('spline_max')),
                               self.get_option('spline_N'))
 
-        elif self.get_option('spacing').lower() == 'lin':
+        elif space_key == 'lin':
             vol = np.linspace(self.get_option('spline_min'),
                               self.get_option('spline_max'),
                               self.get_option('spline_N'))
@@ -834,15 +897,15 @@ class EOSModel(Spline, Isentrope):
                 of the model
         """
 
-        # sigma = self.get_option('spline_sigma')
+        sigma = self.get_option('spline_sigma')
 
-        # return np.diag((sigma * self.prior.get_dof())**2)
+        return np.diag((sigma * self.prior.get_dof())**2)
         # alpha = 3/self.shape()\
         #         * np.log(self.get_option('spline_max')
         #                  /self.get_option('spline_min'))
 
         # beta = np.log(1 + self.get_option('spline_sigma'))
-        return self.gram
+        #return self.gram
     def get_dof(self, *args, **kwargs):
         """Returns the spline coefficients as the model degrees of freedom
 
