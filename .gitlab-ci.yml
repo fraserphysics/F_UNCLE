@@ -1,5 +1,11 @@
+variables:
+  HTTPS_PROXY: "https://proxyout.lanl.gov:8080"
+  HTTP_PROXY: "http://proxyout.lanl.gov:8080"
+  NO_PROXY: "*.lanl.gov,lanl.gov"
+
 stages:
   - test
+  - deploy
 
 before_script:
   - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
@@ -26,10 +32,23 @@ teststyle:
     - pep8 --max-line-length=80 --ignore=W503,E701,E731 --exclude=test* F_UNCLE/
   allow_failure: true    
     
-testdocs:
-  stage: test
+
+pages:
+  stage: deploy
   script:
     - conda install --file pip_doc_req.txt
+    - mkdir .public
     - cd docs
     - make html
+    - ls -l _build/html
+    - cp -r _build/html/* ../.public/
+    - cd ..
+    - mv .public public
+    - ls -l public
+  artifacts:
+    paths:
+      - public
+  only:
+    - master
+
        
