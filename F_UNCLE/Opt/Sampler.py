@@ -123,7 +123,7 @@ class Sampler(Bayesian):
 
         return dof_list, data_list
 
-    def spectral_decomp(self, simid, modkey, tol=1E-3):
+    def spectral_decomp(self, simid, modkey, tol=1E-2):
         """
         Keyword Args:
             tol(float): Eigenvalues less than tol are ignored
@@ -170,16 +170,13 @@ class Sampler(Bayesian):
         eig_vals = np.maximum(eig_vals, 0)        # info is positive definite
 
         vals = eig_vals[np.argsort(eig_vals)[::-1]]
-        vects = eig_vecs[:, np.argsort(eig_vals)[::-1]]
+        vects = eig_vecs[:,np.argsort(eig_vals)[::-1]]
         n_vals = max(len(np.where(vals > vals[0] * tol)[0]), 3)
-        n_vecs = max(len(np.where(vals > vals[0] * tol)[0]), 3)
+        n_vecs = max(len(np.where(vals > vals[0] * tol)[0]), 1)
 
         # Find range of v that includes support of eigenfunctions
         # knots = self.models[self.opt_key].get_t()
         knots = model._get_knot_spacing()
-        v_min = model.get_option('spline_min')
-        v_max = model.get_option('spline_max')
-        vol = np.logspace(np.log10(v_min), np.log10(v_max), len(knots) * 100)
         funcs = []
 
         # Create a matrix of the basis functions evaluated at each knot
@@ -189,8 +186,12 @@ class Sampler(Bayesian):
                 basis_mtx[:, i] = b_fn(knots)
         # end
 
+        print(eig_vals)
+        print(vals[:n_vals])
         for j in range(n_vecs):
-            funcs.append(IUSpline(knots, vals[j] * np.dot(basis_mtx, vects[:, j])))
+            # funcs.append(IUSpline(knots, np.dot(basis_mtx,
+            #                                     vects[j])))
+            funcs.append(model.set_c(vects[:,j]))
         # end
 
         return vals[:n_vals], vects[:, :n_vecs], funcs
