@@ -60,8 +60,6 @@ from ...Models.Isentrope import EOSModel, EOSBump
 from ...Utils.test.test_PhysicsModel import SimpleModel
 from ...Utils.test.test_Experiment import SimpleExperiment
 from ...Utils.test.test_Simulation import SimpleSimulation, TwoModelSimulation
-from ...Experiments.Sandwich import ToySandwich, ToySandwichExperiment
-from ...Experiments.Cylinder import ToyCylinder, ToyCylinderExperiment
 from ...Models.SimpleStr import SimpleStr
 
 
@@ -138,7 +136,7 @@ class TestBayesian(unittest.TestCase):
         # Test passing multiple models as an ordred dict
         model_dct = OrderedDict()
         model_dct['eos1'] = self.eos_model
-        model_dct['eos2'] = self.eos_model        
+        model_dct['eos2'] = self.eos_model
         models, sim = bayes._check_inputs(model_dct,
                                           {'Gun': [self.sim1, self.exp1]})
 
@@ -174,7 +172,7 @@ class TestBayesian(unittest.TestCase):
                                               'eos2': self.eos_model},
                                              {'Gun': [self.sim1, self.exp1]})
         self.assertEqual(cm.exception.args[0][:4], '001b')
-        
+
         # Test passing not a dict to sims
         with self.assertRaises(TypeError) as cm:
             model, sim = bayes._check_inputs({'eos': self.eos_model},
@@ -730,130 +728,6 @@ class TestTwoModelSimple(unittest.TestCase):
                               simulations={'simple': [self.sim1, self.exp1]},
                               precondition=True,
                               opt_keys='simp')
-    
-class TestMultiModelOpt(unittest.TestCase):
-
-    def setUp(self):
-        self.str_model = SimpleStr([101E9,100.0]) # Youngs modulis for Cu from Hibbeler
-        self.str_true = SimpleStr([98E9, 100.0]) # Youngs modulis for Cu from Hibbeler
-        
-        self.eos_model = EOSModel(
-            lambda v: 2.56E9/v**3, # famma=3 gas for HE
-            spline_max = 2.0
-        )
-        self.eos_true = EOSBump()
-        
-        
-        ## Make the simulations and experiments
-        
-        rstate = np.random.RandomState(seed=1122548) # Random state with fixed seed
-        
-        sandwich_simulation = ToySandwich()
-        sandwich_experiment = ToySandwichExperiment(model=self.eos_true, rstate=rstate )
-        
-        stick_simulation = Stick(model_attribute=self.eos_true)
-        stick_experiment = StickExperiment(model=self.eos_true,
-                                           sigma_t=1E-9,
-                                           sigma_x=2E-3)
-        
-        cylinder_simulation = ToyCylinder()
-        cylinder_experiment = ToyCylinderExperiment(
-            models={'eos': self.eos_true, 'strength': self.str_true},
-            rstate=rstate
-        )
-        
-        simulations = OrderedDict()
-        simulations['Sand'] =  [sandwich_simulation, sandwich_experiment]
-        simulations['Stick'] = [stick_simulation, stick_experiment]
-        simulations['Cyl'] = [cylinder_simulation, cylinder_experiment]
-        
-        models = OrderedDict()
-        models['eos'] = self.eos_model
-        models['strength'] = self.str_model
-        
-        self.analysis = Bayesian(
-            simulations=simulations,
-            models=models,
-            opt_keys=['eos', 'strength'],
-            constrain=True,
-            outer_reltol=1E-6,
-            precondition=False,
-            debug=False,
-            verb=True,
-            sens_mode='ser',
-            maxiter=6
-        )
-    # end
-
-    def test_sens(self):
-        """Test of the sensitivities with multiple models
-        """
-        ndof = self.eos_model.shape() + self.str_model.shape()
-        sens_dct = self.analysis._get_sens()
-
-        self.assertTrue('Cyl' in sens_dct)
-        self.assertTrue('Sand' in sens_dct)
-
-        self.assertTrue(np.all(sens_dct['Sand'][:, self.eos_model.shape():]==0))
-        self.assertFalse(np.all(sens_dct['Cyl'][:, self.eos_model.shape():]==0))
-        
-    def test_pq(self):
-        """Test of the P and Q matrix generation
-        """
-
-        initial_data = self.analysis.get_data()
-        sens_dct = self.analysis._get_sens()
-        
-        p_sim, q_sim = self.analysis._get_sim_pq(initial_data, sens_dct)
-        p_mod, q_mod = self.analysis._get_model_pq()
-
-        self.assertFalse(np.all(p_sim[self.eos_model.shape():,
-                                      self.eos_model.shape():]==0))
-
-        ndof = self.eos_model.shape() + self.str_model.shape()
-        self.assertEqual(p_sim.shape, (ndof, ndof))
-        self.assertEqual(q_sim.shape, (ndof,))
-
-        self.assertEqual(p_mod.shape, (ndof, ndof))
-        self.assertEqual(q_mod.shape, (ndof,))
-        
-    def test_constraints(self):
-        """Test of the constraint matrix generation
-        """
-        ndof = self.eos_model.shape() + self.str_model.shape()
-        
-        gmat, hvec = self.analysis._get_constraints()
-
-        self.assertEqual(gmat.shape, (ndof, ndof))
-        self.assertEqual(hvec.shape, (ndof,))
-
-        #self.assertTrue(np.all(hvec[self.eos_model.shape():] == 0))
-        self.assertTrue(np.all(gmat[self.eos_model.shape():,
-                                    self.eos_model.shape():] == 0))
-        #self.assertFalse(np.all(hvec[:self.eos_model.shape()] == 0))
-        self.assertFalse(np.all(gmat[:self.eos_model.shape(),
-                                    :self.eos_model.shape()] == 0))        
-        
-    def test_likelyhood(self):
-        """Test of the log likelihood calculation
-        """
-
-        analysis_like = self.analysis.model_log_like()
-        eos_like = self.eos_model.get_log_like()
-        str_like = self.str_model.get_log_like()
-
-        self.assertTrue(analysis_like == eos_like + str_like)
-        
-    def test_local_opt(self):
-        """Test of the local optimization
-        """
-
-    def test_single_iter(self):
-        """Test of a single iteration of the analysis
-        """
-
-        
-        
 
 
 if __name__ == '__main__':

@@ -115,7 +115,7 @@ class TestEosModel(unittest.TestCase):
     def test_eos_bounds_plot_vol(self):
         """Plots the extrapolated behaviour
         """
-        
+
         eos = EOSModel(self.p_fun)
 
         test_vol = np.linspace(0.01, 1.0, 200)
@@ -128,9 +128,9 @@ class TestEosModel(unittest.TestCase):
             old_dof = eos.get_dof()
             old_dof[i] *= 1.02
             new_eos = eos.update_dof(old_dof)
-            ax1.plot(test_vol, new_eos(test_vol))        
+            ax1.plot(test_vol, new_eos(test_vol))
         # end
-        
+
         ax1.set_xlabel('Specific volume / cm3 g-1')
         ax1.set_ylabel('Pressure / Pa')
         fig.savefig('vol_eos_bounds_test.pdf')
@@ -138,7 +138,7 @@ class TestEosModel(unittest.TestCase):
     def test_eos_bounds_plot_dens(self):
         """Plots the extrapolated behaviour for density basis
         """
-        
+
         eos = EOSModel(lambda rho: 2.56E9 * rho **3,
                        basis='density',
                        spline_min=1.0,
@@ -157,14 +157,14 @@ class TestEosModel(unittest.TestCase):
             old_dof = eos.get_dof()
             old_dof[i] *= 1.02
             new_eos = eos.update_dof(old_dof)
-            ax1.plot(test_dens, new_eos(test_dens))        
+            ax1.plot(test_dens, new_eos(test_dens))
         # end
 
         ax1.set_xlabel('Density / g cm-3')
         ax1.set_ylabel('Pressure / Pa')
         fig.savefig('dens_eos_bounds_test.pdf')
-        
-        
+
+
     def test_custom_instantiation(self):
         """Tests instantiation with non default values
         """
@@ -182,10 +182,10 @@ class TestEosModel(unittest.TestCase):
         eos = EOSModel(self.p_fun, spacing='lin', spline_N=10)
 
         with self.assertRaises(KeyError):
-            eos = EOSModel(self.p_fun, spacing='bad_spacing')            
+            eos = EOSModel(self.p_fun, spacing='bad_spacing')
         # end
 
-        
+
     def test_spline_get_t(self):
         """Test spline interaction method, get knots
         """
@@ -224,7 +224,7 @@ class TestEosModel(unittest.TestCase):
         self.assertEqual(c_list[0], eos._eval_args[1][0])
         self.assertEqual(c_list[1], eos._eval_args[1][1])
         self.assertEqual(c_list[2], eos._eval_args[1][2])
-        self.assertEqual(c_list[3], eos._eval_args[1][3])        
+        self.assertEqual(c_list[3], eos._eval_args[1][3])
         self.assertEqual(c_list[4], eos._eval_args[1][4])
         self.assertEqual(0.0, eos._eval_args[1][-1])
         self.assertEqual(0.0, eos._eval_args[1][-2])
@@ -249,13 +249,13 @@ class TestEosModel(unittest.TestCase):
         self.assertEqual(first_dof, new_eos._eval_args[1][0])
         self.assertEqual(c_list[1], new_eos._eval_args[1][1])
         self.assertEqual(c_list[2], new_eos._eval_args[1][2])
-        self.assertEqual(c_list[3], new_eos._eval_args[1][3])        
+        self.assertEqual(c_list[3], new_eos._eval_args[1][3])
         self.assertEqual(c_list[4], new_eos._eval_args[1][4])
         self.assertEqual(0.0, new_eos._eval_args[1][-1])
         self.assertEqual(0.0, new_eos._eval_args[1][-2])
         self.assertEqual(0.0, new_eos._eval_args[1][-3])
         self.assertEqual(0.0, new_eos._eval_args[1][-4])
-        
+
     def test_spline_get_c(self):
         """Test spline interaction method, get coefficients
         """
@@ -270,13 +270,13 @@ class TestEosModel(unittest.TestCase):
         self.assertEqual(c_list[0], eos._eval_args[1][0])
         self.assertEqual(c_list[1], eos._eval_args[1][1])
         self.assertEqual(c_list[2], eos._eval_args[1][2])
-        self.assertEqual(c_list[3], eos._eval_args[1][3])        
+        self.assertEqual(c_list[3], eos._eval_args[1][3])
         self.assertEqual(c_list[-1], eos._eval_args[1][-5])
         self.assertEqual(0.0, eos._eval_args[1][-1])
         self.assertEqual(0.0, eos._eval_args[1][-2])
         self.assertEqual(0.0, eos._eval_args[1][-3])
         self.assertEqual(0.0, eos._eval_args[1][-4])
-        
+
     def test_spline_new_c(self):
         """Test spline interaction method, set new coefficients
         """
@@ -297,14 +297,14 @@ class TestEosModel(unittest.TestCase):
         self.assertEqual(c_list[0] + 0.1, new_eos._eval_args[1][0])
         self.assertEqual(c_list[1] + 0.1, new_eos._eval_args[1][1])
         self.assertEqual(c_list[2] + 0.1, new_eos._eval_args[1][2])
-        self.assertEqual(c_list[3]+ 0.1, new_eos._eval_args[1][3])        
+        self.assertEqual(c_list[3]+ 0.1, new_eos._eval_args[1][3])
         self.assertEqual(c_list[-1] + 0.1, new_eos._eval_args[1][-5])
         self.assertEqual(0.0, new_eos._eval_args[1][-1])
         self.assertEqual(0.0, new_eos._eval_args[1][-2])
         self.assertEqual(0.0, new_eos._eval_args[1][-3])
         self.assertEqual(0.0, new_eos._eval_args[1][-4])
-        
-        
+
+
     def test_eos_get_sigma(self):
         """ Tests that the co-variance matrix is generated correctly
         """
@@ -363,108 +363,6 @@ class TestEosModel(unittest.TestCase):
         self.assertIsInstance(p_cj, float)
         self.assertGreater(p_cj, 0.0)
 
-    def test_JWL_isen(self):
-        """Test of the JWL Isentrope to ensure it is calculating det. vel
-        correctly
-        """
-
-        def jwl_isentrope(dens, rho_o=1.838, A=16.689, B=0.5969, C=0.018229,
-                R1=5.9, R2=2.1, omega=0.45):
-            """The JWL Isentrope.
-
-            Eqiation come from the Ps eqiation along an isentrope in sec 8.3.1
-            pp 8-21 of Ref [1]
-            Args:
-                dens(float or np.ndarray): The density of the gas g cm-3
-
-            Keyword Args:
-                rho_o(float): Reactants density from ref [1] in g cm-3
-                A(float): PBX-9501 coefficeint from ref[1] in Mbar
-                B(float): PBX-9501 coefficeint from ref[1] in Mbar
-                C(float): PBX-9501 coefficeint from ref[1] in Mbar
-                R1(float): PBX-9501 coefficeint from ref[1], dimensionless
-                R1(float): PBX-9501 coefficeint from ref[1], dimensionless
-                omega(float): PBX-9501 coefficeint from ref[1], dimensionless
-
-            Returns:
-                (float or np.ndarray): The pressure at the given density in Pa
-
-            References
-            [1] "LLNL Explosives Handbook" LLNL-URCRL-52997Ve
-            """
-            v = rho_o / dens
-            return 1e11 * (A * np.exp(-R1 * v)
-                          + B * np.exp(-R2 * v)
-                          + C * v**(-omega - 1))
-        # end
-
-        isen = EOSModel(
-            jwl_isentrope,
-            spline_min=1.0,  # g cm-3
-            spline_max=5.0,  # g cm-3
-            vcj_lower=5E5,  # cm s-1
-            vcj_upper=11E5,  # cm s-1
-            basis='dens'
-        )
-
-        true_vcj = 8.73409E5 # cm/s
-        true_volcj = 0.769109 / 1.838 # cm3 g-1
-        true_prescj = 0.333548E11 # Pa
-        true_ucj = 2.07776 # km/s
-        vel_cj, vol_cj, p_cj, rayl_line =\
-            isen._get_cj_point(1.838**-1, pres_0 = 101325)
-
-        u_cj = 1E-3 * float(np.sqrt((p_cj - 101325)
-                              * 1E-3 * (1.838**-1 - vol_cj))) # km/s
-        try:
-            npt.assert_allclose([vel_cj], [true_vcj], rtol = 1E-4,
-                err_msg="JWL Isentrope did not calculate CJ shock velocity"
-                        "correctly")
-            npt.assert_allclose([vol_cj], [true_volcj], rtol = 1E-2,
-                err_msg="JWL Isentrope did not calculate CJ volume"
-                        "correctly")
-            npt.assert_allclose([p_cj], [true_prescj], rtol = 1E-4,
-                err_msg="JWL Isentrope did not calculate CJ pressure"
-                        "correctly")
-            npt.assert_allclose([u_cj], [true_ucj], rtol = 1E-4,
-                err_msg="JWL Isentrope did not calculate CJ particle velocity"
-                        "correctly")
-        except AssertionError as exp:
-            fig = isen.plot(labels=["JWL Isentrope"])
-            ax1 = fig.gca()
-
-            rho_eos = np.linspace(1.0, 5.0, 300)
-            ax1.plot(rho_eos, rayl_line(vel_cj, rho_eos**-1, 1.84**-1, 0.0),
-                '-b',
-                label="R-line for calculated CJ velocity {:4.3f} km s-1"
-                .format(vel_cj/1E5))
-            ax1.plot(rho_eos, rayl_line(true_vcj, rho_eos**-1, 1.84**-1, 0.0),
-                '-.b',
-                label="R-line for true CJ velocity {:4.3f}  km s-1"
-                .format(true_vcj/1E5))
-            # ax1.plot(rho_eos, rayl_line(11E5, rho_eos**-1, 1.84**-1, 0.0),
-            #     '--r',
-            #     label="R-line for line search upper bound")
-            # ax1.plot(rho_eos, rayl_line(5E5, rho_eos**-1, 1.84**-1, 0.0),
-            #     ':r',
-            #     label="R-line for line search lower bound")
-            ax1.plot(vol_cj**-1, p_cj, 'xk', mfc = 'none',
-                label="calc CJ point")
-            ax1.plot(true_volcj**-1, true_prescj, 'ob', mfc = 'none',
-                label="true CJ point")
-            ax1.plot(1.84, 1013255, 'ok',
-                label="Reactants state")
-            # ax1.set_xlim((1,3))
-            # ax1.set_ylim((0,1E11))
-            ax1.legend(loc='best')
-            ax1.set_xlabel("Density / g cm-3")
-            ax1.set_ylabel("Pressure / Pa")
-
-            fig.savefig('jwl_eos_debug.pdf')
-
-            print("PBX-9501 Detonation velocity {:f} km/s".format(vel_cj/1E5))
-            raise exp
-                
 class TestBumpEOS(unittest.TestCase):
     """Test of the bump EOS
     """
